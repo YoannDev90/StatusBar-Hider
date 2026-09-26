@@ -21,6 +21,14 @@ class MainActivity : Activity() {
         private const val REQ_SHIZUKU = 1001
     }
 
+    private fun dp(i: Int): Int =
+        TypedValue
+            .applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                i.toFloat(),
+                resources.displayMetrics,
+            ).toInt()
+
     private lateinit var statusView: TextView
     private lateinit var logView: TextView
     private lateinit var scrollView: ScrollView
@@ -38,15 +46,6 @@ class MainActivity : Activity() {
         val oemId = OemConfig.detect(this)
         OemConfig.saveId(this, oemId)
         oem = OemConfig.load(this, oemId)
-
-        val dp = { i: Int ->
-            TypedValue
-                .applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP,
-                    i.toFloat(),
-                    resources.displayMetrics,
-                ).toInt()
-        }
 
         val root =
             LinearLayout(this).apply {
