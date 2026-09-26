@@ -1,0 +1,25 @@
+# Project toolchain — `mise install` then `mise run build`.
+# AGP 8.5.2 requires Gradle >= 8.7; Kotlin 2.0.20 is fully tested on 8.8.
+[tools]
+java = "21"
+gradle = "8.8.0"
+android-sdk = "23.0"
+
+# ANDROID_HOME / ANDROID_SDK_ROOT / JAVA_HOME / PATH are set by the
+# mise plugins (android-sdk, java, gradle) — nothing to duplicate here.
+
+[tasks.build]
+description = "Build signed release APK (assembleRelease)"
+run = "gradle assembleRelease"
+
+[tasks.debug]
+description = "Build debug APK (assembleDebug)"
+run = "gradle assembleDebug"
+
+[tasks.clean]
+description = "Clean Gradle outputs"
+run = "gradle clean"
+
+[tasks.show-in-drawer]
+description = "Re-enable the launcher icon (reverse 'Hide from launcher')"
+run = "adb shell am start -a android.intent.action.MAIN -n com.example.statusbarhider/.MainActivity --ez show_in_drawer true"
