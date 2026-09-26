@@ -20,7 +20,6 @@ class MainActivity : Activity() {
 
     companion object {
         private const val REQ_SHIZUKU = 1001
-        private const val OEM_ID = "hyperos"
     }
 
     private lateinit var statusView: TextView
@@ -36,7 +35,9 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        oem = OemConfig.load(this, OEM_ID)
+        val oemId = OemConfig.detect(this)
+        OemConfig.saveId(this, oemId)
+        oem = OemConfig.load(this, oemId)
 
         val dp = { i: Int ->
             TypedValue.applyDimension(

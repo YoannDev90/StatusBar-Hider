@@ -20,12 +20,12 @@ run = "gradle assembleDebug"
 [tasks.install]
 description = "Build + install release APK on device"
 depends = ["build"]
-run = "adb install -r $APK"
+run = "adb install -r {{vars.APK}}"
 
 [tasks.install-debug]
 description = "Build + install debug APK on device"
 depends = ["debug"]
-run = "adb install -r $APK_DEBUG"
+run = "adb install -r {{vars.APK_DEBUG}}"
 
 [tasks.clean]
 description = "Clean Gradle outputs"
@@ -37,7 +37,7 @@ run = "adb devices"
 
 [tasks.logcat]
 description = "Stream logcat for StatusBarHider"
-run = "adb logcat --pid=$(adb shell pidof com.example.statusbarhider) -s StatusBarHider:*"
+run = "adb logcat -s StatusBarHider:* ActivityManager:*"
 
 [tasks.show-in-drawer]
 description = "Re-enable the launcher icon (reverse 'Hide from launcher')"
