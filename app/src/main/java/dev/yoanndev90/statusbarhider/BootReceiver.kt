@@ -36,8 +36,8 @@ class BootReceiver : BroadcastReceiver() {
                     val oemId = OemConfig.getSavedId(context) ?: OemConfig.detect(context)
                     val oem = OemConfig.load(context, oemId)
                     for (cmd in oem.hide) {
-                        val (exit, out) = ShizukuCmd.run(cmd.cmd)
-                        Log.i(TAG, "${cmd.name} -> exit=$exit $out")
+                        val (_, out) = ShizukuCmd.run(cmd.cmd)
+                        Log.i(TAG, "${cmd.name} -> $out")
                     }
                     Log.i(TAG, "Auto-hide done")
                 }
