@@ -2,7 +2,9 @@ package dev.yoanndev90.statusbarhider
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 private const val PREFS_NAME = "statusbarhider"
@@ -23,6 +25,8 @@ data class OemConfig(
     val status: List<OemCommand>,
 ) {
     companion object {
+        private const val TAG = "OemConfig"
+
         fun listAvailable(context: Context): List<String> =
             context.assets
                 .list("oem")
@@ -50,6 +54,9 @@ data class OemConfig(
         fun detect(context: Context): String {
             getSavedId(context)?.let { return it }
             val available = listAvailable(context)
+            if (available.isEmpty()) {
+                error("No OEM config files found in assets/oem/")
+            }
             val props =
                 listOf(
                     Build.MANUFACTURER,
@@ -69,11 +76,23 @@ data class OemConfig(
             id: String,
         ): OemConfig {
             val raw =
-                context.assets
-                    .open("oem/$id.json")
-                    .bufferedReader()
-                    .use { it.readText() }
-            val json = JSONObject(raw)
+                try {
+                    context.assets
+                        .open("oem/$id.json")
+                        .bufferedReader()
+                        .use { it.readText() }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to read OEM config: $id", e)
+                    return FallbackConfig
+                }
+
+            val json =
+                try {
+                    JSONObject(raw)
+                } catch (e: JSONException) {
+                    Log.e(TAG, "Malformed JSON in OEM config: $id", e)
+                    return FallbackConfig
+                }
 
             fun parseCommands(arr: JSONArray): List<OemCommand> =
                 (0 until arr.length()).map { i ->
@@ -86,13 +105,27 @@ data class OemConfig(
                     )
                 }
 
-            return OemConfig(
-                id = id,
-                name = json.getString("name"),
-                hide = parseCommands(json.getJSONArray("hide")),
-                restore = parseCommands(json.getJSONArray("restore")),
-                status = parseCommands(json.getJSONArray("status")),
-            )
+            return try {
+                OemConfig(
+                    id = id,
+                    name = json.getString("name"),
+                    hide = parseCommands(json.getJSONArray("hide")),
+                    restore = parseCommands(json.getJSONArray("restore")),
+                    status = parseCommands(json.getJSONArray("status")),
+                )
+            } catch (e: JSONException) {
+                Log.e(TAG, "Missing required fields in OEM config: $id", e)
+                FallbackConfig
+            }
         }
+
+        private val FallbackConfig =
+            OemConfig(
+                id = "unknown",
+                name = "Unknown OEM",
+                hide = emptyList(),
+                restore = emptyList(),
+                status = emptyList(),
+            )
     }
 }
