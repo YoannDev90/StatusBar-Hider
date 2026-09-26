@@ -17,6 +17,10 @@ run = "gradle assembleRelease"
 description = "Build debug APK"
 run = "gradle assembleDebug"
 
+[tasks.lint]
+description = "Run ktlint on Kotlin sources"
+run = "ktlint 'app/src/main/**/*.kt'"
+
 [tasks.install]
 description = "Build + install release APK on device"
 depends = ["build"]

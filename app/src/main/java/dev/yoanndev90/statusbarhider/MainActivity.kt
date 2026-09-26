@@ -17,7 +17,6 @@ import android.widget.Toast
 import rikka.shizuku.Shizuku
 
 class MainActivity : Activity() {
-
     companion object {
         private const val REQ_SHIZUKU = 1001
     }
@@ -28,9 +27,10 @@ class MainActivity : Activity() {
     private lateinit var oem: OemConfig
 
     private val binderListener = Shizuku.OnBinderReceivedListener { refreshStatus() }
-    private val deadListener = Shizuku.OnBinderDeadListener {
-        runOnUiThread { statusView.text = "Shizuku: disconnected" }
-    }
+    private val deadListener =
+        Shizuku.OnBinderDeadListener {
+            runOnUiThread { statusView.text = "Shizuku: disconnected" }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,41 +40,50 @@ class MainActivity : Activity() {
         oem = OemConfig.load(this, oemId)
 
         val dp = { i: Int ->
-            TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, i.toFloat(), resources.displayMetrics
-            ).toInt()
+            TypedValue
+                .applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    i.toFloat(),
+                    resources.displayMetrics,
+                ).toInt()
         }
 
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
-            setPadding(dp(24), dp(48), dp(24), dp(16))
-        }
+        val root =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                setPadding(dp(24), dp(48), dp(24), dp(16))
+            }
 
         // Title
-        root.addView(TextView(this).apply {
-            text = "StatusBar Hider"
-            textSize = 22f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#1a1a1a"))
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(4))
-        })
-        root.addView(TextView(this).apply {
-            text = oem.name
-            textSize = 13f
-            setTextColor(Color.parseColor("#888888"))
-            gravity = Gravity.CENTER
-            setPadding(0, 0, 0, dp(16))
-        })
+        root.addView(
+            TextView(this).apply {
+                text = "StatusBar Hider"
+                textSize = 22f
+                setTypeface(null, Typeface.BOLD)
+                setTextColor(Color.parseColor("#1a1a1a"))
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, dp(4))
+            },
+        )
+        root.addView(
+            TextView(this).apply {
+                text = oem.name
+                textSize = 13f
+                setTextColor(Color.parseColor("#888888"))
+                gravity = Gravity.CENTER
+                setPadding(0, 0, 0, dp(16))
+            },
+        )
 
         // Status bar
-        statusView = TextView(this).apply {
-            textSize = 14f
-            setTextColor(Color.parseColor("#444444"))
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            setBackgroundColor(Color.parseColor("#f0f0f0"))
-        }
+        statusView =
+            TextView(this).apply {
+                textSize = 14f
+                setTextColor(Color.parseColor("#444444"))
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+                setBackgroundColor(Color.parseColor("#f0f0f0"))
+            }
         root.addView(statusView)
 
         fun separator() {
@@ -82,25 +91,33 @@ class MainActivity : Activity() {
         }
 
         fun sectionLabel(text: String) {
-            root.addView(TextView(this).apply {
-                this.text = text
-                textSize = 11f
-                setTextColor(Color.parseColor("#999999"))
-                letterSpacing = 0.12f
-                setPadding(0, dp(8), 0, dp(4))
-            })
+            root.addView(
+                TextView(this).apply {
+                    this.text = text
+                    textSize = 11f
+                    setTextColor(Color.parseColor("#999999"))
+                    letterSpacing = 0.12f
+                    setPadding(0, dp(8), 0, dp(4))
+                },
+            )
         }
 
-        fun button(label: String, accent: Boolean = false, onClick: () -> Unit) {
-            root.addView(Button(this).apply {
-                text = label
-                setOnClickListener { onClick() }
-                setPadding(dp(16), dp(12), dp(16), dp(12))
-                if (accent) {
-                    setBackgroundColor(Color.parseColor("#1a73e8"))
-                    setTextColor(Color.WHITE)
-                }
-            })
+        fun button(
+            label: String,
+            accent: Boolean = false,
+            onClick: () -> Unit,
+        ) {
+            root.addView(
+                Button(this).apply {
+                    text = label
+                    setOnClickListener { onClick() }
+                    setPadding(dp(16), dp(12), dp(16), dp(12))
+                    if (accent) {
+                        setBackgroundColor(Color.parseColor("#1a73e8"))
+                        setTextColor(Color.WHITE)
+                    }
+                },
+            )
         }
 
         // -- Shizuku --
@@ -136,11 +153,12 @@ class MainActivity : Activity() {
                 android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
                 android.content.pm.PackageManager.DONT_KILL_APP,
             )
-            Toast.makeText(
-                this,
-                "Hidden! Access via Settings > Apps > StatusBar Hider",
-                Toast.LENGTH_LONG,
-            ).show()
+            Toast
+                .makeText(
+                    this,
+                    "Hidden! Access via Settings > Apps > StatusBar Hider",
+                    Toast.LENGTH_LONG,
+                ).show()
         }
         button("Export logs") {
             val clip = ClipData.newPlainText("StatusBarHider logs", logView.text)
@@ -151,19 +169,26 @@ class MainActivity : Activity() {
         // -- Log --
         separator()
         sectionLabel("LOG")
-        logView = TextView(this).apply {
-            textSize = 12f
-            setTextIsSelectable(true)
-            setTextColor(Color.parseColor("#333333"))
-            setPadding(dp(8), dp(6), dp(8), dp(6))
-        }
-        scrollView = ScrollView(this).apply {
-            addView(logView)
-            isVerticalScrollBarEnabled = true
-        }
-        root.addView(scrollView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
-        ))
+        logView =
+            TextView(this).apply {
+                textSize = 12f
+                setTextIsSelectable(true)
+                setTextColor(Color.parseColor("#333333"))
+                setPadding(dp(8), dp(6), dp(8), dp(6))
+            }
+        scrollView =
+            ScrollView(this).apply {
+                addView(logView)
+                isVerticalScrollBarEnabled = true
+            }
+        root.addView(
+            scrollView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f,
+            ),
+        )
 
         setContentView(root)
 
@@ -179,28 +204,37 @@ class MainActivity : Activity() {
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<String>, grantResults: IntArray,
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQ_SHIZUKU) {
             appendLog(
-                if (ShizukuCmd.granted()) "Shizuku permission granted."
-                else "Shizuku permission denied. Grant it in the Shizuku manager.",
+                if (ShizukuCmd.granted()) {
+                    "Shizuku permission granted."
+                } else {
+                    "Shizuku permission denied. Grant it in the Shizuku manager."
+                },
             )
             refreshStatus()
         }
     }
 
     private fun refreshStatus() {
-        val text = when {
-            !Shizuku.pingBinder() -> "Shizuku: not running"
-            !ShizukuCmd.granted() -> "Shizuku: waiting for authorization"
-            else -> "Shizuku: ready"
-        }
+        val text =
+            when {
+                !Shizuku.pingBinder() -> "Shizuku: not running"
+                !ShizukuCmd.granted() -> "Shizuku: waiting for authorization"
+                else -> "Shizuku: ready"
+            }
         runOnUiThread { statusView.text = text }
     }
 
-    private fun runAsync(label: String, block: () -> Unit) {
+    private fun runAsync(
+        label: String,
+        block: () -> Unit,
+    ) {
         appendLog("... $label")
         Thread {
             try {
@@ -226,9 +260,8 @@ class MainActivity : Activity() {
     private fun applyHide() {
         if (!requireGranted()) return
         for (cmd in oem.hide) {
-            val r = ShizukuCmd.run(cmd.cmd)
-            val status = if (r.out.isNotEmpty()) r.out else "ok"
-            appendLog("${cmd.name} -> $status")
+            val (_, out) = ShizukuCmd.run(cmd.cmd)
+            appendLog("${cmd.name} -> ${out.ifEmpty { "ok" }}")
         }
         appendLog("Done. Swipe-down is preserved.")
     }
@@ -236,15 +269,15 @@ class MainActivity : Activity() {
     private fun showState() {
         if (!requireGranted()) return
         for (cmd in oem.status) {
-            val r = ShizukuCmd.run(cmd.cmd)
-            appendLog("${cmd.name} = ${r.out.ifEmpty { "(empty)" }}")
+            val (_, out) = ShizukuCmd.run(cmd.cmd)
+            appendLog("${cmd.name} = ${out.ifEmpty { "(empty)" }}")
         }
     }
 
     private fun restore() {
         if (!requireGranted()) return
         for (cmd in oem.restore) {
-            val r = ShizukuCmd.run(cmd.cmd)
+            ShizukuCmd.run(cmd.cmd)
             appendLog("${cmd.name} -> restored")
         }
     }

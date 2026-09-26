@@ -6,7 +6,6 @@ The app reads OEM-specific commands from JSON files in `app/src/main/assets/oem/
 
 ## Prerequisites
 
-- Android Studio with JDK 17+
 - A device running a supported OEM skin
 - [Shizuku](https://shizuku.rikka.app/) installed and running on the device
   - Start via `adb shell sh /storage/emulated/0/Android/data/moe.shizuku.privileged.api/start.sh`

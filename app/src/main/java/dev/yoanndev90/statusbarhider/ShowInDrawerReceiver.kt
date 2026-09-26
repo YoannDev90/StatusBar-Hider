@@ -9,8 +9,10 @@ import android.util.Log
 import android.widget.Toast
 
 class ShowInDrawerReceiver : BroadcastReceiver() {
-
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         if (intent.action != "dev.yoanndev90.statusbarhider.SHOW_IN_DRAWER") return
         val cn = ComponentName(context, MainActivity::class.java)
         context.packageManager.setComponentEnabledSetting(
