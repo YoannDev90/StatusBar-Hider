@@ -26,6 +26,7 @@ data class OemConfig(
 ) {
     companion object {
         private const val TAG = "OemConfig"
+        private const val CURRENT_SCHEMA_VERSION = 1
 
         fun listAvailable(context: Context): List<String> =
             context.assets
@@ -93,6 +94,12 @@ data class OemConfig(
                     Log.e(TAG, "Malformed JSON in OEM config: $id", e)
                     return FallbackConfig
                 }
+
+            val schemaVersion = json.optInt("schema_version", 0)
+            if (schemaVersion > CURRENT_SCHEMA_VERSION) {
+                Log.e(TAG, "OEM config $id requires schema_version $schemaVersion, app supports up to $CURRENT_SCHEMA_VERSION")
+                return FallbackConfig
+            }
 
             fun parseCommands(arr: JSONArray): List<OemCommand> =
                 (0 until arr.length()).map { i ->
