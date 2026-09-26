@@ -45,8 +45,8 @@ run = "adb logcat -s StatusBarHider:* ActivityManager:*"
 
 [tasks.show-in-drawer]
 description = "Re-enable the launcher icon (reverse 'Hide from launcher')"
-run = "adb shell am broadcast -a com.example.statusbarhider.SHOW_IN_DRAWER"
+run = "adb shell am broadcast -a dev.yoanndev90.statusbarhider.SHOW_IN_DRAWER"
 
 [tasks.uninstall]
 description = "Uninstall the app from device"
-run = "adb uninstall com.example.statusbarhider"
+run = "adb uninstall dev.yoanndev90.statusbarhider"
