@@ -10,6 +10,8 @@ import org.json.JSONObject
 private const val PREFS_NAME = "statusbarhider"
 private const val PREF_OEM_ID = "oem_id"
 
+class OemConfigException(message: String) : Exception(message)
+
 data class OemCommand(
     val name: String,
     val cmd: String,
@@ -87,18 +89,27 @@ data class OemConfig(
                     return FallbackConfig
                 }
 
-            val json =
-                try {
-                    JSONObject(raw)
-                } catch (e: JSONException) {
-                    Log.e(TAG, "Malformed JSON in OEM config: $id", e)
-                    return FallbackConfig
-                }
+            return try {
+                parseJson(id, raw)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse OEM config: $id", e)
+                FallbackConfig
+            }
+        }
+
+        @Throws(OemConfigException::class)
+        fun parseJson(
+            id: String,
+            raw: String,
+        ): OemConfig {
+            val json = JSONObject(raw)
 
             val schemaVersion = json.optInt("schema_version", 0)
             if (schemaVersion > CURRENT_SCHEMA_VERSION) {
-                Log.e(TAG, "OEM config $id requires schema_version $schemaVersion, app supports up to $CURRENT_SCHEMA_VERSION")
-                return FallbackConfig
+                throw OemConfigException(
+                    "OEM config $id requires schema_version $schemaVersion, " +
+                        "app supports up to $CURRENT_SCHEMA_VERSION",
+                )
             }
 
             fun parseCommands(arr: JSONArray): List<OemCommand> =
@@ -112,18 +123,13 @@ data class OemConfig(
                     )
                 }
 
-            return try {
-                OemConfig(
-                    id = id,
-                    name = json.getString("name"),
-                    hide = parseCommands(json.getJSONArray("hide")),
-                    restore = parseCommands(json.getJSONArray("restore")),
-                    status = parseCommands(json.getJSONArray("status")),
-                )
-            } catch (e: JSONException) {
-                Log.e(TAG, "Missing required fields in OEM config: $id", e)
-                FallbackConfig
-            }
+            return OemConfig(
+                id = id,
+                name = json.getString("name"),
+                hide = parseCommands(json.getJSONArray("hide")),
+                restore = parseCommands(json.getJSONArray("restore")),
+                status = parseCommands(json.getJSONArray("status")),
+            )
         }
 
         private val FallbackConfig =
