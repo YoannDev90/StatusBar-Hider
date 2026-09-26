@@ -113,9 +113,6 @@ Edit the file. The structure is:
 ```json
 {
   "name": "One UI",
-  "version": "7",
-  "device": "Galaxy S24",
-  "tested": "2026-09",
   "hide": [
     {
       "name": "policy_control",
@@ -153,10 +150,7 @@ Edit the file. The structure is:
 
 | Field | Required | Description |
 |---|---|---|
-| `name` | yes | Human-readable OEM name (shown in the UI) |
-| `version` | no | Skin version (e.g. "7" for One UI 7) |
-| `device` | no | Device used for testing |
-| `tested` | no | Date of last verified test |
+| `name` | yes | Human-readable OEM name (shown in the UI and used for auto-detection) |
 | `hide[].name` | yes | Short identifier (shown in logs) |
 | `hide[].cmd` | yes | Full shell command to run via Shizuku |
 | `hide[].description` | no | What this command does |
@@ -166,11 +160,13 @@ Edit the file. The structure is:
 | `status[].name` | yes | Short identifier for the status field |
 | `status[].cmd` | yes | Command that returns the current value |
 
+The app auto-detects the OEM by matching `Build.MANUFACTURER`, `BRAND`, `MODEL`, `PRODUCT`, and `DISPLAY` against the JSON file name (lowercase slug). The detection result is saved in SharedPreferences so the user can override it.
+
 ## Step 6 — Test
 
 1. Build the app: `mise run build`
-2. Install on the target device: `mise run build && adb install -r app/build/outputs/apk/release/app-release.apk`
-3. Open the app. The subtitle should show your OEM name and version.
+2. Install on the target device: `mise run install`
+3. Open the app. The subtitle should show your OEM name.
 4. Tap each button and verify the log output matches expectations.
 5. **Restore** the status bar before switching devices.
 
@@ -178,7 +174,7 @@ Edit the file. The structure is:
 
 - Keep one JSON file per OEM in `app/src/main/assets/oem/`.
 - File name = lowercase slug: `oneui.json`, `hyperos.json`, `stock.json`, etc.
-- Include the `tested` date so maintainers know how fresh the data is.
+- The file name should match a substring of the device's `Build.MANUFACTURER`, `BRAND`, `MODEL`, `PRODUCT`, or `DISPLAY` for auto-detection to work.
 - If a command requires a specific Android version, mention it in `description`.
 
 ---
