@@ -8,7 +8,7 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
-            android:name=".MainActivity"
+            android:name="dev.yoanndev90.statusbarhider.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -29,11 +29,22 @@
         <!-- Re-applies the hide commands after reboot when Shizuku is running.
              Requires "Start on boot" enabled in Shizuku settings. -->
         <receiver
-            android:name=".BootReceiver"
+            android:name="dev.yoanndev90.statusbarhider.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Re-enables the launcher icon from adb: `am broadcast` from within
+             the app has permission to toggle its own components. -->
+        <receiver
+            android:name="dev.yoanndev90.statusbarhider.ShowInDrawerReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="dev.yoanndev90.statusbarhider.SHOW_IN_DRAWER" />
             </intent-filter>
         </receiver>
     </application>

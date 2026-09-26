@@ -1,4 +1,4 @@
-package com.example.statusbarhider
+package dev.yoanndev90.statusbarhider
 
 import android.os.ParcelFileDescriptor
 import rikka.shizuku.Shizuku

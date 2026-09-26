@@ -1,4 +1,4 @@
-package com.example.statusbarhider
+package dev.yoanndev90.statusbarhider
 
 import android.content.BroadcastReceiver
 import android.content.Context

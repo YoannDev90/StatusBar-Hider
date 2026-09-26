@@ -5,21 +5,44 @@ java = "21"
 gradle = "8.8.0"
 android-sdk = "23.0"
 
-# ANDROID_HOME / ANDROID_SDK_ROOT / JAVA_HOME / PATH are set by the
-# mise plugins (android-sdk, java, gradle) — nothing to duplicate here.
+[vars]
+APK = "app/build/outputs/apk/release/app-release.apk"
+APK_DEBUG = "app/build/outputs/apk/debug/app-debug.apk"
 
 [tasks.build]
-description = "Build signed release APK (assembleRelease)"
+description = "Build signed release APK"
 run = "gradle assembleRelease"
 
 [tasks.debug]
-description = "Build debug APK (assembleDebug)"
+description = "Build debug APK"
 run = "gradle assembleDebug"
+
+[tasks.install]
+description = "Build + install release APK on device"
+depends = ["build"]
+run = "adb install -r $APK"
+
+[tasks.install-debug]
+description = "Build + install debug APK on device"
+depends = ["debug"]
+run = "adb install -r $APK_DEBUG"
 
 [tasks.clean]
 description = "Clean Gradle outputs"
 run = "gradle clean"
 
+[tasks.devices]
+description = "List connected ADB devices"
+run = "adb devices"
+
+[tasks.logcat]
+description = "Stream logcat for StatusBarHider"
+run = "adb logcat --pid=$(adb shell pidof com.example.statusbarhider) -s StatusBarHider:*"
+
 [tasks.show-in-drawer]
 description = "Re-enable the launcher icon (reverse 'Hide from launcher')"
-run = "adb shell am start -a android.intent.action.MAIN -n com.example.statusbarhider/.MainActivity --ez show_in_drawer true"
+run = "adb shell am broadcast -a com.example.statusbarhider.SHOW_IN_DRAWER"
+
+[tasks.uninstall]
+description = "Uninstall the app from device"
+run = "adb uninstall com.example.statusbarhider"

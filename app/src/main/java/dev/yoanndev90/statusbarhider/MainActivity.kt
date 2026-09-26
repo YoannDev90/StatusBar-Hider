@@ -1,4 +1,4 @@
-package com.example.statusbarhider
+package dev.yoanndev90.statusbarhider
 
 import android.app.Activity
 import android.content.ClipData
@@ -37,17 +37,6 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         oem = OemConfig.load(this, OEM_ID)
-
-        // Re-enable launcher icon when opened via `mise run show-in-drawer`
-        if (intent?.getBooleanExtra("show_in_drawer", false) == true) {
-            val cn = ComponentName(this, MainActivity::class.java)
-            packageManager.setComponentEnabledSetting(
-                cn,
-                android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                android.content.pm.PackageManager.DONT_KILL_APP,
-            )
-            Toast.makeText(this, "Launcher icon restored", Toast.LENGTH_SHORT).show()
-        }
 
         val dp = { i: Int ->
             TypedValue.applyDimension(

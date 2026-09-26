@@ -12,11 +12,11 @@ val keystoreProps = rootProject.file("keystore.properties")
     ?.let { file -> Properties().apply { file.inputStream().use { load(it) } } }
 
 android {
-    namespace = "com.example.statusbarhider"
+    namespace = "dev.yoanndev90.statusbarhider"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.statusbarhider"
+        applicationId = "dev.yoanndev90.statusbarhider"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
