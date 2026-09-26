@@ -1,16 +1,22 @@
 package dev.yoanndev90.statusbarhider
 
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 object ShizukuCmd {
+    private const val TAG = "ShizukuCmd"
+
     data class Result(
         val exit: Int,
         val out: String,
     )
+
+    private val executor = Executors.newCachedThreadPool()
 
     fun granted(): Boolean =
         Shizuku.pingBinder() &&
@@ -21,19 +27,19 @@ object ShizukuCmd {
         cmd: String,
         timeoutSec: Long = 15,
     ): Result {
-        val binder = Shizuku.getBinder() ?: return Result(-1, "")
+        val binder = Shizuku.getBinder() ?: return Result(-1, "Shizuku binder not available")
         val service = IShizukuService.Stub.asInterface(binder)
         val remote =
             try {
                 service.newProcess(arrayOf("sh", "-c", cmd), null, null)
-            } catch (_: Exception) {
-                return Result(-1, "")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to start process for: $cmd", e)
+                return Result(-1, "Failed to start process: ${e.message}")
             }
 
-        val pool = Executors.newSingleThreadExecutor()
         try {
             val future =
-                pool.submit<String> {
+                executor.submit<String> {
                     ParcelFileDescriptor
                         .AutoCloseInputStream(remote.inputStream)
                         .bufferedReader()
@@ -43,15 +49,17 @@ object ShizukuCmd {
             val out =
                 try {
                     future.get(timeoutSec, TimeUnit.SECONDS)
-                } catch (_: Exception) {
-                    ""
+                } catch (e: TimeoutException) {
+                    future.cancel(true)
+                    Log.w(TAG, "Command timed out after ${timeoutSec}s: $cmd")
+                    return Result(-1, "TIMEOUT after ${timeoutSec}s")
                 }
             return Result(0, out)
         } finally {
-            pool.shutdownNow()
             try {
                 remote.destroy()
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to destroy remote process", e)
             }
         }
     }
