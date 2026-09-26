@@ -1,0 +1,11 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+.cxx/
+
+# Clé de signature + mots de passe (jamais commités)
+keystore/
+keystore.properties
+*.keystore
+*.jks
