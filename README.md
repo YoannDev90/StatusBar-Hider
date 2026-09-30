@@ -20,17 +20,17 @@ mise run install        # build + install release APK on device
 
 ## Mise tasks
 
-| Task | Description |
-|---|---|
-| `mise run build` | Build signed release APK |
-| `mise run debug` | Build debug APK |
-| `mise run install` | Build + install release APK |
-| `mise run install-debug` | Build + install debug APK |
-| `mise run clean` | Clean Gradle outputs |
-| `mise run devices` | List connected ADB devices |
-| `mise run logcat` | Stream logcat for StatusBarHider |
-| `mise run show-in-drawer` | Re-enable the launcher icon |
-| `mise run uninstall` | Uninstall the app from device |
+| Task                      | Description                      |
+|---------------------------|----------------------------------|
+| `mise run build`          | Build signed release APK         |
+| `mise run debug`          | Build debug APK                  |
+| `mise run install`        | Build + install release APK      |
+| `mise run install-debug`  | Build + install debug APK        |
+| `mise run clean`          | Clean Gradle outputs             |
+| `mise run devices`        | List connected ADB devices       |
+| `mise run logcat`         | Stream logcat for StatusBarHider |
+| `mise run show-in-drawer` | Re-enable the launcher icon      |
+| `mise run uninstall`      | Uninstall the app from device    |
 
 ## Build without mise
 
