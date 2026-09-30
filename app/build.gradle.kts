@@ -1,8 +1,9 @@
 import java.util.Properties
 
 plugins {
-    id("com.android.application")
-    kotlin("android")
+	alias(libs.plugins.android.application)
+//	alias(libs.plugins.kotlin.compose)
+	alias(libs.plugins.kotlin.serialization)
 }
 
 // Release signing config: reads keystore.properties (gitignored).
@@ -13,12 +14,12 @@ val keystoreProps = rootProject.file("keystore.properties")
 
 android {
     namespace = "dev.yoanndev90.statusbarhider"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "dev.yoanndev90.statusbarhider"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
     }
@@ -52,19 +53,16 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 }
 
 dependencies {
     // Shizuku API 13.1.5 + aidl (newProcess is private in the api artifact;
     // we call IShizukuService.newProcess() directly via the aidl artifact).
     // https://github.com/RikkaApps/Shizuku-API
-    implementation("dev.rikka.shizuku:api:13.1.5")
-    implementation("dev.rikka.shizuku:aidl:13.1.5")
-    implementation("dev.rikka.shizuku:provider:13.1.5")
+    implementation(libs.api)
+    implementation(libs.aidl)
+    implementation(libs.provider)
 
-    testImplementation("org.json:json:20240303")
-    testImplementation("junit:junit:4.13.2")
+    testImplementation(libs.json)
+    testImplementation(libs.junit)
 }

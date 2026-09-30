@@ -1,9 +1,7 @@
 # Project toolchain — `mise install` then `mise run build`.
 # AGP 8.5.2 requires Gradle >= 8.7; Kotlin 2.0.20 is fully tested on 8.8.
 [tools]
-java = "21"
-gradle = "8.8.0"
-android-sdk = "23.0"
+pre-commit = "latest"
 
 [vars]
 APK = "app/build/outputs/apk/release/app-release.apk"
@@ -11,15 +9,15 @@ APK_DEBUG = "app/build/outputs/apk/debug/app-debug.apk"
 
 [tasks.build]
 description = "Build signed release APK"
-run = "gradle assembleRelease"
+run = "./gradlew assembleRelease"
 
 [tasks.debug]
 description = "Build debug APK"
-run = "gradle assembleDebug"
+run = "./gradlew assembleDebug"
 
-[tasks.lint]
-description = "Run ktlint on Kotlin sources"
-run = "ktlint 'app/src/main/**/*.kt'"
+[tasks.format]
+run = "ktlint --format"
+description = "Run ktlint format"
 
 [tasks.install]
 description = "Build + install release APK on device"
@@ -33,7 +31,7 @@ run = "adb install -r {{vars.APK_DEBUG}}"
 
 [tasks.clean]
 description = "Clean Gradle outputs"
-run = "gradle clean"
+run = "./gradlew clean"
 
 [tasks.devices]
 description = "List connected ADB devices"
@@ -50,3 +48,10 @@ run = "adb shell am broadcast -a dev.yoanndev90.statusbarhider.SHOW_IN_DRAWER -n
 [tasks.uninstall]
 description = "Uninstall the app from device"
 run = "adb uninstall dev.yoanndev90.statusbarhider"
+
+[tasks.setup-hooks]
+run = "pre-commit install && pre-commit install --hook-type commit-msg && mise use pre-commit"
+description = "Install git hooks (pre-commit + commit-msg)"
+
+[hooks]
+postinstall = "mise setup-hooks"

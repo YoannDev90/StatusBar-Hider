@@ -1,0 +1,18 @@
+[versions]
+agp = "9.4.1"
+api = "13.1.5"
+json = "20260814"
+junit = "4.13.2"
+kotlin = "2.4.20"
+
+[libraries]
+aidl = { module = "dev.rikka.shizuku:aidl", version.ref = "api" }
+api = { module = "dev.rikka.shizuku:api", version.ref = "api" }
+json = { module = "org.json:json", version.ref = "json" }
+junit = { module = "junit:junit", version.ref = "junit" }
+provider = { module = "dev.rikka.shizuku:provider", version.ref = "api" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
