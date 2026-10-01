@@ -6,6 +6,8 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import rikka.shizuku.Shizuku
 
 class BootReceiver : BroadcastReceiver() {
@@ -40,6 +42,10 @@ class BootReceiver : BroadcastReceiver() {
 						Log.i(TAG, "${cmd.name} -> $out")
 					}
 					Log.i(TAG, "Auto-hide done")
+					if (OverlayPrefs.load(context).enabled) {
+						Log.i(TAG, "Restarting custom overlay")
+						StatusBarOverlayService.start(context)
+					}
 				}
 			}
 
