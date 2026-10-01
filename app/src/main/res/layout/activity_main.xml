@@ -111,6 +111,284 @@
             android:paddingEnd="16dp"
             android:paddingBottom="12dp" />
 
+        <!-- Section: Custom bar -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="CUSTOM BAR"
+            android:textSize="11sp"
+            android:textColor="#999999"
+            android:letterSpacing="0.12"
+            android:paddingBottom="4dp" />
+
+        <CheckBox
+            android:id="@+id/cbShowSeconds"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show seconds (extra battery)" />
+
+        <CheckBox
+            android:id="@+id/cbBattery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Battery" />
+
+        <CheckBox
+            android:id="@+id/cbBatteryPct"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Battery %" />
+
+        <CheckBox
+            android:id="@+id/cbBatteryIcon"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Battery icon" />
+
+        <CheckBox
+            android:id="@+id/cbDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Date" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/etDateFormat"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Date format (EEE dd MMM)"
+                android:singleLine="true"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnDateFormat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set" />
+        </LinearLayout>
+
+        <CheckBox
+            android:id="@+id/cbNotifs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Notification icons" />
+
+        <Button
+            android:id="@+id/btnNotifAccess"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Enable notification access" />
+
+        <TextView
+            android:id="@+id/tvMaxNotifsVal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Max notification icons: 5"
+            android:textSize="13sp" />
+
+        <SeekBar
+            android:id="@+id/sbMaxNotifs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="7" />
+
+        <CheckBox
+            android:id="@+id/cbWifi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="WiFi" />
+
+        <CheckBox
+            android:id="@+id/cbMobile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Mobile data" />
+
+        <CheckBox
+            android:id="@+id/cbBluetooth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bluetooth" />
+
+        <CheckBox
+            android:id="@+id/cbAirplane"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Airplane mode" />
+
+        <CheckBox
+            android:id="@+id/cbUsb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="USB" />
+
+        <CheckBox
+            android:id="@+id/cbAlarm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Next alarm" />
+
+        <CheckBox
+            android:id="@+id/cbBandwidth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bandwidth (1s polling)" />
+
+        <CheckBox
+            android:id="@+id/cbBandwidthMerged"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Merged up/down speed" />
+
+        <CheckBox
+            android:id="@+id/cbInteractive"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Touchable bar (tap clock/date, may block swipe)" />
+
+        <TextView
+            android:id="@+id/tvBurnInVal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Burn-in shift: every 5 min (0 = off)"
+            android:textSize="13sp" />
+
+        <SeekBar
+            android:id="@+id/sbBurnIn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="30" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="WIDGET ORDER"
+            android:textSize="11sp"
+            android:textColor="#999999"
+            android:letterSpacing="0.12"
+            android:paddingBottom="4dp" />
+
+        <LinearLayout
+            android:id="@+id/orderList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <CheckBox
+            android:id="@+id/cbDarkText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Dark text (for transparent bar)" />
+
+        <RadioGroup
+            android:id="@+id/rgBackground"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rbTransparent"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Transparent" />
+
+            <RadioButton
+                android:id="@+id/rbSemi"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Semi" />
+
+            <RadioButton
+                android:id="@+id/rbBlack"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Black" />
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/tvPadStartVal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Padding start: 12dp"
+            android:textSize="13sp" />
+
+        <SeekBar
+            android:id="@+id/sbPadStart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="32" />
+
+        <TextView
+            android:id="@+id/tvPadTopVal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Padding top: 4dp"
+            android:textSize="13sp" />
+
+        <SeekBar
+            android:id="@+id/sbPadTop"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="32" />
+
+        <TextView
+            android:id="@+id/tvPadEndVal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Padding end: 12dp"
+            android:textSize="13sp" />
+
+        <SeekBar
+            android:id="@+id/sbPadEnd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="32" />
+
+        <TextView
+            android:id="@+id/tvPadBottomVal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Padding bottom: 4dp"
+            android:textSize="13sp" />
+
+        <SeekBar
+            android:id="@+id/sbPadBottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="32" />
+
+        <Button
+            android:id="@+id/btnShowCustomBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Show custom bar"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnHideCustomBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Hide custom bar"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="12dp" />
+
         <!-- Section: App -->
         <TextView
             android:layout_width="wrap_content"
