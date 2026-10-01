@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
 
 private const val PREFS_NAME = "statusbarhider"
