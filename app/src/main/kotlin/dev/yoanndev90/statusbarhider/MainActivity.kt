@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
@@ -19,6 +18,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -27,6 +28,10 @@ import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import dev.yoanndev90.statusbarhider.ui.MainUiState
 import dev.yoanndev90.statusbarhider.ui.MainViewModel
+import dev.yoanndev90.statusbarhider.ui.sections.HeaderSection
+import dev.yoanndev90.statusbarhider.ui.sections.ShizukuSection
+import dev.yoanndev90.statusbarhider.ui.sections.StatusBarSection
+import dev.yoanndev90.statusbarhider.ui.theme.StatusBarHiderTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -39,34 +44,29 @@ class MainActivity : ComponentActivity() {
 
 	private var pendingCalendarToggle = false
 
-	private lateinit var statusView: TextView
 	private lateinit var logView: TextView
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
 
-		statusView = findViewById(R.id.statusView)
 		logView = findViewById(R.id.logView)
+
+		findViewById<ComposeView>(R.id.composeTop).setContent {
+			StatusBarHiderTheme {
+				Column {
+					HeaderSection(vm)
+					ShizukuSection(vm, REQ_SHIZUKU)
+					StatusBarSection(vm)
+				}
+			}
+		}
 
 		lifecycleScope.launch {
 			repeatOnLifecycle(Lifecycle.State.STARTED) {
 				launch { vm.uiState.collect { render(it) } }
 			}
 		}
-
-		findViewById<Button>(R.id.btnHideStatusBar).apply {
-			setBackgroundColor(Color.parseColor("#1a73e8"))
-			setTextColor(Color.WHITE)
-		}
-
-		findViewById<Button>(R.id.btnAuthorizeShizuku).setOnClickListener {
-			vm.requestShizukuPermission(REQ_SHIZUKU)
-		}
-
-		findViewById<Button>(R.id.btnHideStatusBar).setOnClickListener { vm.applyHide() }
-		findViewById<Button>(R.id.btnCheckState).setOnClickListener { vm.checkState() }
-		findViewById<Button>(R.id.btnRestore).setOnClickListener { vm.restore() }
 
 		findViewById<Button>(R.id.btnHideFromLauncher).setOnClickListener {
 			val cn = ComponentName(this, MainActivity::class.java)
@@ -217,8 +217,6 @@ class MainActivity : ComponentActivity() {
 	}
 
 	private fun render(state: MainUiState) {
-		statusView.text = state.shizukuText
-		findViewById<TextView>(R.id.oemNameText).text = state.oemName
 		logView.text = state.logs.joinToString("\n")
 	}
 
