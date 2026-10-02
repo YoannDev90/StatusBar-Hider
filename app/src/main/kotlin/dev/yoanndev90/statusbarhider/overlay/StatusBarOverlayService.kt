@@ -94,6 +94,14 @@ class StatusBarOverlayService : Service() {
 	private var iconVpn: ImageView? = null
 	private var iconHotspot: ImageView? = null
 	private var iconUsb: ImageView? = null
+	private var iconNfc: ImageView? = null
+	private var iconGps: ImageView? = null
+	private var calendarRow: LinearLayout? = null
+	private var calendarIcon: ImageView? = null
+	private var calendarView: TextView? = null
+	private var mediaRow: LinearLayout? = null
+	private var mediaIcon: ImageView? = null
+	private var mediaView: TextView? = null
 
 	private val handler = Handler(Looper.getMainLooper())
 	private var screenOn = true
@@ -105,6 +113,55 @@ class StatusBarOverlayService : Service() {
 	private var lastRx = -1L
 	private var lastTx = -1L
 	private var burnInStep = false
+	private var mediaRegistered = false
+	private var mediaSessionManager: android.media.session.MediaSessionManager? = null
+	private var mediaControllers: List<android.media.session.MediaController> = emptyList()
+
+	private val mediaCallback =
+		object : android.media.session.MediaController.Callback() {
+			override fun onMetadataChanged(metadata: android.media.MediaMetadata?) = runOnOverlay { renderMedia() }
+
+			override fun onPlaybackStateChanged(state: android.media.session.PlaybackState?) = runOnOverlay { renderMedia() }
+
+			override fun onSessionDestroyed() = runOnOverlay { renderMedia() }
+		}
+
+	private val mediaSessionsListener =
+		android.media.session.MediaSessionManager.OnActiveSessionsChangedListener { sessions ->
+			runOnOverlay { syncMediaControllers(sessions) }
+		}
+
+	private fun syncMediaControllers(sessions: List<android.media.session.MediaController>?) {
+		mediaControllers.forEach { c ->
+			try {
+				c.unregisterCallback(mediaCallback)
+			} catch (_: Exception) {
+			}
+		}
+		mediaControllers = sessions.orEmpty()
+		mediaControllers.forEach { c ->
+			try {
+				c.registerCallback(mediaCallback)
+			} catch (_: Exception) {
+			}
+		}
+		renderMedia()
+	}
+
+	/** Registers the media session listener; retries until notification access is granted. */
+	private fun ensureMediaSessions() {
+		if (mediaRegistered) return
+		try {
+			val msm = getSystemService(android.media.session.MediaSessionManager::class.java) ?: return
+			val cn = android.content.ComponentName(this, NotifListenerService::class.java)
+			msm.addOnActiveSessionsChangedListener(mediaSessionsListener, cn)
+			mediaRegistered = true
+			mediaSessionManager = msm
+			syncMediaControllers(msm.getActiveSessions(cn))
+		} catch (_: SecurityException) {
+		} catch (_: Exception) {
+		}
+	}
 
 	private val notifListener: () -> Unit = {
 		handler.post { if (screenOn) renderNotifs() }
@@ -165,6 +222,17 @@ class StatusBarOverlayService : Service() {
 			}
 		}
 
+	/** NFC adapter toggles and location provider changes refresh the indicators. */
+	private val radioReceiver =
+		object : BroadcastReceiver() {
+			override fun onReceive(
+				context: Context,
+				intent: Intent
+			) {
+				runOnOverlay { renderConnectivity() }
+			}
+		}
+
 	private val networkCallback =
 		object : ConnectivityManager.NetworkCallback() {
 			override fun onAvailable(network: Network) {
@@ -220,6 +288,7 @@ class StatusBarOverlayService : Service() {
 		attachOverlay()
 		registerReceivers()
 		NotifIcons.addListener(notifListener)
+		if (prefs.showMedia) ensureMediaSessions()
 		refreshAll()
 		schedulePoll()
 		scheduleBurnIn()
@@ -237,6 +306,7 @@ class StatusBarOverlayService : Service() {
 		}
 		prefs = OverlayPrefs.load(this)
 		ensureTouchableFlags()
+		if (prefs.showMedia) ensureMediaSessions()
 		applyPrefsToViews()
 		refreshAll()
 		return START_STICKY
@@ -268,6 +338,21 @@ class StatusBarOverlayService : Service() {
 			unregisterReceiver(usbReceiver)
 		} catch (_: Exception) {
 		}
+		try {
+			unregisterReceiver(radioReceiver)
+		} catch (_: Exception) {
+		}
+		try {
+			mediaSessionManager?.removeOnActiveSessionsChangedListener(mediaSessionsListener)
+		} catch (_: Exception) {
+		}
+		mediaControllers.forEach { c ->
+			try {
+				c.unregisterCallback(mediaCallback)
+			} catch (_: Exception) {
+			}
+		}
+		mediaControllers = emptyList()
 		try {
 			val cm = getSystemService(ConnectivityManager::class.java)
 			cm?.unregisterNetworkCallback(networkCallback)
@@ -342,6 +427,14 @@ class StatusBarOverlayService : Service() {
 		iconVpn = view.findViewById(R.id.iconVpn)
 		iconHotspot = view.findViewById(R.id.iconHotspot)
 		iconUsb = view.findViewById(R.id.iconUsb)
+		iconNfc = view.findViewById(R.id.iconNfc)
+		iconGps = view.findViewById(R.id.iconGps)
+		calendarRow = view.findViewById(R.id.calendarRow)
+		calendarIcon = view.findViewById(R.id.calendarIcon)
+		calendarView = view.findViewById(R.id.calendarView)
+		mediaRow = view.findViewById(R.id.mediaRow)
+		mediaIcon = view.findViewById(R.id.mediaIcon)
+		mediaView = view.findViewById(R.id.mediaView)
 		val touchable = prefs.interactive
 		val flags =
 			WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
@@ -395,7 +488,9 @@ class StatusBarOverlayService : Service() {
 			mapOf(
 				WidgetId.CLOCK to clockView,
 				WidgetId.DATE to dateView,
+				WidgetId.CALENDAR to calendarRow,
 				WidgetId.NOTIFS to notifRow,
+				WidgetId.MEDIA to mediaRow,
 				WidgetId.SPACER to root.findViewById(R.id.spacerView),
 				WidgetId.CONNECTIVITY to connectivityRow,
 				WidgetId.BATTERY to batteryRow,
@@ -536,6 +631,14 @@ class StatusBarOverlayService : Service() {
 		} catch (_: Exception) {
 		}
 		try {
+			val f = IntentFilter()
+			f.addAction("android.nfc.action.ADAPTER_STATE_CHANGED")
+			f.addAction("android.location.PROVIDERS_CHANGED")
+			f.addAction("android.location.GPS_ENABLED_CHANGE")
+			registerReceiver(radioReceiver, f)
+		} catch (_: Exception) {
+		}
+		try {
 			val cm = getSystemService(ConnectivityManager::class.java)
 			cm?.registerDefaultNetworkCallback(networkCallback)
 		} catch (_: Exception) {
@@ -557,6 +660,8 @@ class StatusBarOverlayService : Service() {
 		mobileTypeView?.setTextColor(fg)
 		alarmView?.setTextColor(fg)
 		bandwidthView?.setTextColor(fg)
+		calendarView?.setTextColor(fg)
+		mediaView?.setTextColor(fg)
 		tintIcons(fg)
 		applyWidgetOrder()
 		applyClicks()
@@ -579,7 +684,11 @@ class StatusBarOverlayService : Service() {
 			iconBluetooth,
 			iconVpn,
 			iconHotspot,
-			iconUsb
+			iconUsb,
+			iconNfc,
+			iconGps,
+			calendarIcon,
+			mediaIcon
 		).forEach { it?.setColorFilter(color) }
 	}
 
@@ -591,6 +700,8 @@ class StatusBarOverlayService : Service() {
 		renderBattery()
 		renderDate()
 		renderNotifs()
+		renderCalendar()
+		renderMedia()
 		renderConnectivity()
 		refreshPolled()
 	}
@@ -598,6 +709,7 @@ class StatusBarOverlayService : Service() {
 	private fun refreshPolled() {
 		renderAlarm()
 		renderDate()
+		renderCalendar()
 		renderConnectivity()
 	}
 
@@ -679,6 +791,91 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
+	/** Next calendar event in the next 24h as "HH:mm Title". */
+	private fun renderCalendar() {
+		val row = calendarRow ?: return
+		val v = calendarView ?: return
+		if (!prefs.showCalendar || checkSelfPermission(android.Manifest.permission.READ_CALENDAR) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+			row.visibility = View.GONE
+			return
+		}
+		var text: String? = null
+		try {
+			val now = System.currentTimeMillis()
+			val until = now + 24L * 60 * 60 * 1000
+			val uri = android.net.Uri.withAppendedPath(android.provider.CalendarContract.Instances.CONTENT_URI, "$now/$until")
+			val projection =
+				arrayOf(
+					android.provider.CalendarContract.Instances.BEGIN,
+					android.provider.CalendarContract.Instances.END,
+					android.provider.CalendarContract.Instances.TITLE,
+					android.provider.CalendarContract.Instances.ALL_DAY
+				)
+			contentResolver
+				.query(uri, projection, null, null, "${android.provider.CalendarContract.Instances.BEGIN} ASC")
+				?.use { c ->
+					while (c.moveToNext()) {
+						val begin = c.getLong(0)
+						val end = c.getLong(1)
+						val title = c.getString(2)?.trim().orEmpty()
+						val allDay = c.getInt(3) == 1
+						if (title.isEmpty()) continue
+						// Skip events already finished (Instances range includes ongoing ones).
+						if (!allDay && end <= now) continue
+						text =
+							if (allDay) {
+								title
+							} else {
+								val fmt = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+								"${fmt.format(java.util.Date(begin))} $title"
+							}
+						break
+					}
+				}
+		} catch (_: Exception) {
+		}
+		if (text.isNullOrEmpty()) {
+			row.visibility = View.GONE
+		} else {
+			v.text = text
+			row.visibility = View.VISIBLE
+		}
+	}
+
+	/** Now playing from media sessions; hidden when notification access is off. */
+	private fun renderMedia() {
+		val row = mediaRow ?: return
+		val v = mediaView ?: return
+		if (!prefs.showMedia || !NotifListenerService.isEnabled(this)) {
+			row.visibility = View.GONE
+			return
+		}
+		ensureMediaSessions()
+		val ctrl =
+			mediaControllers.firstOrNull {
+				it.playbackState?.state == android.media.session.PlaybackState.STATE_PLAYING
+			} ?: mediaControllers.firstOrNull {
+				it.playbackState?.state == android.media.session.PlaybackState.STATE_PAUSED
+			}
+		val md = ctrl?.metadata
+		val title = md
+			?.getText(android.media.MediaMetadata.METADATA_KEY_TITLE)
+			?.toString()
+			?.trim()
+			.orEmpty()
+		val artist = md
+			?.getText(android.media.MediaMetadata.METADATA_KEY_ARTIST)
+			?.toString()
+			?.trim()
+			.orEmpty()
+		if (title.isEmpty()) {
+			row.visibility = View.GONE
+			return
+		}
+		v.text = if (artist.isEmpty()) title else "$title — $artist"
+		row.visibility = View.VISIBLE
+	}
+
 	private fun renderConnectivity() {
 		val airplane = isAirplaneOn()
 		iconAirplane?.visibility = if (airplane && prefs.showAirplane) View.VISIBLE else View.GONE
@@ -701,8 +898,10 @@ class StatusBarOverlayService : Service() {
 		iconHotspot?.visibility =
 			if (showRest && prefs.showHotspot && isHotspotOn()) View.VISIBLE else View.GONE
 		iconUsb?.visibility = if (prefs.showUsb && usbConnected) View.VISIBLE else View.GONE
+		iconNfc?.visibility = if (showRest && prefs.showNfc && isNfcOn()) View.VISIBLE else View.GONE
+		iconGps?.visibility = if (prefs.showGps && isGpsOn()) View.VISIBLE else View.GONE
 		val anyVisible =
-			listOf(iconAirplane, iconWifi, iconMobile, iconBluetooth, iconVpn, iconHotspot, iconUsb)
+			listOf(iconAirplane, iconWifi, iconMobile, iconBluetooth, iconVpn, iconHotspot, iconUsb, iconNfc, iconGps)
 				.any { it?.visibility == View.VISIBLE }
 		connectivityRow?.visibility = if (anyVisible) View.VISIBLE else View.GONE
 	}
@@ -808,6 +1007,23 @@ class StatusBarOverlayService : Service() {
 		try {
 			val bm = getSystemService(BluetoothManager::class.java)
 			bm?.adapter?.isEnabled == true
+		} catch (_: Exception) {
+			false
+		}
+
+	private fun isNfcOn(): Boolean =
+		try {
+			android.nfc.NfcAdapter
+				.getDefaultAdapter(this)
+				?.isEnabled == true
+		} catch (_: Exception) {
+			false
+		}
+
+	private fun isGpsOn(): Boolean =
+		try {
+			val lm = getSystemService(android.location.LocationManager::class.java)
+			lm?.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) == true
 		} catch (_: Exception) {
 			false
 		}

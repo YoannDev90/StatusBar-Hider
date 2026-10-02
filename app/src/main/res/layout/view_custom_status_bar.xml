@@ -41,11 +41,67 @@
         android:visibility="gone"
         android:paddingStart="4dp" />
 
+    <LinearLayout
+        android:id="@+id/calendarRow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:paddingStart="6dp">
+
+        <ImageView
+            android:id="@+id/calendarIcon"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_calendar"
+            android:contentDescription="Next event" />
+
+        <TextView
+            android:id="@+id/calendarView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF"
+            android:maxWidth="160dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:paddingStart="4dp" />
+    </LinearLayout>
+
     <Space
         android:id="@+id/spacerView"
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:layout_weight="1" />
+
+    <LinearLayout
+        android:id="@+id/mediaRow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:paddingEnd="8dp">
+
+        <ImageView
+            android:id="@+id/mediaIcon"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:src="@drawable/ic_media"
+            android:contentDescription="Now playing" />
+
+        <TextView
+            android:id="@+id/mediaView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:maxWidth="180dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:paddingStart="3dp" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/bandwidthRow"
@@ -185,6 +241,22 @@
             android:src="@drawable/ic_usb"
             android:visibility="gone"
             android:contentDescription="USB" />
+
+        <ImageView
+            android:id="@+id/iconNfc"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_nfc"
+            android:visibility="gone"
+            android:contentDescription="NFC" />
+
+        <ImageView
+            android:id="@+id/iconGps"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_gps"
+            android:visibility="gone"
+            android:contentDescription="GPS" />
     </LinearLayout>
 
     <LinearLayout
