@@ -66,6 +66,7 @@ dependencies {
 	implementation(libs.activity.compose)
 	implementation(libs.activity.ktx)
 	implementation(libs.compose.foundation)
+	implementation(libs.compose.material.icons.core)
 	implementation(libs.compose.material3)
 	implementation(libs.compose.ui)
 	implementation(libs.compose.ui.tooling.preview)
@@ -73,6 +74,7 @@ dependencies {
 	implementation(libs.lifecycle.runtime.ktx)
 	implementation(libs.lifecycle.viewmodel.compose)
 	implementation(libs.lifecycle.viewmodel.ktx)
+	implementation(libs.reorderable)
 	debugImplementation(libs.compose.ui.tooling)
 
 	// Shizuku API 13.1.5 + aidl (newProcess is private in the api artifact;

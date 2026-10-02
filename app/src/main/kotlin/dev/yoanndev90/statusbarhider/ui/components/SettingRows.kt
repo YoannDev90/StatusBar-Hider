@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
@@ -129,39 +128,4 @@ fun SettingRadioRow(
 			}
 		}
 	}
-}
-
-@Composable
-fun OrderRow(
-	position: Int,
-	label: String,
-	canMoveUp: Boolean,
-	canMoveDown: Boolean,
-	onMoveUp: () -> Unit,
-	onMoveDown: () -> Unit
-) {
-	Row(
-		modifier = Modifier.fillMaxWidth(),
-		verticalAlignment = Alignment.CenterVertically
-	) {
-		Text(
-			text = "$position. $label",
-			style = MaterialTheme.typography.bodyMedium,
-			modifier = Modifier.weight(1f)
-		)
-		Button(
-			onClick = onMoveUp,
-			enabled = canMoveUp,
-			modifier = Modifier.padding(end = 4.dp)
-		) {
-			Text("↑")
-		}
-		Button(
-			onClick = onMoveDown,
-			enabled = canMoveDown
-		) {
-			Text("↓")
-		}
-	}
-	Spacer(Modifier.height(2.dp))
 }
