@@ -3,6 +3,7 @@ package dev.yoanndev90.statusbarhider.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.ShizukuCmd
 import dev.yoanndev90.statusbarhider.data.CommandRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
@@ -24,6 +25,7 @@ data class MainUiState(
 	val shizuku: ShizukuState = ShizukuState.NOT_RUNNING,
 	val shizukuText: String = "",
 	val oemName: String = "",
+	val oemUntested: Boolean = false,
 	val prefs: OverlayPrefs = OverlayPrefs(),
 	val logs: List<String> = emptyList(),
 	val busy: Boolean = false
@@ -56,11 +58,12 @@ class MainViewModel(
 				shizuku = shizuku,
 				shizukuText =
 					when (shizuku) {
-						ShizukuState.NOT_RUNNING -> "Shizuku: not running"
-						ShizukuState.NOT_GRANTED -> "Shizuku: waiting for authorization"
-						ShizukuState.READY -> "Shizuku: ready"
+						ShizukuState.NOT_RUNNING -> str(R.string.shizuku_not_running)
+						ShizukuState.NOT_GRANTED -> str(R.string.shizuku_not_granted)
+						ShizukuState.READY -> str(R.string.shizuku_ready)
 					},
 				oemName = oem.name,
+				oemUntested = oem.untested,
 				prefs = prefs,
 				logs = logs,
 				busy = busy
@@ -94,6 +97,12 @@ class MainViewModel(
 
 	fun applyHide() {
 		runCommand("applying hide...") { oem ->
+			if (oem.untested) {
+				appendLog("Warning: '${oem.name}' config is untested here - adjust commands if nothing happens.")
+			}
+			for (note in oem.notes) {
+				appendLog("note: $note")
+			}
 			for (cmd in oem.hide) {
 				val (_, out) = CommandRunner.run(cmd.cmd)
 				appendLog("${cmd.name} -> ${out.ifEmpty { "ok" }}")
