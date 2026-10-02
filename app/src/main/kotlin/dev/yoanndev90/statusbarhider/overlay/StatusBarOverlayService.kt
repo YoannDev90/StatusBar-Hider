@@ -33,6 +33,7 @@ import android.widget.LinearLayout
 import android.widget.TextClock
 import android.widget.TextView
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 
 /**
  * System-wide custom status bar drawn over all apps.
@@ -105,6 +106,7 @@ class StatusBarOverlayService : Service() {
 
 	private val handler = Handler(Looper.getMainLooper())
 	private var screenOn = true
+	private val prefsRepo = OverlayPrefsRepository.getInstance(this)
 	private var prefs = OverlayPrefs()
 	private var batteryPct = -1
 	private var batteryCharging = false
@@ -283,7 +285,7 @@ class StatusBarOverlayService : Service() {
 
 	override fun onCreate() {
 		super.onCreate()
-		prefs = OverlayPrefs.load(this)
+		prefs = prefsRepo.refresh()
 		startFg()
 		attachOverlay()
 		registerReceivers()
@@ -304,7 +306,7 @@ class StatusBarOverlayService : Service() {
 			stopSelf()
 			return START_NOT_STICKY
 		}
-		prefs = OverlayPrefs.load(this)
+		prefs = prefsRepo.refresh()
 		ensureTouchableFlags()
 		if (prefs.showMedia) ensureMediaSessions()
 		applyPrefsToViews()

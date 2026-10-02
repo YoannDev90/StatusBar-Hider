@@ -1,10 +1,11 @@
 package dev.yoanndev90.statusbarhider.overlay
 
 import android.content.Context
+import android.content.SharedPreferences
 import org.json.JSONArray
 import org.json.JSONObject
 
-private const val PREFS = "overlay_prefs"
+internal const val PREFS = "overlay_prefs"
 private const val KEY_ENABLED = "enabled"
 private const val KEY_SHOW_SECONDS = "show_seconds"
 private const val KEY_SHOW_BATTERY = "show_battery"
@@ -207,6 +208,9 @@ data class OverlayPrefs(
 			.toString()
 
 	companion object {
+		/** SharedPreferences file name, shared with [dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository]. */
+		const val PREFS_NAME = PREFS
+
 		fun fromJson(raw: String): OverlayPrefs =
 			try {
 				val o = JSONObject(raw)
@@ -255,12 +259,11 @@ data class OverlayPrefs(
 				OverlayPrefs()
 			}
 
-		fun load(context: Context): OverlayPrefs {
-			val raw =
-				context
-					.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-					.getString(KEY_ENABLED, null)
-					?: return OverlayPrefs()
+		fun load(context: Context): OverlayPrefs =
+			load(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE))
+
+		fun load(prefs: SharedPreferences): OverlayPrefs {
+			val raw = prefs.getString(KEY_ENABLED, null) ?: return OverlayPrefs()
 			// Stored as full JSON under KEY_ENABLED slot for backward-compat simplicity.
 			return fromJson(raw)
 		}
@@ -269,10 +272,16 @@ data class OverlayPrefs(
 			context: Context,
 			prefs: OverlayPrefs
 		) {
-			context
-				.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+			save(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), prefs)
+		}
+
+		fun save(
+			prefs: SharedPreferences,
+			value: OverlayPrefs
+		) {
+			prefs
 				.edit()
-				.putString(KEY_ENABLED, prefs.toJson())
+				.putString(KEY_ENABLED, value.toJson())
 				.apply()
 		}
 

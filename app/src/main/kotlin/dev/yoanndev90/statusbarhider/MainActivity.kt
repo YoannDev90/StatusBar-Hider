@@ -5,6 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -17,9 +18,14 @@ import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import dev.yoanndev90.statusbarhider.data.OemRepository
+import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
+import dev.yoanndev90.statusbarhider.data.ShizukuRepository
+import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
-import rikka.shizuku.Shizuku
+import dev.yoanndev90.statusbarhider.overlay.WidgetId
 
 class MainActivity : Activity() {
 	companion object {
@@ -31,25 +37,21 @@ class MainActivity : Activity() {
 
 	private lateinit var statusView: TextView
 	private lateinit var logView: TextView
-	private lateinit var oem: OemConfig
-
-	private val binderListener = Shizuku.OnBinderReceivedListener { refreshStatus() }
-	private val deadListener =
-		Shizuku.OnBinderDeadListener {
-			runOnUiThread { statusView.text = "Shizuku: disconnected" }
-		}
+	private lateinit var oemRepo: OemRepository
+	private lateinit var prefsRepo: OverlayPrefsRepository
+	private val shizukuRepo = ShizukuRepository.getInstance()
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
 
-		val oemId = OemConfig.detect(this)
-		OemConfig.saveId(this, oemId)
-		oem = OemConfig.load(this, oemId)
+		oemRepo = OemRepository.getInstance(this)
+		prefsRepo = OverlayPrefsRepository.getInstance(this)
+		shizukuRepo.start()
 
 		statusView = findViewById(R.id.statusView)
 		logView = findViewById(R.id.logView)
-		findViewById<TextView>(R.id.oemNameText).text = oem.name
+		findViewById<TextView>(R.id.oemNameText).text = oemRepo.config.value.name
 
 		findViewById<Button>(R.id.btnHideStatusBar).apply {
 			setBackgroundColor(Color.parseColor("#1a73e8"))
@@ -57,14 +59,14 @@ class MainActivity : Activity() {
 		}
 
 		findViewById<Button>(R.id.btnAuthorizeShizuku).setOnClickListener {
-			if (!Shizuku.pingBinder()) {
+			if (shizukuRepo.state.value == ShizukuState.NOT_RUNNING) {
 				appendLog("Shizuku is not running. Start it, then try again.")
 				return@setOnClickListener
 			}
 			if (ShizukuCmd.granted()) {
 				appendLog("Already authorized.")
 			} else {
-				Shizuku.requestPermission(REQ_SHIZUKU)
+				shizukuRepo.requestPermission(REQ_SHIZUKU)
 			}
 		}
 
@@ -82,8 +84,8 @@ class MainActivity : Activity() {
 			val cn = ComponentName(this, MainActivity::class.java)
 			packageManager.setComponentEnabledSetting(
 				cn,
-				android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-				android.content.pm.PackageManager.DONT_KILL_APP
+				PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+				PackageManager.DONT_KILL_APP
 			)
 			Toast
 				.makeText(
@@ -99,7 +101,7 @@ class MainActivity : Activity() {
 			Toast.makeText(this, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
 		}
 
-		val prefs = OverlayPrefs.load(this)
+		val prefs = prefsRepo.state.value
 		bindOverlayCheck(R.id.cbShowSeconds, prefs.showSeconds) { copy(showSeconds = it) }
 		bindOverlayCheck(R.id.cbBattery, prefs.showBattery) { copy(showBattery = it) }
 		bindOverlayCheck(R.id.cbBatteryPct, prefs.showBatteryPct) { copy(showBatteryPct = it) }
@@ -176,17 +178,17 @@ class MainActivity : Activity() {
 		findViewById<RadioGroup>(R.id.rgBackground).apply {
 			check(
 				when (prefs.background) {
-					dev.yoanndev90.statusbarhider.overlay.OverlayBackground.TRANSPARENT -> R.id.rbTransparent
-					dev.yoanndev90.statusbarhider.overlay.OverlayBackground.BLACK -> R.id.rbBlack
+					OverlayBackground.TRANSPARENT -> R.id.rbTransparent
+					OverlayBackground.BLACK -> R.id.rbBlack
 					else -> R.id.rbSemi
 				}
 			)
 			setOnCheckedChangeListener { _, checkedId ->
 				val bg =
 					when (checkedId) {
-						R.id.rbTransparent -> dev.yoanndev90.statusbarhider.overlay.OverlayBackground.TRANSPARENT
-						R.id.rbBlack -> dev.yoanndev90.statusbarhider.overlay.OverlayBackground.BLACK
-						else -> dev.yoanndev90.statusbarhider.overlay.OverlayBackground.SEMI
+						R.id.rbTransparent -> OverlayBackground.TRANSPARENT
+						R.id.rbBlack -> OverlayBackground.BLACK
+						else -> OverlayBackground.SEMI
 					}
 				updateOverlayPrefs { copy(background = bg) }
 			}
@@ -198,26 +200,21 @@ class MainActivity : Activity() {
 				startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
 				return@setOnClickListener
 			}
-			val current = OverlayPrefs.load(this)
-			OverlayPrefs.save(this, current.copy(enabled = true))
+			updateOverlayPrefs { copy(enabled = true) }
 			StatusBarOverlayService.start(this)
 			appendLog("Custom bar shown (overlay)")
 		}
 		findViewById<Button>(R.id.btnHideCustomBar).setOnClickListener {
-			val current = OverlayPrefs.load(this)
-			OverlayPrefs.save(this, current.copy(enabled = false))
+			updateOverlayPrefs { copy(enabled = false) }
 			StatusBarOverlayService.stop(this)
 			appendLog("Custom bar hidden")
 		}
 
-		Shizuku.addBinderReceivedListenerSticky(binderListener)
-		Shizuku.addBinderDeadListener(deadListener)
 		refreshStatus()
 	}
 
 	override fun onDestroy() {
-		Shizuku.removeBinderReceivedListener(binderListener)
-		Shizuku.removeBinderDeadListener(deadListener)
+		shizukuRepo.stop()
 		super.onDestroy()
 	}
 
@@ -227,19 +224,10 @@ class MainActivity : Activity() {
 		grantResults: IntArray
 	) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-		if (requestCode == REQ_SHIZUKU) {
-			appendLog(
-				if (ShizukuCmd.granted()) {
-					"Shizuku permission granted."
-				} else {
-					"Shizuku permission denied. Grant it in the Shizuku manager."
-				}
-			)
-			refreshStatus()
-		}
+		// Shizuku results are delivered via ShizukuRepository's listener, not here.
 		if (requestCode == REQ_CALENDAR && pendingCalendarToggle) {
 			pendingCalendarToggle = false
-			val granted = grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED
+			val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
 			findViewById<CheckBox>(R.id.cbCalendar).isChecked = granted
 			if (granted) {
 				updateOverlayPrefs { copy(showCalendar = true) }
@@ -250,14 +238,14 @@ class MainActivity : Activity() {
 	}
 
 	private fun hasCalendarPermission(): Boolean =
-		checkSelfPermission(android.Manifest.permission.READ_CALENDAR) == android.content.pm.PackageManager.PERMISSION_GRANTED
+		checkSelfPermission(android.Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
 
 	private fun refreshStatus() {
 		val text =
-			when {
-				!Shizuku.pingBinder() -> "Shizuku: not running"
-				!ShizukuCmd.granted() -> "Shizuku: waiting for authorization"
-				else -> "Shizuku: ready"
+			when (shizukuRepo.refresh()) {
+				ShizukuState.NOT_RUNNING -> "Shizuku: not running"
+				ShizukuState.NOT_GRANTED -> "Shizuku: waiting for authorization"
+				ShizukuState.READY -> "Shizuku: ready"
 			}
 		runOnUiThread { statusView.text = text }
 	}
@@ -294,8 +282,7 @@ class MainActivity : Activity() {
 	}
 
 	private fun updateOverlayPrefs(update: OverlayPrefs.() -> OverlayPrefs) {
-		val updated = OverlayPrefs.load(this).update()
-		OverlayPrefs.save(this, updated)
+		val updated = prefsRepo.update(update)
 		if (updated.enabled) StatusBarOverlayService.start(this)
 	}
 
@@ -364,12 +351,13 @@ class MainActivity : Activity() {
 	private fun refreshOrderList() {
 		val container = findViewById<LinearLayout>(R.id.orderList)
 		container.removeAllViews()
-		val order = OverlayPrefs.load(this).widgetOrder.toMutableList()
+		val order = prefsRepo.state.value.widgetOrder
+			.toMutableList()
 		order.forEachIndexed { index, id ->
 			val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
 			val label =
 				TextView(this).apply {
-					text = "${index + 1}. ${dev.yoanndev90.statusbarhider.overlay.WidgetId.label(id)}"
+					text = "${index + 1}. ${WidgetId.label(id)}"
 					textSize = 14f
 					layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 				}
@@ -378,7 +366,8 @@ class MainActivity : Activity() {
 					text = "↑"
 					setOnClickListener {
 						if (index > 0) {
-							val o = OverlayPrefs.load(this@MainActivity).widgetOrder.toMutableList()
+							val o = prefsRepo.state.value.widgetOrder
+								.toMutableList()
 							val tmp = o[index - 1]
 							o[index - 1] = o[index]
 							o[index] = tmp
@@ -391,7 +380,8 @@ class MainActivity : Activity() {
 				Button(this).apply {
 					text = "↓"
 					setOnClickListener {
-						val o = OverlayPrefs.load(this@MainActivity).widgetOrder.toMutableList()
+						val o = prefsRepo.state.value.widgetOrder
+							.toMutableList()
 						if (index < o.size - 1) {
 							val tmp = o[index + 1]
 							o[index + 1] = o[index]
@@ -418,7 +408,7 @@ class MainActivity : Activity() {
 
 	private fun applyHide() {
 		if (!requireGranted()) return
-		for (cmd in oem.hide) {
+		for (cmd in oemRepo.config.value.hide) {
 			val (_, out) = ShizukuCmd.run(cmd.cmd)
 			appendLog("${cmd.name} -> ${out.ifEmpty { "ok" }}")
 		}
@@ -427,7 +417,7 @@ class MainActivity : Activity() {
 
 	private fun showState() {
 		if (!requireGranted()) return
-		for (cmd in oem.status) {
+		for (cmd in oemRepo.config.value.status) {
 			val (_, out) = ShizukuCmd.run(cmd.cmd)
 			appendLog("${cmd.name} = ${out.ifEmpty { "(empty)" }}")
 		}
@@ -435,13 +425,12 @@ class MainActivity : Activity() {
 
 	private fun restore() {
 		if (!requireGranted()) return
-		for (cmd in oem.restore) {
+		for (cmd in oemRepo.config.value.restore) {
 			ShizukuCmd.run(cmd.cmd)
 			appendLog("${cmd.name} -> restored")
 		}
 		runOnUiThread {
-			val current = OverlayPrefs.load(this)
-			OverlayPrefs.save(this, current.copy(enabled = false))
+			prefsRepo.update { copy(enabled = false) }
 			StatusBarOverlayService.stop(this)
 		}
 	}

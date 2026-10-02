@@ -1,0 +1,73 @@
+package dev.yoanndev90.statusbarhider.data
+
+import dev.yoanndev90.statusbarhider.ShizukuCmd
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import rikka.shizuku.Shizuku
+
+/** Shizuku connection + authorization state. */
+enum class ShizukuState {
+	NOT_RUNNING,
+	NOT_GRANTED,
+	READY
+}
+
+/**
+ * Single source of truth for the Shizuku state.
+ *
+ * Permission results are delivered through [Shizuku.addRequestPermissionResultListener],
+ * which is the only dispatch channel in Shizuku API 13.x: the result never reaches
+ * `Activity.onRequestPermissionsResult`, so the previous override was dead code.
+ */
+class ShizukuRepository private constructor() {
+	private val _state = MutableStateFlow(currentState())
+	val state: StateFlow<ShizukuState> = _state.asStateFlow()
+
+	private val binderListener = Shizuku.OnBinderReceivedListener { refresh() }
+	private val deadListener = Shizuku.OnBinderDeadListener { _state.value = ShizukuState.NOT_RUNNING }
+	private val permissionListener =
+		Shizuku.OnRequestPermissionResultListener { _, _ -> refresh() }
+
+	/** Registers binder + permission listeners. Safe to call repeatedly. */
+	fun start() {
+		Shizuku.addBinderReceivedListenerSticky(binderListener)
+		Shizuku.addBinderDeadListener(deadListener)
+		Shizuku.addRequestPermissionResultListener(permissionListener)
+		refresh()
+	}
+
+	fun stop() {
+		Shizuku.removeBinderReceivedListener(binderListener)
+		Shizuku.removeBinderDeadListener(deadListener)
+		Shizuku.removeRequestPermissionResultListener(permissionListener)
+	}
+
+	/** Recomputes the state from the live binder. Returns the new state. */
+	fun refresh(): ShizukuState {
+		val next = currentState()
+		_state.value = next
+		return next
+	}
+
+	fun requestPermission(requestCode: Int) {
+		Shizuku.requestPermission(requestCode)
+	}
+
+	companion object {
+		private fun currentState(): ShizukuState =
+			when {
+				!Shizuku.pingBinder() -> ShizukuState.NOT_RUNNING
+				!ShizukuCmd.granted() -> ShizukuState.NOT_GRANTED
+				else -> ShizukuState.READY
+			}
+
+		@Volatile
+		private var instance: ShizukuRepository? = null
+
+		fun getInstance(): ShizukuRepository =
+			instance ?: synchronized(this) {
+				instance ?: ShizukuRepository().also { instance = it }
+			}
+	}
+}

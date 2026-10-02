@@ -6,7 +6,8 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.data.OemRepository
+import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import rikka.shizuku.Shizuku
 
@@ -24,6 +25,8 @@ class BootReceiver : BroadcastReceiver() {
 		Log.i(TAG, "Boot completed - scheduling status bar hide")
 
 		val handler = Handler(Looper.getMainLooper())
+		val oemRepo = OemRepository.getInstance(context)
+		val prefsRepo = OverlayPrefsRepository.getInstance(context)
 
 		val listener =
 			object : Shizuku.OnBinderReceivedListener {
@@ -35,14 +38,13 @@ class BootReceiver : BroadcastReceiver() {
 						return
 					}
 					Log.i(TAG, "Shizuku ready - applying hide")
-					val oemId = OemConfig.getSavedId(context) ?: OemConfig.detect(context)
-					val oem = OemConfig.load(context, oemId)
+					val oem = oemRepo.refresh()
 					for (cmd in oem.hide) {
 						val (_, out) = ShizukuCmd.run(cmd.cmd)
 						Log.i(TAG, "${cmd.name} -> $out")
 					}
 					Log.i(TAG, "Auto-hide done")
-					if (OverlayPrefs.load(context).enabled) {
+					if (prefsRepo.state.value.enabled) {
 						Log.i(TAG, "Restarting custom overlay")
 						StatusBarOverlayService.start(context)
 					}

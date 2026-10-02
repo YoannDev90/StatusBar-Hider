@@ -2,7 +2,7 @@ import java.util.Properties
 
 plugins {
 	alias(libs.plugins.android.application)
-// 	alias(libs.plugins.kotlin.compose)
+	alias(libs.plugins.kotlin.compose)
 	alias(libs.plugins.kotlin.serialization)
 }
 
@@ -54,9 +54,26 @@ android {
 		sourceCompatibility = JavaVersion.VERSION_17
 		targetCompatibility = JavaVersion.VERSION_17
 	}
+
+	buildFeatures {
+		compose = true
+	}
 }
 
 dependencies {
+	// Compose BOM keeps all androidx.compose versions in sync.
+	implementation(platform(libs.compose.bom))
+	implementation(libs.activity.compose)
+	implementation(libs.compose.foundation)
+	implementation(libs.compose.material3)
+	implementation(libs.compose.ui)
+	implementation(libs.compose.ui.tooling.preview)
+	implementation(libs.lifecycle.runtime.compose)
+	implementation(libs.lifecycle.runtime.ktx)
+	implementation(libs.lifecycle.viewmodel.compose)
+	implementation(libs.lifecycle.viewmodel.ktx)
+	debugImplementation(libs.compose.ui.tooling)
+
 	// Shizuku API 13.1.5 + aidl (newProcess is private in the api artifact;
 	// we call IShizukuService.newProcess() directly via the aidl artifact).
 	// https://github.com/RikkaApps/Shizuku-API
