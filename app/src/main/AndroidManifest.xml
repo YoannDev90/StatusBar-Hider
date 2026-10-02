@@ -80,5 +80,32 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- Quick Settings: hide / restore the system status bar. The service
+             icon doubles as the tile icon. -->
+        <service
+            android:name="dev.yoanndev90.statusbarhider.tiles.HideRestoreTile"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_hide"
+            android:label="Hide status bar"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Quick Settings: show / hide the custom Compose status bar. -->
+        <service
+            android:name="dev.yoanndev90.statusbarhider.tiles.CustomBarTile"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_bar"
+            android:label="Custom bar"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>
