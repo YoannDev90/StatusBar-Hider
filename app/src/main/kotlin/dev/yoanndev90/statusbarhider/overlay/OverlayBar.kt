@@ -25,7 +25,9 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.yoanndev90.statusbarhider.R
@@ -64,26 +66,38 @@ fun OverlayBar(
 					end = padEnd,
 					bottom = prefs.padBottomDp.dp
 				),
-		verticalAlignment = Alignment.CenterVertically
+		verticalAlignment = Alignment.CenterVertically,
+		horizontalArrangement = Arrangement.spacedBy(prefs.widgetSpacingDp.dp)
 	) {
 		for (id in prefs.widgetOrder) {
 			key(id) {
 				when (id) {
 					WidgetId.CLOCK -> ClockWidget(prefs, state.screenOn, fg, onClockClick)
 					WidgetId.DATE -> DateWidget(prefs, state.screenOn, fg, onDateClick)
-					WidgetId.CALENDAR -> state.calendarText?.let { CalendarWidget(it, fg) }
+					WidgetId.CALENDAR -> state.calendarText?.let { CalendarWidget(prefs, it, fg) }
 					WidgetId.NOTIFS -> NotifWidget(prefs, state, fg)
-					WidgetId.MEDIA -> state.mediaText?.let { MediaWidget(it, fg) }
+					WidgetId.MEDIA -> state.mediaText?.let { MediaWidget(prefs, it, fg) }
 					WidgetId.SPACER -> Spacer(Modifier.weight(1f))
 					WidgetId.CONNECTIVITY -> ConnectivityWidget(prefs, state, fg)
 					WidgetId.BATTERY -> BatteryWidget(prefs, state, fg)
-					WidgetId.ALARM -> state.alarmText?.let { AlarmWidget(it, fg) }
+					WidgetId.ALARM -> state.alarmText?.let { AlarmWidget(prefs, it, fg) }
 					WidgetId.BANDWIDTH -> BandwidthWidget(prefs, state, fg)
 				}
 			}
 		}
 	}
 }
+
+/** Base text size with a relative offset, in sp (e.g. clock = base, date = base - 1). */
+private fun OverlayPrefs.textSp(delta: Int = 0): TextUnit = (fontSizeSp + delta).coerceIn(8, 28).sp
+
+private val OverlayPrefs.fontWeightValue: FontWeight
+	get() =
+		when (fontWeightName) {
+			"BOLD" -> FontWeight.Bold
+			"MEDIUM" -> FontWeight.Medium
+			else -> FontWeight.Normal
+		}
 
 /** Ticks aligned on [intervalMs] boundaries while [enabled]; frozen otherwise. */
 @Composable
@@ -123,7 +137,8 @@ private fun ClockWidget(
 		}
 	Text(
 		text = text,
-		fontSize = 13.sp,
+		fontSize = prefs.textSp(),
+		fontWeight = prefs.fontWeightValue,
 		color = fg,
 		style = tnum,
 		modifier =
@@ -152,14 +167,13 @@ private fun DateWidget(
 		}
 	Text(
 		text = text,
-		fontSize = 12.sp,
+		fontSize = prefs.textSp(-1),
+		fontWeight = prefs.fontWeightValue,
 		color = fg,
 		modifier =
-			Modifier
-				.padding(start = 6.dp)
-				.then(
-					if (prefs.interactive) Modifier.clickable(onClick = onClick) else Modifier
-				)
+			Modifier.then(
+				if (prefs.interactive) Modifier.clickable(onClick = onClick) else Modifier
+			)
 	)
 }
 
@@ -187,7 +201,6 @@ private fun NotifWidget(
 	if (!prefs.showNotifs || !state.notifsEnabled || state.notifs.isEmpty()) return
 	val icons = state.notifs.take(prefs.maxNotifs.coerceIn(1, 8))
 	Row(
-		modifier = Modifier.padding(start = 4.dp),
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.spacedBy(3.dp)
 	) {
@@ -213,24 +226,17 @@ private fun LabeledIcon(
 	iconDesc: String,
 	text: String,
 	fg: Color,
-	textSizeSp: Int,
+	fontSize: TextUnit,
+	fontWeight: FontWeight,
 	maxWidthDp: Int? = null,
-	startPadDp: Int = 4,
-	rowStartPadDp: Int = 6,
-	rowEndPadDp: Int = 0
+	startPadDp: Int = 4
 ) {
-	Row(
-		modifier =
-			Modifier.padding(
-				start = rowStartPadDp.dp,
-				end = rowEndPadDp.dp
-			),
-		verticalAlignment = Alignment.CenterVertically
-	) {
+	Row(verticalAlignment = Alignment.CenterVertically) {
 		IconImage(iconRes, iconDesc, fg, 14)
 		Text(
 			text = text,
-			fontSize = textSizeSp.sp,
+			fontSize = fontSize,
+			fontWeight = fontWeight,
 			color = fg,
 			maxLines = 1,
 			overflow = TextOverflow.Ellipsis,
@@ -244,14 +250,24 @@ private fun LabeledIcon(
 
 @Composable
 private fun CalendarWidget(
+	prefs: OverlayPrefs,
 	text: String,
 	fg: Color
 ) {
-	LabeledIcon(R.drawable.ic_calendar, "Next event", text, fg, 12, maxWidthDp = 160)
+	LabeledIcon(
+		iconRes = R.drawable.ic_calendar,
+		iconDesc = "Next event",
+		text = text,
+		fg = fg,
+		fontSize = prefs.textSp(-1),
+		fontWeight = prefs.fontWeightValue,
+		maxWidthDp = 160
+	)
 }
 
 @Composable
 private fun MediaWidget(
+	prefs: OverlayPrefs,
 	text: String,
 	fg: Color
 ) {
@@ -260,11 +276,10 @@ private fun MediaWidget(
 		iconDesc = "Now playing",
 		text = text,
 		fg = fg,
-		textSizeSp = 11,
+		fontSize = prefs.textSp(-2),
+		fontWeight = prefs.fontWeightValue,
 		maxWidthDp = 180,
-		startPadDp = 3,
-		rowStartPadDp = 0,
-		rowEndPadDp = 8
+		startPadDp = 3
 	)
 }
 
@@ -275,10 +290,7 @@ private fun BandwidthWidget(
 	fg: Color
 ) {
 	if (!prefs.showBandwidth || state.bandwidthText.isEmpty()) return
-	Row(
-		modifier = Modifier.padding(end = 8.dp),
-		verticalAlignment = Alignment.CenterVertically
-	) {
+	Row(verticalAlignment = Alignment.CenterVertically) {
 		if (prefs.bandwidthMerged) {
 			IconImage(R.drawable.ic_swap, "Bandwidth", fg, 14)
 		} else {
@@ -287,7 +299,8 @@ private fun BandwidthWidget(
 		}
 		Text(
 			text = state.bandwidthText,
-			fontSize = 11.sp,
+			fontSize = prefs.textSp(-2),
+			fontWeight = prefs.fontWeightValue,
 			color = fg,
 			modifier = Modifier.padding(start = 2.dp)
 		)
@@ -296,6 +309,7 @@ private fun BandwidthWidget(
 
 @Composable
 private fun AlarmWidget(
+	prefs: OverlayPrefs,
 	text: String,
 	fg: Color
 ) {
@@ -304,10 +318,9 @@ private fun AlarmWidget(
 		iconDesc = "Next alarm",
 		text = text,
 		fg = fg,
-		textSizeSp = 11,
-		startPadDp = 2,
-		rowStartPadDp = 0,
-		rowEndPadDp = 8
+		fontSize = prefs.textSp(-2),
+		fontWeight = prefs.fontWeightValue,
+		startPadDp = 2
 	)
 }
 
@@ -330,7 +343,7 @@ private fun ConnectivityWidget(
 		items += {
 			Text(
 				text = state.mobileType.ifEmpty { "4G" },
-				fontSize = 10.sp,
+				fontSize = prefs.textSp(-3),
 				color = fg,
 				modifier = Modifier.padding(start = 1.dp, end = 2.dp)
 			)
@@ -354,10 +367,24 @@ private fun ConnectivityWidget(
 	if (prefs.showGps && state.gps) {
 		items += { IconImage(R.drawable.ic_gps, "GPS", fg) }
 	}
+	// Unaffected by airplane mode: DND, data saver, auto-rotate and torch are
+	// device-wide states that stay meaningful while offline.
+	if (prefs.showDnd && state.dnd) {
+		items += { IconImage(R.drawable.ic_dnd, "Do not disturb", fg) }
+	}
+	if (prefs.showDataSaver && state.dataSaver) {
+		items += { IconImage(R.drawable.ic_data_saver, "Data saver", fg) }
+	}
+	if (prefs.showRotate && state.autoRotate) {
+		items += { IconImage(R.drawable.ic_rotation, "Auto-rotate", fg) }
+	}
+	if (prefs.showTorch && state.torch) {
+		items += { IconImage(R.drawable.ic_torch, "Flashlight", fg) }
+	}
 	if (items.isEmpty()) return
 	Row(
-		modifier = Modifier.padding(end = 8.dp),
-		verticalAlignment = Alignment.CenterVertically
+		verticalAlignment = Alignment.CenterVertically,
+		horizontalArrangement = Arrangement.spacedBy(2.dp)
 	) {
 		items.forEach { it() }
 	}
@@ -381,7 +408,8 @@ private fun BatteryWidget(
 		if (prefs.showBattery && prefs.showBatteryPct && state.batteryPct >= 0) {
 			Text(
 				text = "${state.batteryPct}%",
-				fontSize = 13.sp,
+				fontSize = prefs.textSp(),
+				fontWeight = prefs.fontWeightValue,
 				color = fg,
 				style = tnum,
 				modifier = Modifier.padding(start = 3.dp)

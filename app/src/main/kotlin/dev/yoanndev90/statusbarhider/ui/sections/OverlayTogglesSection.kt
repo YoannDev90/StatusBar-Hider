@@ -98,6 +98,12 @@ fun OverlayTogglesSection(
 	}
 	SettingSwitch("NFC indicator", prefs.showNfc) { vm.updatePrefs { copy(showNfc = it) } }
 	SettingSwitch("GPS indicator", prefs.showGps) { vm.updatePrefs { copy(showGps = it) } }
+	SettingSwitch("Do Not Disturb", prefs.showDnd) { vm.updatePrefs { copy(showDnd = it) } }
+	SettingSwitch("Data saver", prefs.showDataSaver) { vm.updatePrefs { copy(showDataSaver = it) } }
+	SettingSwitch("Auto-rotate", prefs.showRotate) { vm.updatePrefs { copy(showRotate = it) } }
+	SettingSwitch("Flashlight (shown while on)", prefs.showTorch) {
+		vm.updatePrefs { copy(showTorch = it) }
+	}
 	SettingSwitch("Bandwidth (1s polling)", prefs.showBandwidth) {
 		vm.updatePrefs { copy(showBandwidth = it) }
 	}

@@ -34,5 +34,9 @@ data class OverlayBarState(
 	val hotspot: Boolean = false,
 	val nfc: Boolean = false,
 	val gps: Boolean = false,
+	val dnd: Boolean = false,
+	val dataSaver: Boolean = false,
+	val autoRotate: Boolean = false,
+	val torch: Boolean = false,
 	val sideCutoutPx: Int = 0
 )

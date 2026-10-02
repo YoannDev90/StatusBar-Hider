@@ -134,6 +134,26 @@ fun OrderAppearanceSection(
 	SettingSlider("Padding bottom", prefs.padBottomDp, 0, 32, "dp") {
 		vm.updatePrefs { copy(padBottomDp = it) }
 	}
+	SettingSlider("Text size", prefs.fontSizeSp, 10, 20, "sp") {
+		vm.updatePrefs { copy(fontSizeSp = it) }
+	}
+	SettingSlider("Widget spacing", prefs.widgetSpacingDp, 0, 12, "dp") {
+		vm.updatePrefs { copy(widgetSpacingDp = it) }
+	}
+	Text(
+		text = "Text weight",
+		style = MaterialTheme.typography.bodyMedium,
+		modifier = Modifier.padding(top = 8.dp)
+	)
+	SettingRadioRow(
+		options = FONT_WEIGHT_LABELS,
+		selected = FONT_WEIGHT_IDS.indexOf(prefs.fontWeightName).coerceAtLeast(0),
+		onSelect = { vm.updatePrefs { copy(fontWeightName = FONT_WEIGHT_IDS[it]) } }
+	)
 	SettingAction("Show custom bar", onShowBar)
 	SettingAction("Hide custom bar") { vm.setOverlayEnabled(false) }
 }
+
+/** Display order of the weight choices; indexes map to [OverlayPrefs.fontWeightName]. */
+private val FONT_WEIGHT_LABELS = listOf("Normal", "Medium", "Bold")
+private val FONT_WEIGHT_IDS = listOf("NORMAL", "MEDIUM", "BOLD")

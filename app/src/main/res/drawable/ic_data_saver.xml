@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Funnel: the usual "restrict / data saver" glyph. -->
+    <path
+        android:fillColor="#e3e3e3"
+        android:pathData="M3,5h18l-8,8v6l-3,-2v-4z" />
+</vector>
