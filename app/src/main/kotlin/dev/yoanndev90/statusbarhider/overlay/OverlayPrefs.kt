@@ -35,25 +35,33 @@ private const val KEY_MAX_NOTIFS = "max_notifs"
 private const val KEY_WIDGET_ORDER = "widget_order"
 private const val KEY_BURN_IN_MIN = "burn_in_min"
 private const val KEY_INTERACTIVE = "interactive"
+private const val KEY_SHOW_NFC = "show_nfc"
+private const val KEY_SHOW_GPS = "show_gps"
+private const val KEY_SHOW_CALENDAR = "show_calendar"
+private const val KEY_SHOW_MEDIA = "show_media"
 
 /** Stable widget ids used for ordering. */
 object WidgetId {
 	const val CLOCK = "clock"
 	const val DATE = "date"
+	const val CALENDAR = "calendar"
 	const val NOTIFS = "notifs"
+	const val MEDIA = "media"
 	const val SPACER = "spacer"
 	const val CONNECTIVITY = "connectivity"
 	const val BATTERY = "battery"
 	const val ALARM = "alarm"
 	const val BANDWIDTH = "bandwidth"
-	val ALL = listOf(CLOCK, DATE, NOTIFS, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
-	val DEFAULT_ORDER = listOf(CLOCK, DATE, NOTIFS, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
+	val ALL = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
+	val DEFAULT_ORDER = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
 
 	fun label(id: String): String =
 		when (id) {
 			CLOCK -> "Clock"
 			DATE -> "Date"
+			CALENDAR -> "Next event"
 			NOTIFS -> "Notifications"
+			MEDIA -> "Now playing"
 			SPACER -> "— Flexible space —"
 			CONNECTIVITY -> "Connectivity"
 			BATTERY -> "Battery"
@@ -110,7 +118,11 @@ data class OverlayPrefs(
 	val maxNotifs: Int = 5,
 	val widgetOrder: List<String> = WidgetId.DEFAULT_ORDER,
 	val burnInMin: Int = 5,
-	val interactive: Boolean = false
+	val interactive: Boolean = false,
+	val showNfc: Boolean = false,
+	val showGps: Boolean = false,
+	val showCalendar: Boolean = false,
+	val showMedia: Boolean = false
 ) {
 	/** Effective format honoring the seconds toggle. */
 	fun effectiveTimeFormat(): String =
@@ -188,6 +200,10 @@ data class OverlayPrefs(
 			.put(KEY_WIDGET_ORDER, widgetOrder.joinToString(","))
 			.put(KEY_BURN_IN_MIN, burnInMin)
 			.put(KEY_INTERACTIVE, interactive)
+			.put(KEY_SHOW_NFC, showNfc)
+			.put(KEY_SHOW_GPS, showGps)
+			.put(KEY_SHOW_CALENDAR, showCalendar)
+			.put(KEY_SHOW_MEDIA, showMedia)
 			.toString()
 
 	companion object {
@@ -229,7 +245,11 @@ data class OverlayPrefs(
 					maxNotifs = o.optInt(KEY_MAX_NOTIFS, 5).coerceIn(1, 8),
 					widgetOrder = WidgetId.parseOrder(o.optString(KEY_WIDGET_ORDER, "").ifEmpty { null }),
 					burnInMin = o.optInt(KEY_BURN_IN_MIN, 5).coerceIn(0, 30),
-					interactive = o.optBoolean(KEY_INTERACTIVE, false)
+					interactive = o.optBoolean(KEY_INTERACTIVE, false),
+					showNfc = o.optBoolean(KEY_SHOW_NFC, false),
+					showGps = o.optBoolean(KEY_SHOW_GPS, false),
+					showCalendar = o.optBoolean(KEY_SHOW_CALENDAR, false),
+					showMedia = o.optBoolean(KEY_SHOW_MEDIA, false)
 				)
 			} catch (_: Exception) {
 				OverlayPrefs()
