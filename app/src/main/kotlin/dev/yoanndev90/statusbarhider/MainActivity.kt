@@ -1,6 +1,5 @@
 package dev.yoanndev90.statusbarhider
 
-import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
@@ -18,40 +17,43 @@ import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import dev.yoanndev90.statusbarhider.data.OemRepository
-import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.data.ShizukuRepository
-import dev.yoanndev90.statusbarhider.data.ShizukuState
+import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
-import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
+import dev.yoanndev90.statusbarhider.ui.MainUiState
+import dev.yoanndev90.statusbarhider.ui.MainViewModel
+import kotlinx.coroutines.launch
 
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
 	companion object {
 		private const val REQ_SHIZUKU = 1001
 		private const val REQ_CALENDAR = 1002
 	}
 
+	private val vm: MainViewModel by viewModels()
+
 	private var pendingCalendarToggle = false
 
 	private lateinit var statusView: TextView
 	private lateinit var logView: TextView
-	private lateinit var oemRepo: OemRepository
-	private lateinit var prefsRepo: OverlayPrefsRepository
-	private val shizukuRepo = ShizukuRepository.getInstance()
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		setContentView(R.layout.activity_main)
 
-		oemRepo = OemRepository.getInstance(this)
-		prefsRepo = OverlayPrefsRepository.getInstance(this)
-		shizukuRepo.start()
-
 		statusView = findViewById(R.id.statusView)
 		logView = findViewById(R.id.logView)
-		findViewById<TextView>(R.id.oemNameText).text = oemRepo.config.value.name
+
+		lifecycleScope.launch {
+			repeatOnLifecycle(Lifecycle.State.STARTED) {
+				launch { vm.uiState.collect { render(it) } }
+			}
+		}
 
 		findViewById<Button>(R.id.btnHideStatusBar).apply {
 			setBackgroundColor(Color.parseColor("#1a73e8"))
@@ -59,26 +61,12 @@ class MainActivity : Activity() {
 		}
 
 		findViewById<Button>(R.id.btnAuthorizeShizuku).setOnClickListener {
-			if (shizukuRepo.state.value == ShizukuState.NOT_RUNNING) {
-				appendLog("Shizuku is not running. Start it, then try again.")
-				return@setOnClickListener
-			}
-			if (ShizukuCmd.granted()) {
-				appendLog("Already authorized.")
-			} else {
-				shizukuRepo.requestPermission(REQ_SHIZUKU)
-			}
+			vm.requestShizukuPermission(REQ_SHIZUKU)
 		}
 
-		findViewById<Button>(R.id.btnHideStatusBar).setOnClickListener {
-			runAsync("applying hide...") { applyHide() }
-		}
-		findViewById<Button>(R.id.btnCheckState).setOnClickListener {
-			runAsync("reading state...") { showState() }
-		}
-		findViewById<Button>(R.id.btnRestore).setOnClickListener {
-			runAsync("restoring...") { restore() }
-		}
+		findViewById<Button>(R.id.btnHideStatusBar).setOnClickListener { vm.applyHide() }
+		findViewById<Button>(R.id.btnCheckState).setOnClickListener { vm.checkState() }
+		findViewById<Button>(R.id.btnRestore).setOnClickListener { vm.restore() }
 
 		findViewById<Button>(R.id.btnHideFromLauncher).setOnClickListener {
 			val cn = ComponentName(this, MainActivity::class.java)
@@ -101,7 +89,7 @@ class MainActivity : Activity() {
 			Toast.makeText(this, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
 		}
 
-		val prefs = prefsRepo.state.value
+		val prefs = vm.uiState.value.prefs
 		bindOverlayCheck(R.id.cbShowSeconds, prefs.showSeconds) { copy(showSeconds = it) }
 		bindOverlayCheck(R.id.cbBattery, prefs.showBattery) { copy(showBattery = it) }
 		bindOverlayCheck(R.id.cbBatteryPct, prefs.showBatteryPct) { copy(showBatteryPct = it) }
@@ -116,8 +104,8 @@ class MainActivity : Activity() {
 				Toast.makeText(this, "Invalid date format", Toast.LENGTH_SHORT).show()
 				return@setOnClickListener
 			}
-			updateOverlayPrefs { copy(dateFormat = fmt) }
-			appendLog("Date format: $fmt")
+			vm.updatePrefs { copy(dateFormat = fmt) }
+			vm.appendLog("Date format: $fmt")
 		}
 		bindOverlayCheck(R.id.cbNotifs, prefs.showNotifs) { copy(showNotifs = it) }
 		findViewById<Button>(R.id.btnNotifAccess).setOnClickListener {
@@ -152,7 +140,7 @@ class MainActivity : Activity() {
 					pendingCalendarToggle = true
 					requestPermissions(arrayOf(android.Manifest.permission.READ_CALENDAR), REQ_CALENDAR)
 				} else {
-					updateOverlayPrefs { copy(showCalendar = isChecked) }
+					vm.updatePrefs { copy(showCalendar = isChecked) }
 				}
 			}
 		}
@@ -190,7 +178,7 @@ class MainActivity : Activity() {
 						R.id.rbBlack -> OverlayBackground.BLACK
 						else -> OverlayBackground.SEMI
 					}
-				updateOverlayPrefs { copy(background = bg) }
+				vm.updatePrefs { copy(background = bg) }
 			}
 		}
 
@@ -200,22 +188,13 @@ class MainActivity : Activity() {
 				startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
 				return@setOnClickListener
 			}
-			updateOverlayPrefs { copy(enabled = true) }
-			StatusBarOverlayService.start(this)
-			appendLog("Custom bar shown (overlay)")
+			vm.setOverlayEnabled(true)
 		}
 		findViewById<Button>(R.id.btnHideCustomBar).setOnClickListener {
-			updateOverlayPrefs { copy(enabled = false) }
-			StatusBarOverlayService.stop(this)
-			appendLog("Custom bar hidden")
+			vm.setOverlayEnabled(false)
 		}
 
-		refreshStatus()
-	}
-
-	override fun onDestroy() {
-		shizukuRepo.stop()
-		super.onDestroy()
+		vm.refreshShizuku()
 	}
 
 	override fun onRequestPermissionsResult(
@@ -230,43 +209,21 @@ class MainActivity : Activity() {
 			val granted = grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED
 			findViewById<CheckBox>(R.id.cbCalendar).isChecked = granted
 			if (granted) {
-				updateOverlayPrefs { copy(showCalendar = true) }
+				vm.updatePrefs { copy(showCalendar = true) }
 			} else {
 				Toast.makeText(this, "Calendar permission denied", Toast.LENGTH_SHORT).show()
 			}
 		}
 	}
 
+	private fun render(state: MainUiState) {
+		statusView.text = state.shizukuText
+		findViewById<TextView>(R.id.oemNameText).text = state.oemName
+		logView.text = state.logs.joinToString("\n")
+	}
+
 	private fun hasCalendarPermission(): Boolean =
 		checkSelfPermission(android.Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
-
-	private fun refreshStatus() {
-		val text =
-			when (shizukuRepo.refresh()) {
-				ShizukuState.NOT_RUNNING -> "Shizuku: not running"
-				ShizukuState.NOT_GRANTED -> "Shizuku: waiting for authorization"
-				ShizukuState.READY -> "Shizuku: ready"
-			}
-		runOnUiThread { statusView.text = text }
-	}
-
-	private fun runAsync(
-		label: String,
-		block: () -> Unit
-	) {
-		appendLog("... $label")
-		Thread {
-			try {
-				block()
-			} catch (e: Exception) {
-				appendLog("ERROR: ${e.message}")
-			}
-		}.start()
-	}
-
-	private fun appendLog(line: String) {
-		runOnUiThread { logView.append(line + "\n") }
-	}
 
 	private fun bindOverlayCheck(
 		id: Int,
@@ -276,14 +233,9 @@ class MainActivity : Activity() {
 		findViewById<CheckBox>(id).apply {
 			isChecked = checked
 			setOnCheckedChangeListener { _, isChecked ->
-				updateOverlayPrefs { update(isChecked) }
+				vm.updatePrefs { update(isChecked) }
 			}
 		}
-	}
-
-	private fun updateOverlayPrefs(update: OverlayPrefs.() -> OverlayPrefs) {
-		val updated = prefsRepo.update(update)
-		if (updated.enabled) StatusBarOverlayService.start(this)
 	}
 
 	private fun bindPaddingSeek(
@@ -305,7 +257,7 @@ class MainActivity : Activity() {
 					fromUser: Boolean
 				) {
 					tv.text = "$label: ${progress}dp"
-					if (fromUser) updateOverlayPrefs { update(progress) }
+					if (fromUser) vm.updatePrefs { update(progress) }
 				}
 
 				override fun onStartTrackingTouch(s: SeekBar) = Unit
@@ -338,7 +290,7 @@ class MainActivity : Activity() {
 					fromUser: Boolean
 				) {
 					tv.text = "$label ${progress + min}$suffix"
-					if (fromUser) updateOverlayPrefs { update(progress + min) }
+					if (fromUser) vm.updatePrefs { update(progress + min) }
 				}
 
 				override fun onStartTrackingTouch(s: SeekBar) = Unit
@@ -351,7 +303,7 @@ class MainActivity : Activity() {
 	private fun refreshOrderList() {
 		val container = findViewById<LinearLayout>(R.id.orderList)
 		container.removeAllViews()
-		val order = prefsRepo.state.value.widgetOrder
+		val order = vm.uiState.value.prefs.widgetOrder
 			.toMutableList()
 		order.forEachIndexed { index, id ->
 			val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -366,12 +318,12 @@ class MainActivity : Activity() {
 					text = "↑"
 					setOnClickListener {
 						if (index > 0) {
-							val o = prefsRepo.state.value.widgetOrder
+							val o = vm.uiState.value.prefs.widgetOrder
 								.toMutableList()
 							val tmp = o[index - 1]
 							o[index - 1] = o[index]
 							o[index] = tmp
-							updateOverlayPrefs { copy(widgetOrder = o) }
+							vm.updatePrefs { copy(widgetOrder = o) }
 							refreshOrderList()
 						}
 					}
@@ -380,13 +332,13 @@ class MainActivity : Activity() {
 				Button(this).apply {
 					text = "↓"
 					setOnClickListener {
-						val o = prefsRepo.state.value.widgetOrder
+						val o = vm.uiState.value.prefs.widgetOrder
 							.toMutableList()
 						if (index < o.size - 1) {
 							val tmp = o[index + 1]
 							o[index + 1] = o[index]
 							o[index] = tmp
-							updateOverlayPrefs { copy(widgetOrder = o) }
+							vm.updatePrefs { copy(widgetOrder = o) }
 							refreshOrderList()
 						}
 					}
@@ -395,43 +347,6 @@ class MainActivity : Activity() {
 			row.addView(up)
 			row.addView(down)
 			container.addView(row)
-		}
-	}
-
-	private fun requireGranted(): Boolean {
-		if (!ShizukuCmd.granted()) {
-			appendLog("Shizuku not authorized. Use button 1 first.")
-			return false
-		}
-		return true
-	}
-
-	private fun applyHide() {
-		if (!requireGranted()) return
-		for (cmd in oemRepo.config.value.hide) {
-			val (_, out) = ShizukuCmd.run(cmd.cmd)
-			appendLog("${cmd.name} -> ${out.ifEmpty { "ok" }}")
-		}
-		appendLog("Done. Swipe-down is preserved.")
-	}
-
-	private fun showState() {
-		if (!requireGranted()) return
-		for (cmd in oemRepo.config.value.status) {
-			val (_, out) = ShizukuCmd.run(cmd.cmd)
-			appendLog("${cmd.name} = ${out.ifEmpty { "(empty)" }}")
-		}
-	}
-
-	private fun restore() {
-		if (!requireGranted()) return
-		for (cmd in oemRepo.config.value.restore) {
-			ShizukuCmd.run(cmd.cmd)
-			appendLog("${cmd.name} -> restored")
-		}
-		runOnUiThread {
-			prefsRepo.update { copy(enabled = false) }
-			StatusBarOverlayService.stop(this)
 		}
 	}
 }

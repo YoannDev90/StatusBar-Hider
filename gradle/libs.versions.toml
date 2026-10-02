@@ -10,6 +10,7 @@ lifecycle = "2.11.0"
 
 [libraries]
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
+activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity" }
 aidl = { module = "dev.rikka.shizuku:aidl", version.ref = "api" }
 api = { module = "dev.rikka.shizuku:api", version.ref = "api" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
