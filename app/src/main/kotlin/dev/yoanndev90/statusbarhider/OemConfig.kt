@@ -32,6 +32,14 @@ data class OemConfig(
 		private const val TAG = "OemConfig"
 		private const val CURRENT_SCHEMA_VERSION = 1
 
+		val default: OemConfig = OemConfig(
+			id = "",
+			name = "",
+			hide = emptyList(),
+			restore = emptyList(),
+			status = emptyList()
+		)
+
 		fun listAvailable(context: Context): List<String> =
 			context.assets
 				.list("oem")

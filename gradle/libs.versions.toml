@@ -5,7 +5,20 @@ json = "20260814"
 junit = "4.13.2"
 kotlin = "2.4.20"
 
+activityCompose = "1.13.0"
+composeBom = "2026.09.00"
+ui = "1.12.1"
+appcompat = "1.8.0"
+
 [libraries]
+
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+
 aidl = { module = "dev.rikka.shizuku:aidl", version.ref = "api" }
 api = { module = "dev.rikka.shizuku:api", version.ref = "api" }
 json = { module = "org.json:json", version.ref = "json" }
