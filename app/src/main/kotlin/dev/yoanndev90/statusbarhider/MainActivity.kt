@@ -8,16 +8,11 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Column
-import androidx.compose.ui.platform.ComposeView
+import dev.yoanndev90.statusbarhider.ui.MainScreen
 import dev.yoanndev90.statusbarhider.ui.MainViewModel
-import dev.yoanndev90.statusbarhider.ui.sections.AppLogSections
-import dev.yoanndev90.statusbarhider.ui.sections.HeaderSection
-import dev.yoanndev90.statusbarhider.ui.sections.OrderAppearanceSection
-import dev.yoanndev90.statusbarhider.ui.sections.OverlayTogglesSection
-import dev.yoanndev90.statusbarhider.ui.sections.ShizukuSection
-import dev.yoanndev90.statusbarhider.ui.sections.StatusBarSection
 import dev.yoanndev90.statusbarhider.ui.theme.StatusBarHiderTheme
 
 class MainActivity : ComponentActivity() {
@@ -32,18 +27,16 @@ class MainActivity : ComponentActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		setContentView(R.layout.activity_main)
-
-		findViewById<ComposeView>(R.id.composeTop).setContent {
+		enableEdgeToEdge()
+		setContent {
 			StatusBarHiderTheme {
-				Column {
-					HeaderSection(vm)
-					ShizukuSection(vm, REQ_SHIZUKU)
-					StatusBarSection(vm)
-					OverlayTogglesSection(vm, onCalendarToggle = ::onCalendarToggle)
-					OrderAppearanceSection(vm, onShowBar = ::onShowBar)
-					AppLogSections(vm, onHideFromLauncher = ::onHideFromLauncher)
-				}
+				MainScreen(
+					vm = vm,
+					shizukuRequestCode = REQ_SHIZUKU,
+					onCalendarToggle = ::onCalendarToggle,
+					onShowBar = ::onShowBar,
+					onHideFromLauncher = ::onHideFromLauncher
+				)
 			}
 		}
 
