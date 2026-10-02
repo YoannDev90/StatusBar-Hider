@@ -2,7 +2,6 @@ package dev.yoanndev90.statusbarhider.overlay
 
 import android.content.Context
 import android.content.SharedPreferences
-import org.json.JSONArray
 import org.json.JSONObject
 
 internal const val PREFS = "overlay_prefs"
@@ -92,7 +91,7 @@ enum class OverlayBackground {
 data class OverlayPrefs(
 	val enabled: Boolean = false,
 	val showSeconds: Boolean = false,
-	val timeFormat: String = OverlayWidget.Time.DEFAULT_FORMAT_NO_SECONDS,
+	val timeFormat: String = DEFAULT_FORMAT_NO_SECONDS,
 	val showBattery: Boolean = true,
 	val showBatteryPct: Boolean = true,
 	val showWifi: Boolean = true,
@@ -134,7 +133,7 @@ data class OverlayPrefs(
 				.replace(":ss", "")
 				.replace("ss", "")
 				.trim()
-				.ifEmpty { OverlayWidget.Time.DEFAULT_FORMAT_NO_SECONDS }
+				.ifEmpty { DEFAULT_FORMAT_NO_SECONDS }
 		}
 
 	fun hasSeconds(): Boolean = effectiveTimeFormat().contains("ss")
@@ -149,25 +148,6 @@ data class OverlayPrefs(
 
 	/** Text color honoring the dark-text toggle (for transparent bar over light apps). */
 	fun textColor(): Int = if (darkText) android.graphics.Color.BLACK else android.graphics.Color.WHITE
-
-	fun toWidgets(): List<OverlayWidget> {
-		val list = mutableListOf<OverlayWidget>()
-		list += OverlayWidget.Time(effectiveTimeFormat())
-		list += OverlayWidget.SpacerCutout
-		list +=
-			OverlayWidget.Connectivity(
-				showWifi = showWifi,
-				showMobileData = showMobileData,
-				showBluetooth = showBluetooth,
-				showAirplane = showAirplane,
-				showVpn = showVpn,
-				showHotspot = showHotspot
-			)
-		if (showBattery) list += OverlayWidget.Battery(showPercentage = showBatteryPct)
-		if (showAlarm) list += OverlayWidget.NextAlarm()
-		if (showBandwidth) list += OverlayWidget.Bandwidth(merged = bandwidthMerged)
-		return list
-	}
 
 	fun toJson(): String =
 		JSONObject()
@@ -210,6 +190,8 @@ data class OverlayPrefs(
 	companion object {
 		/** SharedPreferences file name, shared with [dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository]. */
 		const val PREFS_NAME = PREFS
+		const val DEFAULT_FORMAT_WITH_SECONDS = "HH:mm:ss"
+		const val DEFAULT_FORMAT_NO_SECONDS = "HH:mm"
 
 		fun fromJson(raw: String): OverlayPrefs =
 			try {
@@ -217,7 +199,7 @@ data class OverlayPrefs(
 				OverlayPrefs(
 					enabled = o.optBoolean(KEY_ENABLED, false),
 					showSeconds = o.optBoolean(KEY_SHOW_SECONDS, false),
-					timeFormat = o.optString(KEY_TIME_FORMAT, OverlayWidget.Time.DEFAULT_FORMAT_NO_SECONDS),
+					timeFormat = o.optString(KEY_TIME_FORMAT, DEFAULT_FORMAT_NO_SECONDS),
 					showBattery = o.optBoolean(KEY_SHOW_BATTERY, true),
 					showBatteryPct = o.optBoolean(KEY_SHOW_BATTERY_PCT, true),
 					showWifi = o.optBoolean(KEY_SHOW_WIFI, true),
@@ -298,11 +280,5 @@ data class OverlayPrefs(
 			level: Int,
 			scale: Int
 		): Int = if (level >= 0 && scale > 0) (level * 100) / scale else -1
-
-		@Suppress("unused")
-		fun widgetTypes(prefs: OverlayPrefs): List<String> = prefs.toWidgets().map { it::class.simpleName ?: "?" }
-
-		@Suppress("unused")
-		fun widgetTypeNames(widgets: List<OverlayWidget>): JSONArray = JSONArray(widgets.map { it::class.simpleName ?: "?" })
 	}
 }
