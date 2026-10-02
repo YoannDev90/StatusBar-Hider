@@ -1,6 +1,13 @@
 {
   "schema_version": 1,
-  "name": "HyperOS",
+  "name": "Xiaomi HyperOS / MIUI",
+  "untested": false,
+  "match": ["xiaomi", "redmi", "poco", "miui", "hyperos"],
+  "notes": [
+    "Tested config - reference OEM shipped with the app.",
+    "MIUI 14 / HyperOS ignore policy_control (removed by Xiaomi) - icon_blacklist + disable_flags do the work there; keep policy_control for older MIUI (<= Android 10).",
+    "If `settings put secure icon_blacklist` fails with WRITE_SECURE_SETTINGS, enable Developer options > USB debugging (security settings)."
+  ],
   "hide": [
     {
       "name": "policy_control",
