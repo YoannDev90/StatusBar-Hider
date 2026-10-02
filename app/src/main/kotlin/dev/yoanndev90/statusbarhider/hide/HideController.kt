@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.os.Build
 import android.service.quicksettings.TileService
+import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.data.CommandRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.tiles.CustomBarTile
@@ -63,17 +64,20 @@ object HideController {
 		val config = OemRepository.getInstance(context).config.value
 		val commands = if (hide) config.hide else config.restore
 		if (commands.isEmpty()) {
-			return Result(false, listOf("No ${if (hide) "hide" else "restore"} commands for ${config.name}"))
+			val resId = if (hide) R.string.log_no_hide_commands else R.string.log_no_restore_commands
+			return Result(false, listOf(context.getString(resId, config.name)))
 		}
 		val lines = mutableListOf<String>()
 		var ok = true
 		for (cmd in commands) {
-			val (exit, out) = CommandRunner.run(cmd.cmd)
+			val (exit, out) = CommandRunner.run(context, cmd.cmd)
 			if (exit == 0) {
-				lines += "${cmd.name} -> ${out.ifEmpty { "ok" }}"
+				val output = out.ifEmpty { context.getString(R.string.log_ok) }
+				lines += context.getString(R.string.log_command_ok, cmd.name, output)
 			} else {
 				ok = false
-				lines += "${cmd.name} -> FAILED (${out.ifEmpty { "exit $exit" }})"
+				val output = out.ifEmpty { context.getString(R.string.log_exit_code, exit) }
+				lines += context.getString(R.string.log_command_failed, cmd.name, output)
 			}
 		}
 		if (ok) {

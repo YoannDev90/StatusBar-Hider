@@ -2,6 +2,7 @@ package dev.yoanndev90.statusbarhider.overlay
 
 import android.content.Context
 import android.content.SharedPreferences
+import dev.yoanndev90.statusbarhider.R
 import org.json.JSONObject
 
 internal const val PREFS = "overlay_prefs"
@@ -62,19 +63,20 @@ object WidgetId {
 	val ALL = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
 	val DEFAULT_ORDER = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
 
-	fun label(id: String): String =
+	/** String resource for the display label of [id]; unknown ids fall back to a generic label. */
+	fun labelRes(id: String): Int =
 		when (id) {
-			CLOCK -> "Clock"
-			DATE -> "Date"
-			CALENDAR -> "Next event"
-			NOTIFS -> "Notifications"
-			MEDIA -> "Now playing"
-			SPACER -> "— Flexible space —"
-			CONNECTIVITY -> "Connectivity"
-			BATTERY -> "Battery"
-			ALARM -> "Next alarm"
-			BANDWIDTH -> "Bandwidth"
-			else -> id
+			CLOCK -> R.string.widget_clock
+			DATE -> R.string.widget_date
+			CALENDAR -> R.string.widget_calendar
+			NOTIFS -> R.string.widget_notifications
+			MEDIA -> R.string.widget_media
+			SPACER -> R.string.widget_spacer
+			CONNECTIVITY -> R.string.widget_connectivity
+			BATTERY -> R.string.widget_battery
+			ALARM -> R.string.widget_alarm
+			BANDWIDTH -> R.string.widget_bandwidth
+			else -> R.string.widget_unknown
 		}
 
 	/** Parses a stored order, dropping unknown ids and appending missing ones. */

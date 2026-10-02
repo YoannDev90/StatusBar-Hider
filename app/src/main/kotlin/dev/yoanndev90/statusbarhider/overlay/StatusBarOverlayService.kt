@@ -414,7 +414,11 @@ class StatusBarOverlayService : Service() {
 		if (Build.VERSION.SDK_INT >= 26) {
 			if (nm.getNotificationChannel(CHANNEL_ID) == null) {
 				nm.createNotificationChannel(
-					NotificationChannel(CHANNEL_ID, "Custom status bar", NotificationManager.IMPORTANCE_MIN)
+					NotificationChannel(
+						CHANNEL_ID,
+						getString(R.string.notif_channel_name),
+						NotificationManager.IMPORTANCE_MIN
+					)
 				)
 			}
 		}
@@ -422,15 +426,15 @@ class StatusBarOverlayService : Service() {
 			if (Build.VERSION.SDK_INT >= 26) {
 				Notification
 					.Builder(this, CHANNEL_ID)
-					.setContentTitle("Custom status bar active")
-					.setContentText("Tap Restore in the app to remove it")
+					.setContentTitle(getString(R.string.notif_content_title))
+					.setContentText(getString(R.string.notif_content_text))
 					.setSmallIcon(android.R.drawable.stat_notify_more)
 					.build()
 			} else {
 				@Suppress("DEPRECATION")
 				Notification
 					.Builder(this)
-					.setContentTitle("Custom status bar active")
+					.setContentTitle(getString(R.string.notif_content_title))
 					.setSmallIcon(android.R.drawable.stat_notify_more)
 					.build()
 			}

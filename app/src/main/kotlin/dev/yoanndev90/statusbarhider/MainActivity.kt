@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
 			if (granted) {
 				vm.updatePrefs { copy(showCalendar = true) }
 			} else {
-				Toast.makeText(this, "Calendar permission denied", Toast.LENGTH_SHORT).show()
+				Toast.makeText(this, getString(R.string.toast_calendar_permission_denied), Toast.LENGTH_SHORT).show()
 			}
 		}
 	}
@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
 
 	private fun onShowBar() {
 		if (!Settings.canDrawOverlays(this)) {
-			Toast.makeText(this, "Grant overlay permission first", Toast.LENGTH_LONG).show()
+			Toast.makeText(this, getString(R.string.toast_grant_overlay_permission), Toast.LENGTH_LONG).show()
 			startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
 			return
 		}
@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
 		Toast
 			.makeText(
 				this,
-				"Hidden! Access via Settings > Apps > StatusBar Hider",
+				getString(R.string.toast_hidden_from_launcher),
 				Toast.LENGTH_LONG
 			).show()
 	}

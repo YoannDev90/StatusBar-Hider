@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider
 
+import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import moe.shizuku.server.IShizukuService
@@ -24,17 +25,18 @@ object ShizukuCmd {
 			android.content.pm.PackageManager.PERMISSION_GRANTED
 
 	fun run(
+		context: Context,
 		cmd: String,
 		timeoutSec: Long = 15
 	): Result {
-		val binder = Shizuku.getBinder() ?: return Result(-1, "Shizuku binder not available")
+		val binder = Shizuku.getBinder() ?: return Result(-1, context.getString(R.string.err_shizuku_binder_unavailable))
 		val service = IShizukuService.Stub.asInterface(binder)
 		val remote =
 			try {
 				service.newProcess(arrayOf("sh", "-c", cmd), null, null)
 			} catch (e: Exception) {
 				Log.e(TAG, "Failed to start process for: $cmd", e)
-				return Result(-1, "Failed to start process: ${e.message}")
+				return Result(-1, context.getString(R.string.err_start_process, e.message))
 			}
 
 		try {
@@ -52,7 +54,7 @@ object ShizukuCmd {
 				} catch (e: TimeoutException) {
 					future.cancel(true)
 					Log.w(TAG, "Command timed out after ${timeoutSec}s: $cmd")
-					return Result(-1, "TIMEOUT after ${timeoutSec}s")
+					return Result(-1, context.getString(R.string.err_command_timeout, timeoutSec))
 				}
 			return Result(0, out)
 		} finally {

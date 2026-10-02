@@ -4,6 +4,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
+import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.ShizukuCmd
 import dev.yoanndev90.statusbarhider.hide.HideController
 import kotlinx.coroutines.runBlocking
@@ -48,7 +49,7 @@ class HideRestoreTile : TileService() {
 						}
 					} catch (e: Exception) {
 						Log.e(TAG, "tile command failed", e)
-						HideController.Result(false, listOf("ERROR: ${e.message}"))
+						HideController.Result(false, listOf(app.getString(R.string.log_error, e.message)))
 					}
 				}
 			result.lines.forEach { Log.i(TAG, it) }
@@ -72,7 +73,8 @@ class HideRestoreTile : TileService() {
 		val hidden = HideController.isHidden(this)
 		tile.state = if (hidden) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
 		if (Build.VERSION.SDK_INT >= 29) {
-			tile.subtitle = if (hidden) "Tap to restore" else "Tap to hide"
+			tile.subtitle =
+				if (hidden) getString(R.string.tile_tap_to_restore) else getString(R.string.tile_tap_to_hide)
 		}
 		tile.updateTile()
 	}

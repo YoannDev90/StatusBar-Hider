@@ -17,8 +17,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.ui.MainViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SectionHeader
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
@@ -36,15 +38,26 @@ fun OverlayTogglesSection(
 	val state by vm.uiState.collectAsStateWithLifecycle()
 	val prefs = state.prefs
 	val context = LocalContext.current
+	val invalidDateFormatToast = stringResource(R.string.toast_invalid_date_format)
+	val cannotOpenNotifSettingsToast = stringResource(R.string.toast_cannot_open_notification_settings)
+	val dateLogTemplate = stringResource(R.string.log_date_format)
 
-	SectionHeader("CUSTOM BAR")
-	SettingSwitch("Show seconds (extra battery)", prefs.showSeconds) {
+	SectionHeader(stringResource(R.string.section_custom_bar))
+	SettingSwitch(stringResource(R.string.switch_show_seconds), prefs.showSeconds) {
 		vm.updatePrefs { copy(showSeconds = it) }
 	}
-	SettingSwitch("Battery", prefs.showBattery) { vm.updatePrefs { copy(showBattery = it) } }
-	SettingSwitch("Battery %", prefs.showBatteryPct) { vm.updatePrefs { copy(showBatteryPct = it) } }
-	SettingSwitch("Battery icon", prefs.showBatteryIcon) { vm.updatePrefs { copy(showBatteryIcon = it) } }
-	SettingSwitch("Date", prefs.showDate) { vm.updatePrefs { copy(showDate = it) } }
+	SettingSwitch(stringResource(R.string.switch_battery), prefs.showBattery) {
+		vm.updatePrefs { copy(showBattery = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_battery_pct), prefs.showBatteryPct) {
+		vm.updatePrefs { copy(showBatteryPct = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_battery_icon), prefs.showBatteryIcon) {
+		vm.updatePrefs { copy(showBatteryIcon = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_date), prefs.showDate) {
+		vm.updatePrefs { copy(showDate = it) }
+	}
 
 	var dateFormat by remember(prefs.dateFormat) { mutableStateOf(prefs.dateFormat) }
 	Row(
@@ -54,7 +67,7 @@ fun OverlayTogglesSection(
 		OutlinedTextField(
 			value = dateFormat,
 			onValueChange = { dateFormat = it },
-			label = { Text("Date format (EEE dd MMM)") },
+			label = { Text(stringResource(R.string.label_date_format)) },
 			singleLine = true,
 			modifier = Modifier.weight(1f).padding(end = 8.dp)
 		)
@@ -64,56 +77,92 @@ fun OverlayTogglesSection(
 				try {
 					SimpleDateFormat(fmt, Locale.getDefault()).format(Date())
 				} catch (_: Exception) {
-					Toast.makeText(context, "Invalid date format", Toast.LENGTH_SHORT).show()
+					Toast.makeText(context, invalidDateFormatToast, Toast.LENGTH_SHORT).show()
 					return@Button
 				}
 				vm.updatePrefs { copy(dateFormat = fmt) }
-				vm.appendLog("Date format: $fmt")
+				vm.appendLog(dateLogTemplate.format(fmt))
 			}
 		) {
-			Text("Set")
+			Text(stringResource(R.string.action_set))
 		}
 	}
 
-	SettingSwitch("Notification icons", prefs.showNotifs) { vm.updatePrefs { copy(showNotifs = it) } }
-	SettingAction("Enable notification access") {
+	SettingSwitch(stringResource(R.string.switch_notification_icons), prefs.showNotifs) {
+		vm.updatePrefs { copy(showNotifs = it) }
+	}
+	SettingAction(stringResource(R.string.action_enable_notification_access)) {
 		try {
 			context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
 		} catch (_: Exception) {
-			Toast.makeText(context, "Cannot open notification settings", Toast.LENGTH_SHORT).show()
+			Toast
+				.makeText(context, cannotOpenNotifSettingsToast, Toast.LENGTH_SHORT)
+				.show()
 		}
 	}
-	SettingSlider("Max notification icons", prefs.maxNotifs, 1, 8) {
+	SettingSlider(stringResource(R.string.slider_max_notification_icons), prefs.maxNotifs, 1, 8) {
 		vm.updatePrefs { copy(maxNotifs = it) }
 	}
-	SettingSwitch("WiFi", prefs.showWifi) { vm.updatePrefs { copy(showWifi = it) } }
-	SettingSwitch("Mobile data", prefs.showMobileData) { vm.updatePrefs { copy(showMobileData = it) } }
-	SettingSwitch("Bluetooth", prefs.showBluetooth) { vm.updatePrefs { copy(showBluetooth = it) } }
-	SettingSwitch("Airplane mode", prefs.showAirplane) { vm.updatePrefs { copy(showAirplane = it) } }
-	SettingSwitch("USB", prefs.showUsb) { vm.updatePrefs { copy(showUsb = it) } }
-	SettingSwitch("Next alarm", prefs.showAlarm) { vm.updatePrefs { copy(showAlarm = it) } }
-	SettingSwitch("Next calendar event (asks calendar permission)", prefs.showCalendar, onCalendarToggle)
-	SettingSwitch("Now playing (needs notification access)", prefs.showMedia) {
+	SettingSwitch(stringResource(R.string.switch_wifi), prefs.showWifi) {
+		vm.updatePrefs { copy(showWifi = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_mobile_data), prefs.showMobileData) {
+		vm.updatePrefs { copy(showMobileData = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_bluetooth), prefs.showBluetooth) {
+		vm.updatePrefs { copy(showBluetooth = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_airplane), prefs.showAirplane) {
+		vm.updatePrefs { copy(showAirplane = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_usb), prefs.showUsb) {
+		vm.updatePrefs { copy(showUsb = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_next_alarm), prefs.showAlarm) {
+		vm.updatePrefs { copy(showAlarm = it) }
+	}
+	SettingSwitch(
+		stringResource(R.string.switch_next_calendar_event),
+		prefs.showCalendar,
+		onCalendarToggle
+	)
+	SettingSwitch(stringResource(R.string.switch_now_playing), prefs.showMedia) {
 		vm.updatePrefs { copy(showMedia = it) }
 	}
-	SettingSwitch("NFC indicator", prefs.showNfc) { vm.updatePrefs { copy(showNfc = it) } }
-	SettingSwitch("GPS indicator", prefs.showGps) { vm.updatePrefs { copy(showGps = it) } }
-	SettingSwitch("Do Not Disturb", prefs.showDnd) { vm.updatePrefs { copy(showDnd = it) } }
-	SettingSwitch("Data saver", prefs.showDataSaver) { vm.updatePrefs { copy(showDataSaver = it) } }
-	SettingSwitch("Auto-rotate", prefs.showRotate) { vm.updatePrefs { copy(showRotate = it) } }
-	SettingSwitch("Flashlight (shown while on)", prefs.showTorch) {
+	SettingSwitch(stringResource(R.string.switch_nfc), prefs.showNfc) {
+		vm.updatePrefs { copy(showNfc = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_gps), prefs.showGps) {
+		vm.updatePrefs { copy(showGps = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_dnd), prefs.showDnd) {
+		vm.updatePrefs { copy(showDnd = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_data_saver), prefs.showDataSaver) {
+		vm.updatePrefs { copy(showDataSaver = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_auto_rotate), prefs.showRotate) {
+		vm.updatePrefs { copy(showRotate = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_flashlight), prefs.showTorch) {
 		vm.updatePrefs { copy(showTorch = it) }
 	}
-	SettingSwitch("Bandwidth (1s polling)", prefs.showBandwidth) {
+	SettingSwitch(stringResource(R.string.switch_bandwidth), prefs.showBandwidth) {
 		vm.updatePrefs { copy(showBandwidth = it) }
 	}
-	SettingSwitch("Merged up/down speed", prefs.bandwidthMerged) {
+	SettingSwitch(stringResource(R.string.switch_merged_speed), prefs.bandwidthMerged) {
 		vm.updatePrefs { copy(bandwidthMerged = it) }
 	}
-	SettingSwitch("Touchable bar (tap clock/date, may block swipe)", prefs.interactive) {
+	SettingSwitch(stringResource(R.string.switch_touchable_bar), prefs.interactive) {
 		vm.updatePrefs { copy(interactive = it) }
 	}
-	SettingSlider("Burn-in shift: every", prefs.burnInMin, 0, 30, " min (0 = off)") {
+	SettingSlider(
+		stringResource(R.string.slider_burn_in_shift),
+		prefs.burnInMin,
+		0,
+		30,
+		stringResource(R.string.suffix_minutes)
+	) {
 		vm.updatePrefs { copy(burnInMin = it) }
 	}
 }

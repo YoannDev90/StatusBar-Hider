@@ -11,8 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.ui.MainViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SectionHeader
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
@@ -24,16 +26,18 @@ fun AppLogSections(
 ) {
 	val state by vm.uiState.collectAsStateWithLifecycle()
 	val context = LocalContext.current
+	val clipboardLabel = stringResource(R.string.clipboard_label)
+	val logsCopiedToast = stringResource(R.string.toast_logs_copied)
 
-	SectionHeader("APP")
-	SettingAction("Hide from launcher", onHideFromLauncher)
-	SettingAction("Export logs") {
-		val clip = ClipData.newPlainText("StatusBarHider logs", state.logs.joinToString("\n"))
+	SectionHeader(stringResource(R.string.section_app))
+	SettingAction(stringResource(R.string.action_hide_from_launcher), onHideFromLauncher)
+	SettingAction(stringResource(R.string.action_export_logs)) {
+		val clip = ClipData.newPlainText(clipboardLabel, state.logs.joinToString("\n"))
 		context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
-		Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
+		Toast.makeText(context, logsCopiedToast, Toast.LENGTH_SHORT).show()
 	}
 
-	SectionHeader("LOG")
+	SectionHeader(stringResource(R.string.section_log))
 	SelectionContainer {
 		Text(
 			text = state.logs.joinToString("\n"),

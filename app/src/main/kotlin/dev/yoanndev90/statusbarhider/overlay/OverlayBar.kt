@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -256,7 +257,7 @@ private fun CalendarWidget(
 ) {
 	LabeledIcon(
 		iconRes = R.drawable.ic_calendar,
-		iconDesc = "Next event",
+		iconDesc = stringResource(R.string.cd_next_event),
 		text = text,
 		fg = fg,
 		fontSize = prefs.textSp(-1),
@@ -273,7 +274,7 @@ private fun MediaWidget(
 ) {
 	LabeledIcon(
 		iconRes = R.drawable.ic_media,
-		iconDesc = "Now playing",
+		iconDesc = stringResource(R.string.cd_now_playing),
 		text = text,
 		fg = fg,
 		fontSize = prefs.textSp(-2),
@@ -292,10 +293,10 @@ private fun BandwidthWidget(
 	if (!prefs.showBandwidth || state.bandwidthText.isEmpty()) return
 	Row(verticalAlignment = Alignment.CenterVertically) {
 		if (prefs.bandwidthMerged) {
-			IconImage(R.drawable.ic_swap, "Bandwidth", fg, 14)
+			IconImage(R.drawable.ic_swap, stringResource(R.string.cd_bandwidth), fg, 14)
 		} else {
-			IconImage(R.drawable.ic_arrow_down, "Download", fg, 14)
-			IconImage(R.drawable.ic_arrow_up, "Upload", fg, 14)
+			IconImage(R.drawable.ic_arrow_down, stringResource(R.string.cd_download), fg, 14)
+			IconImage(R.drawable.ic_arrow_up, stringResource(R.string.cd_upload), fg, 14)
 		}
 		Text(
 			text = state.bandwidthText,
@@ -315,7 +316,7 @@ private fun AlarmWidget(
 ) {
 	LabeledIcon(
 		iconRes = R.drawable.ic_alarm,
-		iconDesc = "Next alarm",
+		iconDesc = stringResource(R.string.cd_next_alarm),
 		text = text,
 		fg = fg,
 		fontSize = prefs.textSp(-2),
@@ -333,13 +334,13 @@ private fun ConnectivityWidget(
 	val showRest = !state.airplane
 	val items = mutableListOf<@Composable () -> Unit>()
 	if (state.airplane && prefs.showAirplane) {
-		items += { IconImage(R.drawable.ic_plane, "Airplane mode", fg) }
+		items += { IconImage(R.drawable.ic_plane, stringResource(R.string.cd_airplane_mode), fg) }
 	}
 	if (showRest && prefs.showWifi && state.wifi) {
-		items += { IconImage(R.drawable.ic_wifi, "WiFi", fg) }
+		items += { IconImage(R.drawable.ic_wifi, stringResource(R.string.cd_wifi), fg) }
 	}
 	if (showRest && prefs.showMobileData && state.mobile) {
-		items += { IconImage(R.drawable.ic_signal, "Mobile data", fg) }
+		items += { IconImage(R.drawable.ic_signal, stringResource(R.string.cd_mobile_data), fg) }
 		items += {
 			Text(
 				text = state.mobileType.ifEmpty { "4G" },
@@ -350,36 +351,36 @@ private fun ConnectivityWidget(
 		}
 	}
 	if (showRest && prefs.showBluetooth && state.bluetooth) {
-		items += { IconImage(R.drawable.ic_bt, "Bluetooth", fg) }
+		items += { IconImage(R.drawable.ic_bt, stringResource(R.string.cd_bluetooth), fg) }
 	}
 	if (showRest && prefs.showVpn && state.vpn) {
-		items += { IconImage(R.drawable.ic_vpn, "VPN", fg) }
+		items += { IconImage(R.drawable.ic_vpn, stringResource(R.string.cd_vpn), fg) }
 	}
 	if (showRest && prefs.showHotspot && state.hotspot) {
-		items += { IconImage(R.drawable.ic_hotspot, "Hotspot", fg) }
+		items += { IconImage(R.drawable.ic_hotspot, stringResource(R.string.cd_hotspot), fg) }
 	}
 	if (prefs.showUsb && state.usbConnected) {
-		items += { IconImage(R.drawable.ic_usb, "USB", fg) }
+		items += { IconImage(R.drawable.ic_usb, stringResource(R.string.cd_usb), fg) }
 	}
 	if (showRest && prefs.showNfc && state.nfc) {
-		items += { IconImage(R.drawable.ic_nfc, "NFC", fg) }
+		items += { IconImage(R.drawable.ic_nfc, stringResource(R.string.cd_nfc), fg) }
 	}
 	if (prefs.showGps && state.gps) {
-		items += { IconImage(R.drawable.ic_gps, "GPS", fg) }
+		items += { IconImage(R.drawable.ic_gps, stringResource(R.string.cd_gps), fg) }
 	}
 	// Unaffected by airplane mode: DND, data saver, auto-rotate and torch are
 	// device-wide states that stay meaningful while offline.
 	if (prefs.showDnd && state.dnd) {
-		items += { IconImage(R.drawable.ic_dnd, "Do not disturb", fg) }
+		items += { IconImage(R.drawable.ic_dnd, stringResource(R.string.cd_do_not_disturb), fg) }
 	}
 	if (prefs.showDataSaver && state.dataSaver) {
-		items += { IconImage(R.drawable.ic_data_saver, "Data saver", fg) }
+		items += { IconImage(R.drawable.ic_data_saver, stringResource(R.string.cd_data_saver), fg) }
 	}
 	if (prefs.showRotate && state.autoRotate) {
-		items += { IconImage(R.drawable.ic_rotation, "Auto-rotate", fg) }
+		items += { IconImage(R.drawable.ic_rotation, stringResource(R.string.cd_auto_rotate), fg) }
 	}
 	if (prefs.showTorch && state.torch) {
-		items += { IconImage(R.drawable.ic_torch, "Flashlight", fg) }
+		items += { IconImage(R.drawable.ic_torch, stringResource(R.string.cd_flashlight), fg) }
 	}
 	if (items.isEmpty()) return
 	Row(

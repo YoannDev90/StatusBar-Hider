@@ -10,6 +10,7 @@ import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.hide.HideController
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import kotlinx.coroutines.Dispatchers
@@ -79,53 +80,57 @@ class MainViewModel(
 		super.onCleared()
 	}
 
+	/** Resolves a string resource, optionally formatting it with [args]. */
+	private fun str(
+		id: Int,
+		vararg args: Any?
+	): String = getApplication<Application>().getString(id, *args)
+
 	fun refreshShizuku() {
 		shizukuRepo.refresh()
 	}
 
 	fun requestShizukuPermission(requestCode: Int) {
 		if (shizukuRepo.state.value == ShizukuState.NOT_RUNNING) {
-			appendLog("Shizuku is not running. Start it, then try again.")
+			appendLog(str(R.string.log_shizuku_not_running))
 			return
 		}
 		if (ShizukuCmd.granted()) {
-			appendLog("Already authorized.")
+			appendLog(str(R.string.log_already_authorized))
 		} else {
 			shizukuRepo.requestPermission(requestCode)
 		}
 	}
 
 	fun applyHide() {
-		runCommand("applying hide...") { oem ->
+		runCommand(R.string.log_applying_hide) { oem ->
 			if (oem.untested) {
-				appendLog("Warning: '${oem.name}' config is untested here - adjust commands if nothing happens.")
+				appendLog(str(R.string.log_untested_config, oem.name))
 			}
 			for (note in oem.notes) {
-				appendLog("note: $note")
+				appendLog(str(R.string.log_note, note))
 			}
-			for (cmd in oem.hide) {
-				val (_, out) = CommandRunner.run(cmd.cmd)
-				appendLog("${cmd.name} -> ${out.ifEmpty { "ok" }}")
+			val result = HideController.applyHide(getApplication())
+			result.lines.forEach { appendLog(it) }
+			if (result.ok) {
+				appendLog(str(R.string.log_done))
 			}
-			appendLog("Done. Swipe-down is preserved.")
 		}
 	}
 
 	fun checkState() {
-		runCommand("reading state...") { oem ->
+		runCommand(R.string.log_reading_state) { oem ->
 			for (cmd in oem.status) {
-				val (_, out) = CommandRunner.run(cmd.cmd)
-				appendLog("${cmd.name} = ${out.ifEmpty { "(empty)" }}")
+				val (_, out) = CommandRunner.run(getApplication<Application>(), cmd.cmd)
+				appendLog(str(R.string.log_status_value, cmd.name, out.ifEmpty { str(R.string.log_status_empty) }))
 			}
 		}
 	}
 
 	fun restore() {
-		runCommand("restoring...") { oem ->
-			for (cmd in oem.restore) {
-				CommandRunner.run(cmd.cmd)
-				appendLog("${cmd.name} -> restored")
-			}
+		runCommand(R.string.log_restoring) { _ ->
+			val result = HideController.restore(getApplication())
+			result.lines.forEach { appendLog(it) }
 			prefsRepo.update { copy(enabled = false) }
 			StatusBarOverlayService.stop(getApplication())
 		}
@@ -143,19 +148,20 @@ class MainViewModel(
 		} else {
 			StatusBarOverlayService.stop(getApplication())
 		}
-		appendLog(if (enabled) "Custom bar shown (overlay)" else "Custom bar hidden")
+		appendLog(str(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden))
 	}
 
 	fun appendLog(line: String) {
 		logsFlow.value += line
 	}
 
+	/** @param labelRes resource id of the progress line shown before [block] runs. */
 	private fun runCommand(
-		label: String,
+		labelRes: Int,
 		block: suspend (oem: dev.yoanndev90.statusbarhider.OemConfig) -> Unit
 	) {
 		if (!ShizukuCmd.granted()) {
-			appendLog("Shizuku not authorized. Use button 1 first.")
+			appendLog(str(R.string.log_shizuku_not_authorized))
 			return
 		}
 		cmdJob?.cancel()
@@ -163,11 +169,11 @@ class MainViewModel(
 			viewModelScope.launch(Dispatchers.IO) {
 				busyFlow.value = true
 				try {
-					appendLog("... $label")
+					appendLog(str(R.string.log_progress, str(labelRes)))
 					block(oemRepo.config.value)
 				} catch (e: Exception) {
 					if (e is kotlinx.coroutines.CancellationException) throw e
-					appendLog("ERROR: ${e.message}")
+					appendLog(str(R.string.log_error, e.message))
 				} finally {
 					busyFlow.value = false
 				}

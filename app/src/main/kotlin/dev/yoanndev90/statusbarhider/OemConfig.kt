@@ -96,14 +96,14 @@ data class OemConfig(
 						.use { it.readText() }
 				} catch (e: Exception) {
 					Log.e(TAG, "Failed to read OEM config: $id", e)
-					return FallbackConfig
+					return fallbackConfig(context)
 				}
 
 			return try {
 				parseJson(id, raw)
 			} catch (e: Exception) {
 				Log.e(TAG, "Failed to parse OEM config: $id", e)
-				FallbackConfig
+				fallbackConfig(context)
 			}
 		}
 
@@ -148,10 +148,11 @@ data class OemConfig(
 			)
 		}
 
-		private val FallbackConfig =
+		/** Config used when no file could be loaded (stock AOSP defaults). */
+		private fun fallbackConfig(context: Context): OemConfig =
 			OemConfig(
 				id = "unknown",
-				name = "Unknown OEM",
+				name = context.getString(R.string.oem_unknown),
 				hide = emptyList(),
 				restore = emptyList(),
 				status = emptyList()

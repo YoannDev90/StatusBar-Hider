@@ -16,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dev.yoanndev90.statusbarhider.R
 
 @Composable
 fun SectionHeader(title: String) {
@@ -69,7 +71,7 @@ fun SettingSlider(
 ) {
 	Column(modifier = Modifier.fillMaxWidth()) {
 		Text(
-			text = "$label $value$suffix",
+			text = stringResource(R.string.slider_value, label, value, suffix),
 			style = MaterialTheme.typography.bodyMedium
 		)
 		Slider(
