@@ -96,35 +96,6 @@ All commands are OEM-specific. The JSON files in `app/src/main/assets/oem/` defi
 - Disable flags (`cmd statusbar send-disable-flag`) are volatile and reset on reboot / SystemUI restart. The `BOOT_COMPLETED` receiver handles this automatically, but **Shizuku must be configured to start on boot**.
 - `ShizukuCmd` calls `IShizukuService.newProcess()` directly via the `aidl` artifact instead of the deprecated `Shizuku.newProcess()` method (private since Shizuku 13.1.5). Stdout is read via `ParcelFileDescriptor.AutoCloseInputStream` with a timeout to avoid pipe deadlocks.
 
-## Project structure
-
-```
-StatusBar-Hider/
-├── app/src/main/
-│   ├── assets/oem/                    # OEM command definitions (JSON)
-│   │   ├── aosp.json                  # Generic fallback (stock AOSP defaults)
-│   │   ├── hyperos.json               # Tested reference config
-│   │   └── *.json                     # One file per OEM (untested defaults)
-│   ├── kotlin/.../
-│   │   ├── MainActivity.kt            # ComponentActivity + setContent
-│   │   ├── OemConfig.kt               # JSON loader + detection + data classes
-│   │   ├── ShizukuCmd.kt              # Shell command runner via Shizuku AIDL
-│   │   ├── BootReceiver.kt            # Auto-hide on BOOT_COMPLETED
-│   │   ├── ShowInDrawerReceiver.kt    # Re-enable launcher via broadcast
-│   │   ├── data/                      # Repositories (prefs/Shizuku/OEM) + CommandRunner
-│   │   ├── ui/                        # MainViewModel, MainScreen, sections, theme
-│   │   └── overlay/                   # Overlay service + OverlayBar composables + prefs
-│   ├── res/
-│   │   ├── drawable/                  # Overlay widget icons
-│   │   └── values/themes.xml          # Framework host theme (Compose draws its own)
-│   └── AndroidManifest.xml
-├── keystore/                           # Release signing keystore (gitignored)
-├── keystore.properties                 # Signing passwords (gitignored)
-├── mise.toml                           # Dev toolchain + tasks
-├── CONTRIBUTING.md                     # How to add a new OEM
-└── README.md
-```
-
 ## Credits
 
 Inspired by [Essentials](https://github.com/sameerasw/essentials) by Sameera Perera and [SystemUI Tuner](https://github.com/zacharee/Tweaker) by Zachary Wander.
