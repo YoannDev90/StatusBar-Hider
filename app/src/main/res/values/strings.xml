@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <string name="app_name">StatusBar Hider</string>
+    <string name="oem_unknown">Unknown OEM</string>
+    <string name="header_untested">untested config - commands may need adjustment</string>
+
+    <!-- Shizuku status -->
+    <string name="shizuku_not_running">Shizuku: not running</string>
+    <string name="shizuku_not_granted">Shizuku: waiting for authorization</string>
+    <string name="shizuku_ready">Shizuku: ready</string>
+
+    <!-- Section titles -->
+    <string name="section_shizuku">SHIZUKU</string>
+    <string name="section_status_bar">STATUS BAR</string>
+    <string name="section_custom_bar">CUSTOM BAR</string>
+    <string name="section_widget_order">WIDGET ORDER</string>
+    <string name="section_app">APP</string>
+    <string name="section_log">LOG</string>
+
+    <!-- Buttons -->
+    <string name="action_authorize_shizuku">Authorize Shizuku</string>
+    <string name="action_hide_status_bar">Hide status bar</string>
+    <string name="action_check_state">Check state</string>
+    <string name="action_restore">Restore (undo)</string>
+    <string name="action_set">Set</string>
+    <string name="action_enable_notification_access">Enable notification access</string>
+    <string name="action_hide_from_launcher">Hide from launcher</string>
+    <string name="action_export_logs">Export logs</string>
+    <string name="action_show_custom_bar">Show custom bar</string>
+    <string name="action_hide_custom_bar">Hide custom bar</string>
+
+    <!-- Switches -->
+    <string name="switch_show_seconds">Show seconds (extra battery)</string>
+    <string name="switch_battery">Battery</string>
+    <string name="switch_battery_pct">Battery %</string>
+    <string name="switch_battery_icon">Battery icon</string>
+    <string name="switch_date">Date</string>
+    <string name="switch_notification_icons">Notification icons</string>
+    <string name="switch_wifi">WiFi</string>
+    <string name="switch_mobile_data">Mobile data</string>
+    <string name="switch_bluetooth">Bluetooth</string>
+    <string name="switch_airplane">Airplane mode</string>
+    <string name="switch_usb">USB</string>
+    <string name="switch_next_alarm">Next alarm</string>
+    <string name="switch_next_calendar_event">Next calendar event (asks calendar permission)</string>
+    <string name="switch_now_playing">Now playing (needs notification access)</string>
+    <string name="switch_nfc">NFC indicator</string>
+    <string name="switch_gps">GPS indicator</string>
+    <string name="switch_dnd">Do Not Disturb</string>
+    <string name="switch_data_saver">Data saver</string>
+    <string name="switch_auto_rotate">Auto-rotate</string>
+    <string name="switch_flashlight">Flashlight (shown while on)</string>
+    <string name="switch_bandwidth">Bandwidth (1s polling)</string>
+    <string name="switch_merged_speed">Merged up/down speed</string>
+    <string name="switch_touchable_bar">Touchable bar (tap clock/date, may block swipe)</string>
+    <string name="switch_dark_text">Dark text (for transparent bar)</string>
+
+    <!-- Sliders, labels and hints -->
+    <string name="label_date_format">Date format (EEE dd MMM)</string>
+    <string name="label_text_weight">Text weight</string>
+    <string name="label_widget_order_hint">Drag the handle to reorder</string>
+    <string name="slider_max_notification_icons">Max notification icons</string>
+    <string name="slider_burn_in_shift">Burn-in shift: every</string>
+    <string name="slider_padding_start">Padding start</string>
+    <string name="slider_padding_top">Padding top</string>
+    <string name="slider_padding_end">Padding end</string>
+    <string name="slider_padding_bottom">Padding bottom</string>
+    <string name="slider_text_size">Text size</string>
+    <string name="slider_widget_spacing">Widget spacing</string>
+    <string name="slider_value">%1$s %2$s%3$s</string>
+
+    <!-- Units and option labels -->
+    <string name="suffix_dp">dp</string>
+    <string name="suffix_sp">sp</string>
+    <string name="suffix_minutes">" min (0 = off)"</string>
+    <string name="background_transparent">Transparent</string>
+    <string name="background_semi">Semi</string>
+    <string name="background_black">Black</string>
+    <string name="font_weight_normal">Normal</string>
+    <string name="font_weight_medium">Medium</string>
+    <string name="font_weight_bold">Bold</string>
+
+    <!-- Widget order labels -->
+    <string name="widget_clock">Clock</string>
+    <string name="widget_date">Date</string>
+    <string name="widget_calendar">Next event</string>
+    <string name="widget_notifications">Notifications</string>
+    <string name="widget_media">Now playing</string>
+    <string name="widget_spacer">— Flexible space —</string>
+    <string name="widget_connectivity">Connectivity</string>
+    <string name="widget_battery">Battery</string>
+    <string name="widget_alarm">Next alarm</string>
+    <string name="widget_bandwidth">Bandwidth</string>
+    <string name="widget_unknown">Unknown widget</string>
+
+    <!-- Quick Settings tiles -->
+    <string name="tile_custom_bar">Custom bar</string>
+    <string name="tile_tap_to_hide">Tap to hide</string>
+    <string name="tile_tap_to_show">Tap to show</string>
+    <string name="tile_tap_to_restore">Tap to restore</string>
+
+    <!-- Foreground service notification -->
+    <string name="notif_channel_name">Custom status bar</string>
+    <string name="notif_content_title">Custom status bar active</string>
+    <string name="notif_content_text">Tap Restore in the app to remove it</string>
+    <string name="notif_listener_label">Custom bar notifications</string>
+
+    <!-- Toasts -->
+    <string name="toast_invalid_date_format">Invalid date format</string>
+    <string name="toast_cannot_open_notification_settings">Cannot open notification settings</string>
+    <string name="toast_calendar_permission_denied">Calendar permission denied</string>
+    <string name="toast_grant_overlay_permission">Grant overlay permission first</string>
+    <string name="toast_hidden_from_launcher">Hidden! Access via Settings &gt; Apps &gt; StatusBar Hider</string>
+    <string name="toast_launcher_icon_restored">Launcher icon restored</string>
+    <string name="toast_logs_copied">Logs copied to clipboard</string>
+    <string name="clipboard_label">StatusBarHider logs</string>
+
+    <!-- Content descriptions (accessibility) -->
+    <string name="cd_reorder">Reorder</string>
+    <string name="cd_next_event">Next event</string>
+    <string name="cd_now_playing">Now playing</string>
+    <string name="cd_next_alarm">Next alarm</string>
+    <string name="cd_airplane_mode">Airplane mode</string>
+    <string name="cd_wifi">WiFi</string>
+    <string name="cd_mobile_data">Mobile data</string>
+    <string name="cd_bluetooth">Bluetooth</string>
+    <string name="cd_vpn">VPN</string>
+    <string name="cd_hotspot">Hotspot</string>
+    <string name="cd_usb">USB</string>
+    <string name="cd_nfc">NFC</string>
+    <string name="cd_gps">GPS</string>
+    <string name="cd_do_not_disturb">Do not disturb</string>
+    <string name="cd_data_saver">Data saver</string>
+    <string name="cd_auto_rotate">Auto-rotate</string>
+    <string name="cd_flashlight">Flashlight</string>
+    <string name="cd_bandwidth">Bandwidth</string>
+    <string name="cd_download">Download</string>
+    <string name="cd_upload">Upload</string>
+
+    <!-- In-app log lines -->
+    <string name="log_shizuku_not_running">Shizuku is not running. Start it, then try again.</string>
+    <string name="log_already_authorized">Already authorized.</string>
+    <string name="log_shizuku_not_authorized">Shizuku not authorized. Use button 1 first.</string>
+    <string name="log_progress">... %1$s</string>
+    <string name="log_applying_hide">applying hide...</string>
+    <string name="log_reading_state">reading state...</string>
+    <string name="log_restoring">restoring...</string>
+    <string name="log_done">Done. Swipe-down is preserved.</string>
+    <string name="log_untested_config">Warning: \'%1$s\' config is untested here - adjust commands if nothing happens.</string>
+    <string name="log_note">note: %1$s</string>
+    <string name="log_status_value">%1$s = %2$s</string>
+    <string name="log_status_empty">(empty)</string>
+    <string name="log_bar_shown">Custom bar shown (overlay)</string>
+    <string name="log_bar_hidden">Custom bar hidden</string>
+    <string name="log_date_format">Date format: %1$s</string>
+    <string name="log_error">ERROR: %1$s</string>
+    <string name="log_no_hide_commands">No hide commands for %1$s</string>
+    <string name="log_no_restore_commands">No restore commands for %1$s</string>
+    <string name="log_command_ok">%1$s -&gt; %2$s</string>
+    <string name="log_command_failed">%1$s -&gt; FAILED (%2$s)</string>
+    <string name="log_ok">ok</string>
+    <string name="log_exit_code">exit %1$d</string>
+
+    <!-- Shell command failures -->
+    <string name="err_shizuku_binder_unavailable">Shizuku binder not available</string>
+    <string name="err_start_process">Failed to start process: %1$s</string>
+    <string name="err_command_timeout">TIMEOUT after %1$ds</string>
+</resources>

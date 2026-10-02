@@ -3,12 +3,14 @@ package dev.yoanndev90.statusbarhider.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.ShizukuCmd
 import dev.yoanndev90.statusbarhider.data.CommandRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.hide.HideController
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +26,7 @@ data class MainUiState(
 	val shizuku: ShizukuState = ShizukuState.NOT_RUNNING,
 	val shizukuText: String = "",
 	val oemName: String = "",
+	val oemUntested: Boolean = false,
 	val prefs: OverlayPrefs = OverlayPrefs(),
 	val logs: List<String> = emptyList(),
 	val busy: Boolean = false
@@ -56,11 +59,12 @@ class MainViewModel(
 				shizuku = shizuku,
 				shizukuText =
 					when (shizuku) {
-						ShizukuState.NOT_RUNNING -> "Shizuku: not running"
-						ShizukuState.NOT_GRANTED -> "Shizuku: waiting for authorization"
-						ShizukuState.READY -> "Shizuku: ready"
+						ShizukuState.NOT_RUNNING -> str(R.string.shizuku_not_running)
+						ShizukuState.NOT_GRANTED -> str(R.string.shizuku_not_granted)
+						ShizukuState.READY -> str(R.string.shizuku_ready)
 					},
 				oemName = oem.name,
+				oemUntested = oem.untested,
 				prefs = prefs,
 				logs = logs,
 				busy = busy
@@ -76,47 +80,57 @@ class MainViewModel(
 		super.onCleared()
 	}
 
+	/** Resolves a string resource, optionally formatting it with [args]. */
+	private fun str(
+		id: Int,
+		vararg args: Any?
+	): String = getApplication<Application>().getString(id, *args)
+
 	fun refreshShizuku() {
 		shizukuRepo.refresh()
 	}
 
 	fun requestShizukuPermission(requestCode: Int) {
 		if (shizukuRepo.state.value == ShizukuState.NOT_RUNNING) {
-			appendLog("Shizuku is not running. Start it, then try again.")
+			appendLog(str(R.string.log_shizuku_not_running))
 			return
 		}
 		if (ShizukuCmd.granted()) {
-			appendLog("Already authorized.")
+			appendLog(str(R.string.log_already_authorized))
 		} else {
 			shizukuRepo.requestPermission(requestCode)
 		}
 	}
 
 	fun applyHide() {
-		runCommand("applying hide...") { oem ->
-			for (cmd in oem.hide) {
-				val (_, out) = CommandRunner.run(cmd.cmd)
-				appendLog("${cmd.name} -> ${out.ifEmpty { "ok" }}")
+		runCommand(R.string.log_applying_hide) { oem ->
+			if (oem.untested) {
+				appendLog(str(R.string.log_untested_config, oem.name))
 			}
-			appendLog("Done. Swipe-down is preserved.")
+			for (note in oem.notes) {
+				appendLog(str(R.string.log_note, note))
+			}
+			val result = HideController.applyHide(getApplication())
+			result.lines.forEach { appendLog(it) }
+			if (result.ok) {
+				appendLog(str(R.string.log_done))
+			}
 		}
 	}
 
 	fun checkState() {
-		runCommand("reading state...") { oem ->
+		runCommand(R.string.log_reading_state) { oem ->
 			for (cmd in oem.status) {
-				val (_, out) = CommandRunner.run(cmd.cmd)
-				appendLog("${cmd.name} = ${out.ifEmpty { "(empty)" }}")
+				val (_, out) = CommandRunner.run(getApplication<Application>(), cmd.cmd)
+				appendLog(str(R.string.log_status_value, cmd.name, out.ifEmpty { str(R.string.log_status_empty) }))
 			}
 		}
 	}
 
 	fun restore() {
-		runCommand("restoring...") { oem ->
-			for (cmd in oem.restore) {
-				CommandRunner.run(cmd.cmd)
-				appendLog("${cmd.name} -> restored")
-			}
+		runCommand(R.string.log_restoring) { _ ->
+			val result = HideController.restore(getApplication())
+			result.lines.forEach { appendLog(it) }
 			prefsRepo.update { copy(enabled = false) }
 			StatusBarOverlayService.stop(getApplication())
 		}
@@ -134,19 +148,20 @@ class MainViewModel(
 		} else {
 			StatusBarOverlayService.stop(getApplication())
 		}
-		appendLog(if (enabled) "Custom bar shown (overlay)" else "Custom bar hidden")
+		appendLog(str(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden))
 	}
 
 	fun appendLog(line: String) {
 		logsFlow.value += line
 	}
 
+	/** @param labelRes resource id of the progress line shown before [block] runs. */
 	private fun runCommand(
-		label: String,
+		labelRes: Int,
 		block: suspend (oem: dev.yoanndev90.statusbarhider.OemConfig) -> Unit
 	) {
 		if (!ShizukuCmd.granted()) {
-			appendLog("Shizuku not authorized. Use button 1 first.")
+			appendLog(str(R.string.log_shizuku_not_authorized))
 			return
 		}
 		cmdJob?.cancel()
@@ -154,11 +169,11 @@ class MainViewModel(
 			viewModelScope.launch(Dispatchers.IO) {
 				busyFlow.value = true
 				try {
-					appendLog("... $label")
+					appendLog(str(R.string.log_progress, str(labelRes)))
 					block(oemRepo.config.value)
 				} catch (e: Exception) {
 					if (e is kotlinx.coroutines.CancellationException) throw e
-					appendLog("ERROR: ${e.message}")
+					appendLog(str(R.string.log_error, e.message))
 				} finally {
 					busyFlow.value = false
 				}

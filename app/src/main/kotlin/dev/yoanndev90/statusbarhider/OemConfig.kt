@@ -23,6 +23,9 @@ data class OemCommand(
 data class OemConfig(
 	val id: String,
 	val name: String,
+	val untested: Boolean = false,
+	val match: List<String> = emptyList(),
+	val notes: List<String> = emptyList(),
 	val hide: List<OemCommand>,
 	val restore: List<OemCommand>,
 	val status: List<OemCommand>
@@ -30,6 +33,9 @@ data class OemConfig(
 	companion object {
 		private const val TAG = "OemConfig"
 		private const val CURRENT_SCHEMA_VERSION = 1
+
+		/** Config used when no file matches the device (stock AOSP defaults). */
+		private const val DEFAULT_ID = "aosp"
 
 		fun listAvailable(context: Context): List<String> =
 			context.assets
@@ -72,7 +78,10 @@ data class OemConfig(
 			for (id in available) {
 				if (props.contains(id)) return id
 			}
-			return available.first()
+			for (id in available) {
+				if (load(context, id).match.any { props.contains(it) }) return id
+			}
+			return if (DEFAULT_ID in available) DEFAULT_ID else available.first()
 		}
 
 		fun load(
@@ -87,14 +96,14 @@ data class OemConfig(
 						.use { it.readText() }
 				} catch (e: Exception) {
 					Log.e(TAG, "Failed to read OEM config: $id", e)
-					return FallbackConfig
+					return fallbackConfig(context)
 				}
 
 			return try {
 				parseJson(id, raw)
 			} catch (e: Exception) {
 				Log.e(TAG, "Failed to parse OEM config: $id", e)
-				FallbackConfig
+				fallbackConfig(context)
 			}
 		}
 
@@ -124,19 +133,26 @@ data class OemConfig(
 					)
 				}
 
+			fun parseStringList(arr: JSONArray?): List<String> =
+				arr?.let { a -> (0 until a.length()).map { i -> a.getString(i) } } ?: emptyList()
+
 			return OemConfig(
 				id = id,
 				name = json.getString("name"),
+				untested = json.optBoolean("untested", false),
+				match = parseStringList(json.optJSONArray("match")).map { it.lowercase() },
+				notes = parseStringList(json.optJSONArray("notes")),
 				hide = parseCommands(json.getJSONArray("hide")),
 				restore = parseCommands(json.getJSONArray("restore")),
 				status = parseCommands(json.getJSONArray("status"))
 			)
 		}
 
-		private val FallbackConfig =
+		/** Config used when no file could be loaded (stock AOSP defaults). */
+		private fun fallbackConfig(context: Context): OemConfig =
 			OemConfig(
 				id = "unknown",
-				name = "Unknown OEM",
+				name = context.getString(R.string.oem_unknown),
 				hide = emptyList(),
 				restore = emptyList(),
 				status = emptyList()

@@ -2,7 +2,7 @@
 
 A minimal Android app that hides the status bar system-wide (including the launcher) using [Shizuku](https://shizuku.rikka.app/). No system apps are uninstalled. Swipe-down to expand notifications is preserved.
 
-The app reads OEM-specific commands from JSON files in `app/src/main/assets/oem/`. Currently supported: **HyperOS** (Xiaomi/Redmi). See [CONTRIBUTING.md](CONTRIBUTING.md) to add more.
+The app reads OEM-specific commands from JSON files in `app/src/main/assets/oem/`. Supported configs: **HyperOS/MIUI** (tested), plus researched defaults for **Samsung One UI, Google Pixel, OnePlus, OPPO, realme, vivo/iQOO, Motorola, Nothing, Huawei, Honor, Sony, ASUS, Nokia, Tecno, Infinix, ZTE/nubia** and a generic **AOSP** fallback. All of them except HyperOS are flagged `untested` (shown in the UI) - see [CONTRIBUTING.md](CONTRIBUTING.md) to fix and promote one.
 
 ## Prerequisites
 
@@ -85,6 +85,7 @@ All commands are OEM-specific. The JSON files in `app/src/main/assets/oem/` defi
 ## App features
 
 - **Auto OEM detection** -- matches system properties against available JSON configs on first launch.
+- **Untested badge** -- configs that were only researched online are labelled `untested` in the header; their troubleshooting notes are printed in the log before the commands run.
 - **Hide from launcher** -- disables the launcher activity so the app disappears from the app drawer. Re-access via `mise run show-in-drawer` or Settings > Apps > StatusBar Hider.
 - **Boot auto-hide** -- a `BOOT_COMPLETED` receiver re-applies the hide commands on reboot (requires "Start on boot" enabled in Shizuku settings).
 - **Export logs** -- copies the log output to the clipboard.
@@ -94,33 +95,6 @@ All commands are OEM-specific. The JSON files in `app/src/main/assets/oem/` defi
 
 - Disable flags (`cmd statusbar send-disable-flag`) are volatile and reset on reboot / SystemUI restart. The `BOOT_COMPLETED` receiver handles this automatically, but **Shizuku must be configured to start on boot**.
 - `ShizukuCmd` calls `IShizukuService.newProcess()` directly via the `aidl` artifact instead of the deprecated `Shizuku.newProcess()` method (private since Shizuku 13.1.5). Stdout is read via `ParcelFileDescriptor.AutoCloseInputStream` with a timeout to avoid pipe deadlocks.
-
-## Project structure
-
-```
-StatusBar-Hider/
-├── app/src/main/
-│   ├── assets/oem/                    # OEM command definitions (JSON)
-│   │   └── hyperos.json
-│   ├── kotlin/.../
-│   │   ├── MainActivity.kt            # ComponentActivity + setContent
-│   │   ├── OemConfig.kt               # JSON loader + detection + data classes
-│   │   ├── ShizukuCmd.kt              # Shell command runner via Shizuku AIDL
-│   │   ├── BootReceiver.kt            # Auto-hide on BOOT_COMPLETED
-│   │   ├── ShowInDrawerReceiver.kt    # Re-enable launcher via broadcast
-│   │   ├── data/                      # Repositories (prefs/Shizuku/OEM) + CommandRunner
-│   │   ├── ui/                        # MainViewModel, MainScreen, sections, theme
-│   │   └── overlay/                   # Overlay service + OverlayBar composables + prefs
-│   ├── res/
-│   │   ├── drawable/                  # Overlay widget icons
-│   │   └── values/themes.xml          # Framework host theme (Compose draws its own)
-│   └── AndroidManifest.xml
-├── keystore/                           # Release signing keystore (gitignored)
-├── keystore.properties                 # Signing passwords (gitignored)
-├── mise.toml                           # Dev toolchain + tasks
-├── CONTRIBUTING.md                     # How to add a new OEM
-└── README.md
-```
 
 ## Credits
 

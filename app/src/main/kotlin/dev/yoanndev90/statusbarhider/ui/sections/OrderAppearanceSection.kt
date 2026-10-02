@@ -19,8 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import dev.yoanndev90.statusbarhider.ui.MainViewModel
@@ -41,9 +43,9 @@ fun OrderAppearanceSection(
 	val prefs = state.prefs
 	val haptic = LocalHapticFeedback.current
 
-	SectionHeader("WIDGET ORDER")
+	SectionHeader(stringResource(R.string.section_widget_order))
 	Text(
-		text = "Drag the handle to reorder",
+		text = stringResource(R.string.label_widget_order_hint),
 		style = MaterialTheme.typography.bodySmall,
 		color = MaterialTheme.colorScheme.onSurfaceVariant,
 		modifier = Modifier.padding(bottom = 4.dp)
@@ -74,7 +76,7 @@ fun OrderAppearanceSection(
 						verticalAlignment = Alignment.CenterVertically
 					) {
 						Text(
-							text = WidgetId.label(id),
+							text = stringResource(WidgetId.labelRes(id)),
 							style = MaterialTheme.typography.bodyMedium,
 							modifier = Modifier.weight(1f).padding(vertical = 12.dp)
 						)
@@ -92,7 +94,7 @@ fun OrderAppearanceSection(
 						) {
 							Icon(
 								imageVector = Icons.Filled.Menu,
-								contentDescription = "Reorder"
+								contentDescription = stringResource(R.string.cd_reorder)
 							)
 						}
 					}
@@ -101,11 +103,16 @@ fun OrderAppearanceSection(
 		}
 	}
 
-	SettingSwitch("Dark text (for transparent bar)", prefs.darkText) {
+	SettingSwitch(stringResource(R.string.switch_dark_text), prefs.darkText) {
 		vm.updatePrefs { copy(darkText = it) }
 	}
 	SettingRadioRow(
-		options = listOf("Transparent", "Semi", "Black"),
+		options =
+			listOf(
+				stringResource(R.string.background_transparent),
+				stringResource(R.string.background_semi),
+				stringResource(R.string.background_black)
+			),
 		selected =
 			when (prefs.background) {
 				OverlayBackground.TRANSPARENT -> 0
@@ -122,18 +129,43 @@ fun OrderAppearanceSection(
 			vm.updatePrefs { copy(background = bg) }
 		}
 	)
-	SettingSlider("Padding start", prefs.padStartDp, 0, 32, "dp") {
+	SettingSlider(stringResource(R.string.slider_padding_start), prefs.padStartDp, 0, 32, stringResource(R.string.suffix_dp)) {
 		vm.updatePrefs { copy(padStartDp = it) }
 	}
-	SettingSlider("Padding top", prefs.padTopDp, 0, 32, "dp") {
+	SettingSlider(stringResource(R.string.slider_padding_top), prefs.padTopDp, 0, 32, stringResource(R.string.suffix_dp)) {
 		vm.updatePrefs { copy(padTopDp = it) }
 	}
-	SettingSlider("Padding end", prefs.padEndDp, 0, 32, "dp") {
+	SettingSlider(stringResource(R.string.slider_padding_end), prefs.padEndDp, 0, 32, stringResource(R.string.suffix_dp)) {
 		vm.updatePrefs { copy(padEndDp = it) }
 	}
-	SettingSlider("Padding bottom", prefs.padBottomDp, 0, 32, "dp") {
+	SettingSlider(stringResource(R.string.slider_padding_bottom), prefs.padBottomDp, 0, 32, stringResource(R.string.suffix_dp)) {
 		vm.updatePrefs { copy(padBottomDp = it) }
 	}
-	SettingAction("Show custom bar", onShowBar)
-	SettingAction("Hide custom bar") { vm.setOverlayEnabled(false) }
+	SettingSlider(stringResource(R.string.slider_text_size), prefs.fontSizeSp, 10, 20, stringResource(R.string.suffix_sp)) {
+		vm.updatePrefs { copy(fontSizeSp = it) }
+	}
+	SettingSlider(stringResource(R.string.slider_widget_spacing), prefs.widgetSpacingDp, 0, 12, stringResource(R.string.suffix_dp)) {
+		vm.updatePrefs { copy(widgetSpacingDp = it) }
+	}
+	Text(
+		text = stringResource(R.string.label_text_weight),
+		style = MaterialTheme.typography.bodyMedium,
+		modifier = Modifier.padding(top = 8.dp)
+	)
+	val fontWeightLabels =
+		listOf(
+			stringResource(R.string.font_weight_normal),
+			stringResource(R.string.font_weight_medium),
+			stringResource(R.string.font_weight_bold)
+		)
+	SettingRadioRow(
+		options = fontWeightLabels,
+		selected = FONT_WEIGHT_IDS.indexOf(prefs.fontWeightName).coerceAtLeast(0),
+		onSelect = { vm.updatePrefs { copy(fontWeightName = FONT_WEIGHT_IDS[it]) } }
+	)
+	SettingAction(stringResource(R.string.action_show_custom_bar), onShowBar)
+	SettingAction(stringResource(R.string.action_hide_custom_bar)) { vm.setOverlayEnabled(false) }
 }
+
+/** Stored ids behind the weight choices; indexes map to [OverlayPrefs.fontWeightName]. */
+private val FONT_WEIGHT_IDS = listOf("NORMAL", "MEDIUM", "BOLD")

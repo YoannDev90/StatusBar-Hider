@@ -10,7 +10,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.database.ContentObserver
 import android.graphics.PixelFormat
+import android.hardware.camera2.CameraManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -47,11 +49,13 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
+import dev.yoanndev90.statusbarhider.hide.HideController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * System-wide custom status bar drawn over all apps, rendered with Compose.
@@ -111,6 +115,36 @@ class StatusBarOverlayService : Service() {
 	private var mediaRegistered = false
 	private var mediaSessionManager: android.media.session.MediaSessionManager? = null
 	private var mediaControllers: List<android.media.session.MediaController> = emptyList()
+
+	/** Camera ids with the torch currently on (filled by [torchCallback]). */
+	private val torchIds = ConcurrentHashMap.newKeySet<String>()
+	private var cameraManager: CameraManager? = null
+	private var torchRegistered = false
+
+	/** DND / auto-rotate changes land here so the icons react immediately. */
+	private val systemObserver =
+		object : ContentObserver(handler) {
+			override fun onChange(
+				selfChange: Boolean
+			) {
+				runOnOverlay { updateConnectivity() }
+			}
+		}
+
+	private val torchCallback =
+		object : CameraManager.TorchCallback() {
+			override fun onTorchModeChanged(
+				cameraId: String,
+				enabled: Boolean
+			) {
+				if (enabled) {
+					torchIds.add(cameraId)
+				} else {
+					torchIds.remove(cameraId)
+				}
+				runOnOverlay { updateConnectivity() }
+			}
+		}
 
 	private val mediaCallback =
 		object : android.media.session.MediaController.Callback() {
@@ -359,7 +393,19 @@ class StatusBarOverlayService : Service() {
 			cm?.unregisterNetworkCallback(networkCallback)
 		} catch (_: Exception) {
 		}
+		try {
+			contentResolver.unregisterContentObserver(systemObserver)
+		} catch (_: Exception) {
+		}
+		if (torchRegistered) {
+			try {
+				cameraManager?.unregisterTorchCallback(torchCallback)
+			} catch (_: Exception) {
+			}
+		}
 		detachOverlay()
+		// The overlay is gone: let SystemUI re-read the "Custom bar" tile state.
+		HideController.notifyTiles(this)
 		super.onDestroy()
 	}
 
@@ -368,7 +414,11 @@ class StatusBarOverlayService : Service() {
 		if (Build.VERSION.SDK_INT >= 26) {
 			if (nm.getNotificationChannel(CHANNEL_ID) == null) {
 				nm.createNotificationChannel(
-					NotificationChannel(CHANNEL_ID, "Custom status bar", NotificationManager.IMPORTANCE_MIN)
+					NotificationChannel(
+						CHANNEL_ID,
+						getString(R.string.notif_channel_name),
+						NotificationManager.IMPORTANCE_MIN
+					)
 				)
 			}
 		}
@@ -376,15 +426,15 @@ class StatusBarOverlayService : Service() {
 			if (Build.VERSION.SDK_INT >= 26) {
 				Notification
 					.Builder(this, CHANNEL_ID)
-					.setContentTitle("Custom status bar active")
-					.setContentText("Tap Restore in the app to remove it")
+					.setContentTitle(getString(R.string.notif_content_title))
+					.setContentText(getString(R.string.notif_content_text))
 					.setSmallIcon(android.R.drawable.stat_notify_more)
 					.build()
 			} else {
 				@Suppress("DEPRECATION")
 				Notification
 					.Builder(this)
-					.setContentTitle("Custom status bar active")
+					.setContentTitle(getString(R.string.notif_content_title))
 					.setSmallIcon(android.R.drawable.stat_notify_more)
 					.build()
 			}
@@ -595,6 +645,7 @@ class StatusBarOverlayService : Service() {
 			f.addAction("android.nfc.action.ADAPTER_STATE_CHANGED")
 			f.addAction("android.location.PROVIDERS_CHANGED")
 			f.addAction("android.location.GPS_ENABLED_CHANGE")
+			f.addAction(ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED)
 			registerReceiver(radioReceiver, f)
 		} catch (_: Exception) {
 		}
@@ -602,6 +653,26 @@ class StatusBarOverlayService : Service() {
 			val cm = getSystemService(ConnectivityManager::class.java)
 			cm?.registerDefaultNetworkCallback(networkCallback)
 		} catch (_: Exception) {
+		}
+		try {
+			contentResolver.registerContentObserver(
+				Settings.Global.getUriFor("zen_mode"),
+				false,
+				systemObserver
+			)
+			contentResolver.registerContentObserver(
+				Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+				false,
+				systemObserver
+			)
+		} catch (_: Exception) {
+		}
+		try {
+			cameraManager = getSystemService(CameraManager::class.java)
+			cameraManager?.registerTorchCallback(torchCallback, handler)
+			torchRegistered = true
+		} catch (_: Exception) {
+			torchRegistered = false
 		}
 	}
 
@@ -747,7 +818,11 @@ class StatusBarOverlayService : Service() {
 				vpn = showRest && prefs.showVpn && isVpn(),
 				hotspot = showRest && prefs.showHotspot && isHotspotOn(),
 				nfc = showRest && prefs.showNfc && isNfcOn(),
-				gps = prefs.showGps && isGpsOn()
+				gps = prefs.showGps && isGpsOn(),
+				dnd = prefs.showDnd && isDndOn(),
+				dataSaver = prefs.showDataSaver && isDataSaverOn(),
+				autoRotate = prefs.showRotate && isAutoRotateOn(),
+				torch = prefs.showTorch && torchIds.isNotEmpty()
 			)
 	}
 
@@ -858,6 +933,32 @@ class StatusBarOverlayService : Service() {
 		try {
 			val lm = getSystemService(android.location.LocationManager::class.java)
 			lm?.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) == true
+		} catch (_: Exception) {
+			false
+		}
+
+	/** Do Not Disturb: zen_mode is a plain global setting, readable without policy access. */
+	private fun isDndOn(): Boolean =
+		try {
+			Settings.Global.getInt(contentResolver, "zen_mode", 0) != 0
+		} catch (_: Exception) {
+			false
+		}
+
+	/** Data saver is on when this app is restricted (or exempted) by it. */
+	private fun isDataSaverOn(): Boolean =
+		try {
+			val cm = getSystemService(ConnectivityManager::class.java) ?: return false
+			val status = cm.restrictBackgroundStatus
+			status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED ||
+				status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_WHITELISTED
+		} catch (_: Exception) {
+			false
+		}
+
+	private fun isAutoRotateOn(): Boolean =
+		try {
+			Settings.System.getInt(contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) != 0
 		} catch (_: Exception) {
 			false
 		}

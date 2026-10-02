@@ -2,6 +2,7 @@ package dev.yoanndev90.statusbarhider.overlay
 
 import android.content.Context
 import android.content.SharedPreferences
+import dev.yoanndev90.statusbarhider.R
 import org.json.JSONObject
 
 internal const val PREFS = "overlay_prefs"
@@ -39,6 +40,13 @@ private const val KEY_SHOW_NFC = "show_nfc"
 private const val KEY_SHOW_GPS = "show_gps"
 private const val KEY_SHOW_CALENDAR = "show_calendar"
 private const val KEY_SHOW_MEDIA = "show_media"
+private const val KEY_SHOW_DND = "show_dnd"
+private const val KEY_SHOW_DATA_SAVER = "show_data_saver"
+private const val KEY_SHOW_ROTATE = "show_rotate"
+private const val KEY_SHOW_TORCH = "show_torch"
+private const val KEY_FONT_SIZE = "font_size_sp"
+private const val KEY_FONT_WEIGHT = "font_weight"
+private const val KEY_WIDGET_SPACING = "widget_spacing_dp"
 
 /** Stable widget ids used for ordering. */
 object WidgetId {
@@ -55,19 +63,20 @@ object WidgetId {
 	val ALL = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
 	val DEFAULT_ORDER = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
 
-	fun label(id: String): String =
+	/** String resource for the display label of [id]; unknown ids fall back to a generic label. */
+	fun labelRes(id: String): Int =
 		when (id) {
-			CLOCK -> "Clock"
-			DATE -> "Date"
-			CALENDAR -> "Next event"
-			NOTIFS -> "Notifications"
-			MEDIA -> "Now playing"
-			SPACER -> "— Flexible space —"
-			CONNECTIVITY -> "Connectivity"
-			BATTERY -> "Battery"
-			ALARM -> "Next alarm"
-			BANDWIDTH -> "Bandwidth"
-			else -> id
+			CLOCK -> R.string.widget_clock
+			DATE -> R.string.widget_date
+			CALENDAR -> R.string.widget_calendar
+			NOTIFS -> R.string.widget_notifications
+			MEDIA -> R.string.widget_media
+			SPACER -> R.string.widget_spacer
+			CONNECTIVITY -> R.string.widget_connectivity
+			BATTERY -> R.string.widget_battery
+			ALARM -> R.string.widget_alarm
+			BANDWIDTH -> R.string.widget_bandwidth
+			else -> R.string.widget_unknown
 		}
 
 	/** Parses a stored order, dropping unknown ids and appending missing ones. */
@@ -122,7 +131,14 @@ data class OverlayPrefs(
 	val showNfc: Boolean = false,
 	val showGps: Boolean = false,
 	val showCalendar: Boolean = false,
-	val showMedia: Boolean = false
+	val showMedia: Boolean = false,
+	val showDnd: Boolean = false,
+	val showDataSaver: Boolean = false,
+	val showRotate: Boolean = false,
+	val showTorch: Boolean = false,
+	val fontSizeSp: Int = 13,
+	val fontWeightName: String = "NORMAL",
+	val widgetSpacingDp: Int = 6
 ) {
 	/** Effective format honoring the seconds toggle. */
 	fun effectiveTimeFormat(): String =
@@ -185,6 +201,13 @@ data class OverlayPrefs(
 			.put(KEY_SHOW_GPS, showGps)
 			.put(KEY_SHOW_CALENDAR, showCalendar)
 			.put(KEY_SHOW_MEDIA, showMedia)
+			.put(KEY_SHOW_DND, showDnd)
+			.put(KEY_SHOW_DATA_SAVER, showDataSaver)
+			.put(KEY_SHOW_ROTATE, showRotate)
+			.put(KEY_SHOW_TORCH, showTorch)
+			.put(KEY_FONT_SIZE, fontSizeSp)
+			.put(KEY_FONT_WEIGHT, fontWeightName)
+			.put(KEY_WIDGET_SPACING, widgetSpacingDp)
 			.toString()
 
 	companion object {
@@ -192,6 +215,9 @@ data class OverlayPrefs(
 		const val PREFS_NAME = PREFS
 		const val DEFAULT_FORMAT_WITH_SECONDS = "HH:mm:ss"
 		const val DEFAULT_FORMAT_NO_SECONDS = "HH:mm"
+
+		/** Accepted values of [OverlayPrefs.fontWeightName]. */
+		private val FONT_WEIGHTS = setOf("NORMAL", "MEDIUM", "BOLD")
 
 		fun fromJson(raw: String): OverlayPrefs =
 			try {
@@ -235,7 +261,17 @@ data class OverlayPrefs(
 					showNfc = o.optBoolean(KEY_SHOW_NFC, false),
 					showGps = o.optBoolean(KEY_SHOW_GPS, false),
 					showCalendar = o.optBoolean(KEY_SHOW_CALENDAR, false),
-					showMedia = o.optBoolean(KEY_SHOW_MEDIA, false)
+					showMedia = o.optBoolean(KEY_SHOW_MEDIA, false),
+					showDnd = o.optBoolean(KEY_SHOW_DND, false),
+					showDataSaver = o.optBoolean(KEY_SHOW_DATA_SAVER, false),
+					showRotate = o.optBoolean(KEY_SHOW_ROTATE, false),
+					showTorch = o.optBoolean(KEY_SHOW_TORCH, false),
+					fontSizeSp = o.optInt(KEY_FONT_SIZE, 13).coerceIn(10, 20),
+					fontWeightName =
+						o.optString(KEY_FONT_WEIGHT, "NORMAL").let { weight ->
+							if (weight in FONT_WEIGHTS) weight else "NORMAL"
+						},
+					widgetSpacingDp = o.optInt(KEY_WIDGET_SPACING, 6).coerceIn(0, 12)
 				)
 			} catch (_: Exception) {
 				OverlayPrefs()

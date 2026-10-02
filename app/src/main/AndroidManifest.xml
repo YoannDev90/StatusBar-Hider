@@ -19,7 +19,7 @@
         android:required="false" />
 
     <application
-        android:label="StatusBar Hider"
+        android:label="@string/app_name"
         android:theme="@style/Theme.StatusBarHider">
 
         <activity
@@ -74,10 +74,37 @@
             android:name="dev.yoanndev90.statusbarhider.overlay.NotifListenerService"
             android:enabled="true"
             android:exported="false"
-            android:label="Custom bar notifications"
+            android:label="@string/notif_listener_label"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Quick Settings: hide / restore the system status bar. The service
+             icon doubles as the tile icon. -->
+        <service
+            android:name="dev.yoanndev90.statusbarhider.tiles.HideRestoreTile"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_hide"
+            android:label="@string/action_hide_status_bar"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Quick Settings: show / hide the custom Compose status bar. -->
+        <service
+            android:name="dev.yoanndev90.statusbarhider.tiles.CustomBarTile"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_tile_bar"
+            android:label="@string/tile_custom_bar"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
     </application>

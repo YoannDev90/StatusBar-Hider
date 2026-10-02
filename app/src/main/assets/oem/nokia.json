@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "name": "Nokia / HMD",
+  "untested": true,
+  "match": [
+    "nokia",
+    "hmd"
+  ],
+  "notes": [
+    "Android One / near-stock build - all three commands should apply.",
+    "List real icon slots on the device with `dumpsys statusbar | grep mSlot` and add any missing name to icon_blacklist."
+  ],
+  "hide": [
+    {
+      "name": "policy_control",
+      "cmd": "settings put global policy_control 'immersive.status=*'",
+      "description": "Enable immersive mode globally (status bar hidden, swipe-down preserved)",
+      "persistent": true
+    },
+    {
+      "name": "icon_blacklist",
+      "cmd": "settings put secure icon_blacklist phone_evdo_signal,data_connection,safezone,phone_signal,com.samsung.rcs,glove,frame_rate_mode,secure,battery,gesture,toddler,wearable_gear,cdma_eri,sync_failing,keyguard_wakeup,alarm,remote_call,dnd,smart_scroll,vowifi,left_clock_position,su,volte_call,wifi_calling,femtoicon,sync_active,phone_signal_second_stub,answering_memo,do_not_disturb,otg_mouse,knox_container,face,nfc_on,nosim,volte,smart_network,nfclock,ims_volte,private_mode,unicom_call,otg_keyboard,glove_mode,smart_bonding,felica_lock,clock,alarm_clock,wifi,zen,volume,mute,speakerphone,nfc,bluetooth,bluetooth_handsfree_battery,location,cast,ime,managed_profile,missed_call,gps,quiet,ble_unlock_mode,privacy_mode,call_record,mikey,headset,micphone,tty,wimax,airplane,hotspot,vpn,ethernet,mobile,rotate,data_saver,screen_record,nearby",
+      "description": "Hide 78 status bar icon slots",
+      "persistent": true
+    },
+    {
+      "name": "disable_flags",
+      "cmd": "cmd statusbar send-disable-flag system-icons clock notification-icons",
+      "description": "Suppress system, notification and clock icon groups (volatile, re-applied on boot)",
+      "persistent": false
+    }
+  ],
+  "restore": [
+    {
+      "name": "policy_control",
+      "cmd": "settings delete global policy_control"
+    },
+    {
+      "name": "icon_blacklist",
+      "cmd": "settings delete secure icon_blacklist"
+    },
+    {
+      "name": "disable_flags",
+      "cmd": "cmd statusbar send-disable-flag none"
+    }
+  ],
+  "status": [
+    {
+      "name": "policy_control",
+      "cmd": "settings get global policy_control"
+    },
+    {
+      "name": "icon_blacklist_size",
+      "cmd": "settings get secure icon_blacklist | wc -c",
+      "description": "Byte count of the blacklist (null/4 = key absent)"
+    },
+    {
+      "name": "mDisabled1",
+      "cmd": "dumpsys statusbar | grep -m1 mDisabled1",
+      "description": "Non-zero = disable flags are active"
+    }
+  ]
+}

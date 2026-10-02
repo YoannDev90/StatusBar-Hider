@@ -40,7 +40,7 @@ class BootReceiver : BroadcastReceiver() {
 					Log.i(TAG, "Shizuku ready - applying hide")
 					val oem = oemRepo.refresh()
 					for (cmd in oem.hide) {
-						val (_, out) = ShizukuCmd.run(cmd.cmd)
+						val (_, out) = ShizukuCmd.run(context, cmd.cmd)
 						Log.i(TAG, "${cmd.name} -> $out")
 					}
 					Log.i(TAG, "Auto-hide done")

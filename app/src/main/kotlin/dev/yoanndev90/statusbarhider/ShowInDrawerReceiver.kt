@@ -21,6 +21,6 @@ class ShowInDrawerReceiver : BroadcastReceiver() {
 			PackageManager.DONT_KILL_APP
 		)
 		Log.i("StatusBarHider", "Launcher icon re-enabled")
-		Toast.makeText(context, "Launcher icon restored", Toast.LENGTH_SHORT).show()
+		Toast.makeText(context, context.getString(R.string.toast_launcher_icon_restored), Toast.LENGTH_SHORT).show()
 	}
 }
