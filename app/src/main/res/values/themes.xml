@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Framework theme for the host Activity. Compose draws its own
+        Material 3 theme (see ui.theme); this only covers the window
+        background and removes the action bar. -->
+    <style name="Theme.StatusBarHider" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>

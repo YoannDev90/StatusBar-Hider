@@ -20,7 +20,7 @@
 
     <application
         android:label="StatusBar Hider"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.StatusBarHider">
 
         <activity
             android:name="dev.yoanndev90.statusbarhider.MainActivity"

@@ -102,12 +102,18 @@ StatusBar-Hider/
 ├── app/src/main/
 │   ├── assets/oem/                    # OEM command definitions (JSON)
 │   │   └── hyperos.json
-│   ├── java/.../
-│   │   ├── MainActivity.kt            # UI + button handlers
+│   ├── kotlin/.../
+│   │   ├── MainActivity.kt            # ComponentActivity + setContent
 │   │   ├── OemConfig.kt               # JSON loader + detection + data classes
 │   │   ├── ShizukuCmd.kt              # Shell command runner via Shizuku AIDL
 │   │   ├── BootReceiver.kt            # Auto-hide on BOOT_COMPLETED
-│   │   └── ShowInDrawerReceiver.kt    # Re-enable launcher via broadcast
+│   │   ├── ShowInDrawerReceiver.kt    # Re-enable launcher via broadcast
+│   │   ├── data/                      # Repositories (prefs/Shizuku/OEM) + CommandRunner
+│   │   ├── ui/                        # MainViewModel, MainScreen, sections, theme
+│   │   └── overlay/                   # Overlay service + OverlayBar composables + prefs
+│   ├── res/
+│   │   ├── drawable/                  # Overlay widget icons
+│   │   └── values/themes.xml          # Framework host theme (Compose draws its own)
 │   └── AndroidManifest.xml
 ├── keystore/                           # Release signing keystore (gitignored)
 ├── keystore.properties                 # Signing passwords (gitignored)
