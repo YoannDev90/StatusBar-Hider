@@ -236,6 +236,30 @@
             android:text="Next alarm" />
 
         <CheckBox
+            android:id="@+id/cbCalendar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Next calendar event (asks calendar permission)" />
+
+        <CheckBox
+            android:id="@+id/cbMedia"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Now playing (needs notification access)" />
+
+        <CheckBox
+            android:id="@+id/cbNfc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="NFC indicator" />
+
+        <CheckBox
+            android:id="@+id/cbGps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="GPS indicator" />
+
+        <CheckBox
             android:id="@+id/cbBandwidth"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

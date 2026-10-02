@@ -24,7 +24,10 @@ import rikka.shizuku.Shizuku
 class MainActivity : Activity() {
 	companion object {
 		private const val REQ_SHIZUKU = 1001
+		private const val REQ_CALENDAR = 1002
 	}
+
+	private var pendingCalendarToggle = false
 
 	private lateinit var statusView: TextView
 	private lateinit var logView: TextView
@@ -136,6 +139,21 @@ class MainActivity : Activity() {
 		bindOverlayCheck(R.id.cbAirplane, prefs.showAirplane) { copy(showAirplane = it) }
 		bindOverlayCheck(R.id.cbUsb, prefs.showUsb) { copy(showUsb = it) }
 		bindOverlayCheck(R.id.cbAlarm, prefs.showAlarm) { copy(showAlarm = it) }
+		bindOverlayCheck(R.id.cbMedia, prefs.showMedia) { copy(showMedia = it) }
+		bindOverlayCheck(R.id.cbNfc, prefs.showNfc) { copy(showNfc = it) }
+		bindOverlayCheck(R.id.cbGps, prefs.showGps) { copy(showGps = it) }
+		// Calendar needs a runtime permission: only save the toggle once granted.
+		findViewById<CheckBox>(R.id.cbCalendar).apply {
+			isChecked = prefs.showCalendar
+			setOnCheckedChangeListener { box, isChecked ->
+				if (isChecked && !hasCalendarPermission()) {
+					pendingCalendarToggle = true
+					requestPermissions(arrayOf(android.Manifest.permission.READ_CALENDAR), REQ_CALENDAR)
+				} else {
+					updateOverlayPrefs { copy(showCalendar = isChecked) }
+				}
+			}
+		}
 		bindOverlayCheck(R.id.cbBandwidth, prefs.showBandwidth) { copy(showBandwidth = it) }
 		bindOverlayCheck(R.id.cbBandwidthMerged, prefs.bandwidthMerged) { copy(bandwidthMerged = it) }
 		bindOverlayCheck(R.id.cbInteractive, prefs.interactive) { copy(interactive = it) }
@@ -219,7 +237,20 @@ class MainActivity : Activity() {
 			)
 			refreshStatus()
 		}
+		if (requestCode == REQ_CALENDAR && pendingCalendarToggle) {
+			pendingCalendarToggle = false
+			val granted = grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED
+			findViewById<CheckBox>(R.id.cbCalendar).isChecked = granted
+			if (granted) {
+				updateOverlayPrefs { copy(showCalendar = true) }
+			} else {
+				Toast.makeText(this, "Calendar permission denied", Toast.LENGTH_SHORT).show()
+			}
+		}
 	}
+
+	private fun hasCalendarPermission(): Boolean =
+		checkSelfPermission(android.Manifest.permission.READ_CALENDAR) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
 	private fun refreshStatus() {
 		val text =
