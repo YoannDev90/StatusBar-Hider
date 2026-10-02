@@ -113,6 +113,11 @@ Edit the file. The structure is:
 ```json
 {
   "name": "One UI",
+  "untested": true,
+  "match": ["samsung", "galaxy"],
+  "notes": [
+    "If the bar does not hide: `settings get global policy_control` returns null -> this key is ignored, rely on the other two commands."
+  ],
   "hide": [
     {
       "name": "policy_control",
@@ -151,6 +156,9 @@ Edit the file. The structure is:
 | Field | Required | Description |
 |---|---|---|
 | `name` | yes | Human-readable OEM name (shown in the UI and used for auto-detection) |
+| `untested` | no | `true` = commands were researched but never verified on a device. The UI shows an "untested" badge and the log prints a warning. Remove the flag (or set `false`) once someone tested it. Default: `false` |
+| `match` | no | Extra lowercase substrings checked against `Build.MANUFACTURER`/`BRAND`/`MODEL`/`PRODUCT`/`DISPLAY` during auto-detection (e.g. `["xiaomi", "redmi"]` for `hyperos.json`) |
+| `notes` | no | Short troubleshooting hints ("if it doesn't work, do X"). Logged in the app before the hide commands run |
 | `hide[].name` | yes | Short identifier (shown in logs) |
 | `hide[].cmd` | yes | Full shell command to run via Shizuku |
 | `hide[].description` | no | What this command does |
@@ -160,7 +168,19 @@ Edit the file. The structure is:
 | `status[].name` | yes | Short identifier for the status field |
 | `status[].cmd` | yes | Command that returns the current value |
 
-The app auto-detects the OEM by matching `Build.MANUFACTURER`, `BRAND`, `MODEL`, `PRODUCT`, and `DISPLAY` against the JSON file name (lowercase slug). The detection result is saved in SharedPreferences so the user can override it.
+The app auto-detects the OEM in three steps: saved selection > JSON file name substring >
+`match` substrings > fallback to `aosp.json` (generic defaults). The detection result is saved
+in SharedPreferences so the user can override it.
+
+### Untested configs
+
+Most OEM files ship as **untested defaults**: the standard AOSP trio
+(`policy_control` + `icon_blacklist` + `cmd statusbar send-disable-flag`) plus researched
+OEM notes. To promote a config to tested:
+
+1. Run it on the target device (Step 6).
+2. Fix the commands / slot names that don't apply.
+3. Set `"untested": false` (or drop the field) and note the verified device in `notes`.
 
 ## Step 6 — Test
 
@@ -174,7 +194,8 @@ The app auto-detects the OEM by matching `Build.MANUFACTURER`, `BRAND`, `MODEL`,
 
 - Keep one JSON file per OEM in `app/src/main/assets/oem/`.
 - File name = lowercase slug: `oneui.json`, `hyperos.json`, `stock.json`, etc.
-- The file name should match a substring of the device's `Build.MANUFACTURER`, `BRAND`, `MODEL`, `PRODUCT`, or `DISPLAY` for auto-detection to work.
+- Auto-detection must work: the file name should match a substring of the device's `Build.MANUFACTURER`, `BRAND`, `MODEL`, `PRODUCT`, or `DISPLAY`, otherwise add the substrings to the `match` array.
+- New configs start with `"untested": true` until someone verifies them on hardware.
 - If a command requires a specific Android version, mention it in `description`.
 
 ---
