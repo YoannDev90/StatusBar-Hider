@@ -4,6 +4,6 @@
         Material 3 theme (see ui.theme); this only covers the window
         background and removes the action bar. -->
     <style name="Theme.StatusBarHider" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowBackground">@color/window_background</item>
     </style>
 </resources>

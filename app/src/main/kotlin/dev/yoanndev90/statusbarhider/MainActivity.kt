@@ -4,6 +4,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -19,6 +20,7 @@ class MainActivity : ComponentActivity() {
 	companion object {
 		private const val REQ_SHIZUKU = 1001
 		private const val REQ_CALENDAR = 1002
+		private const val REQ_NOTIFICATIONS = 1003
 	}
 
 	private val vm: MainViewModel by viewModels()
@@ -41,6 +43,18 @@ class MainActivity : ComponentActivity() {
 		}
 
 		vm.refreshShizuku()
+		requestNotificationPermissionIfNeeded()
+	}
+
+	/**
+	 * The overlay runs as a foreground service: without POST_NOTIFICATIONS its
+	 * "custom bar active" notification is silently suppressed on API 33+.
+	 * A denial is fine (the service still runs), so no result handling.
+	 */
+	private fun requestNotificationPermissionIfNeeded() {
+		if (Build.VERSION.SDK_INT < 33) return
+		if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+		requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIFICATIONS)
 	}
 
 	override fun onRequestPermissionsResult(
