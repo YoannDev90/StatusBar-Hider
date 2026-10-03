@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.database.ContentObserver
 import android.graphics.PixelFormat
 import android.hardware.camera2.CameraManager
@@ -350,6 +351,12 @@ class StatusBarOverlayService : Service() {
 		return START_STICKY
 	}
 
+	/** Rotation / fold changes resize the display: re-resolve the cutout against the new screen. */
+	override fun onConfigurationChanged(newConfig: Configuration) {
+		super.onConfigurationChanged(newConfig)
+		handler.post { overlayView?.let { updateCamera(it) } }
+	}
+
 	private fun onPrefsChanged(next: OverlayPrefs) {
 		prefs = next
 		ensureWindowFlags()
@@ -531,10 +538,10 @@ class StatusBarOverlayService : Service() {
 			return
 		}
 		view.setOnApplyWindowInsetsListener { v, insets ->
-			updateCutout(v)
+			updateCamera(v)
 			insets
 		}
-		view.post { updateCutout(view) }
+		view.post { updateCamera(view) }
 	}
 
 	/**
@@ -569,11 +576,16 @@ class StatusBarOverlayService : Service() {
 		overlayViewModelStore = null
 	}
 
-	/** Side padding grows to clear a side-hugging cutout; top/bottom stay manual. */
-	private fun updateCutout(view: View) {
-		val side = InsetsUtils.sideCutoutWidthPx(view, resources.displayMetrics.widthPixels)
-		if (side != barState.sideCutoutPx) {
-			barState = barState.copy(sideCutoutPx = side)
+	/**
+	 * Resolves the cutout geometry (auto-detect + user correction, or manual
+	 * offsets) into the bar state; slot and progress ring both read it.
+	 */
+	private fun updateCamera(view: View) {
+		val wm = getSystemService(WindowManager::class.java) ?: return
+		val (width, height) = InsetsUtils.screenSize(wm, resources)
+		val geometry = InsetsUtils.resolveCamera(view, width, height, prefs)
+		if (geometry != barState.camera) {
+			barState = barState.copy(camera = geometry)
 		}
 	}
 
@@ -706,6 +718,7 @@ class StatusBarOverlayService : Service() {
 	}
 
 	private fun refreshAll() {
+		overlayView?.let { updateCamera(it) }
 		updateBattery()
 		updateNotifs()
 		updateCalendar()
@@ -744,7 +757,8 @@ class StatusBarOverlayService : Service() {
 	}
 
 	private fun updateNotifs() {
-		val enabled = prefs.showNotifs && NotifListenerService.isEnabled(this)
+		val listenerOn = NotifListenerService.isEnabled(this)
+		val enabled = prefs.showNotifs && listenerOn
 		val icons =
 			if (!enabled) {
 				emptyList()
@@ -758,7 +772,12 @@ class StatusBarOverlayService : Service() {
 					}
 				}
 			}
-		barState = barState.copy(notifsEnabled = enabled, notifs = icons)
+		val progress =
+			NotifIcons
+				.progress()
+				?.let { OverlayProgress(it.fraction, it.indeterminate, it.pkg) }
+				?.takeIf { listenerOn }
+		barState = barState.copy(notifsEnabled = enabled, notifs = icons, progress = progress)
 	}
 
 	/** Next calendar event in the next 24h as "HH:mm Title". */

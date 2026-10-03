@@ -61,6 +61,16 @@ private const val KEY_SHOW_TORCH = "show_torch"
 private const val KEY_FONT_SIZE = "font_size_sp"
 private const val KEY_FONT_WEIGHT = "font_weight"
 private const val KEY_WIDGET_SPACING = "widget_spacing_dp"
+private const val KEY_CAMERA_AUTO = "camera_auto_detect"
+private const val KEY_CAMERA_GAP = "camera_gap_dp"
+private const val KEY_CAMERA_NUDGE_X = "camera_nudge_x_dp"
+private const val KEY_CAMERA_NUDGE_Y = "camera_nudge_y_dp"
+private const val KEY_CAMERA_OFFSET_X = "camera_offset_x_pct"
+private const val KEY_CAMERA_OFFSET_Y = "camera_offset_y_dp"
+private const val KEY_CAMERA_SIZE = "camera_size_dp"
+private const val KEY_CAMERA_RING = "camera_ring"
+private const val KEY_CAMERA_RING_STROKE = "camera_ring_stroke_dp"
+private const val KEY_CAMERA_RING_COLOR = "camera_ring_color"
 
 /** Stable widget ids used for ordering. */
 object WidgetId {
@@ -217,7 +227,27 @@ data class OverlayPrefs(
 	@SerialName(KEY_FONT_WEIGHT)
 	val fontWeightName: String = "NORMAL",
 	@SerialName(KEY_WIDGET_SPACING)
-	val widgetSpacingDp: Int = 6
+	val widgetSpacingDp: Int = 6,
+	@SerialName(KEY_CAMERA_AUTO)
+	val cameraAutoDetect: Boolean = true,
+	@SerialName(KEY_CAMERA_GAP)
+	val cameraGapDp: Int = 4,
+	@SerialName(KEY_CAMERA_NUDGE_X)
+	val cameraNudgeXDp: Int = 0,
+	@SerialName(KEY_CAMERA_NUDGE_Y)
+	val cameraNudgeYDp: Int = 0,
+	@SerialName(KEY_CAMERA_OFFSET_X)
+	val cameraOffsetXPct: Int = 50,
+	@SerialName(KEY_CAMERA_OFFSET_Y)
+	val cameraOffsetYDp: Int = 12,
+	@SerialName(KEY_CAMERA_SIZE)
+	val cameraSizeDp: Int = 0,
+	@SerialName(KEY_CAMERA_RING)
+	val cameraRing: Boolean = true,
+	@SerialName(KEY_CAMERA_RING_STROKE)
+	val cameraRingStrokeDp: Int = 3,
+	@SerialName(KEY_CAMERA_RING_COLOR)
+	val cameraRingColor: String = ""
 ) {
 	/** Effective clock pattern honoring the seconds and 12 / 24-hour toggles. */
 	fun effectiveTimeFormat(): String =
@@ -259,6 +289,9 @@ data class OverlayPrefs(
 		/** Accepted values of [OverlayPrefs.fontWeightName]. */
 		private val FONT_WEIGHTS = setOf("NORMAL", "MEDIUM", "BOLD")
 
+		/** Stored ring colors are plain `#RRGGBB`; anything else falls back to the text color. */
+		private val RING_COLOR = Regex("^#[0-9A-Fa-f]{6}$")
+
 		/** Shared reader / writer for the stored blob. */
 		private val json = Json {
 			ignoreUnknownKeys = true
@@ -296,7 +329,15 @@ data class OverlayPrefs(
 				burnInMin = prefs.burnInMin.coerceIn(0, 30),
 				fontSizeSp = prefs.fontSizeSp.coerceIn(10, 20),
 				fontWeightName = prefs.fontWeightName.takeIf { it in FONT_WEIGHTS } ?: "NORMAL",
-				widgetSpacingDp = prefs.widgetSpacingDp.coerceIn(0, 12)
+				widgetSpacingDp = prefs.widgetSpacingDp.coerceIn(0, 12),
+				cameraGapDp = prefs.cameraGapDp.coerceIn(0, 16),
+				cameraNudgeXDp = prefs.cameraNudgeXDp.coerceIn(-48, 48),
+				cameraNudgeYDp = prefs.cameraNudgeYDp.coerceIn(-48, 48),
+				cameraOffsetXPct = prefs.cameraOffsetXPct.coerceIn(0, 100),
+				cameraOffsetYDp = prefs.cameraOffsetYDp.coerceIn(0, 60),
+				cameraSizeDp = prefs.cameraSizeDp.coerceIn(0, 40),
+				cameraRingStrokeDp = prefs.cameraRingStrokeDp.coerceIn(1, 8),
+				cameraRingColor = prefs.cameraRingColor.takeIf { RING_COLOR.matches(it) } ?: ""
 			)
 
 		fun load(context: Context): OverlayPrefs =
