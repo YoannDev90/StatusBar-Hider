@@ -55,11 +55,17 @@ class NotifListenerService : NotificationListenerService() {
 		sbn: StatusBarNotification,
 		pkg: String
 	): android.graphics.drawable.Drawable? {
-		try {
-			sbn.notification?.smallIcon?.let { icon ->
-				icon.loadDrawable(this)?.let { return it }
+		// Icon.loadDrawable() logs an E/Icon stacktrace *before* throwing when the
+		// emitting package is gone (uninstalled apps can keep stale notifications),
+		// and that log can't be caught. Only resolve the notification icon while
+		// the package still exists.
+		if (isInstalled(pm, pkg)) {
+			try {
+				sbn.notification?.smallIcon?.let { icon ->
+					icon.loadDrawable(this)?.let { return it }
+				}
+			} catch (_: Exception) {
 			}
-		} catch (_: Exception) {
 		}
 		return try {
 			pm.getApplicationIcon(pkg)
@@ -67,6 +73,18 @@ class NotifListenerService : NotificationListenerService() {
 			null
 		}
 	}
+
+	/** True when [pkg] is still installed (its `getApplicationInfo` resolves). */
+	private fun isInstalled(
+		pm: PackageManager,
+		pkg: String
+	): Boolean =
+		try {
+			pm.getApplicationInfo(pkg, 0)
+			true
+		} catch (_: Exception) {
+			false
+		}
 
 	companion object {
 		/** True when the user enabled notification access for this app. */
