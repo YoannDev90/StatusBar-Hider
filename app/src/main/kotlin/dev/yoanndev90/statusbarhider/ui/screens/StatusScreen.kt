@@ -1,17 +1,19 @@
-package dev.yoanndev90.statusbarhider.ui.sections
+package dev.yoanndev90.statusbarhider.ui.screens
 
 import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,8 +35,27 @@ import dev.yoanndev90.statusbarhider.ui.MainViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SectionHeader
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 
+/** Status bar page: device identification, Shizuku authorization and hide / restore commands. */
 @Composable
-fun HeaderSection(vm: MainViewModel) {
+fun StatusScreen(
+	vm: MainViewModel,
+	shizukuRequestCode: Int
+) {
+	Column(
+		modifier =
+			Modifier
+				.fillMaxSize()
+				.padding(horizontal = 24.dp)
+				.verticalScroll(rememberScrollState())
+	) {
+		HeaderSection(vm)
+		ShizukuSection(vm, shizukuRequestCode)
+		StatusBarSection(vm)
+	}
+}
+
+@Composable
+private fun HeaderSection(vm: MainViewModel) {
 	val state by vm.uiState.collectAsStateWithLifecycle()
 
 	Column(
@@ -42,16 +63,11 @@ fun HeaderSection(vm: MainViewModel) {
 		horizontalAlignment = Alignment.CenterHorizontally
 	) {
 		Text(
-			text = stringResource(R.string.app_name),
-			style = MaterialTheme.typography.headlineSmall,
-			textAlign = TextAlign.Center
-		)
-		Text(
 			text = state.oemName,
 			style = MaterialTheme.typography.bodySmall,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
 			textAlign = TextAlign.Center,
-			modifier = Modifier.padding(bottom = if (state.oemUntested) 0.dp else 16.dp)
+			modifier = Modifier.padding(top = 8.dp, bottom = if (state.oemUntested) 0.dp else 16.dp)
 		)
 		if (state.oemUntested) {
 			Text(
@@ -72,7 +88,7 @@ fun HeaderSection(vm: MainViewModel) {
 }
 
 @Composable
-fun ShizukuSection(
+private fun ShizukuSection(
 	vm: MainViewModel,
 	requestCode: Int
 ) {
@@ -93,18 +109,13 @@ fun ShizukuSection(
 }
 
 @Composable
-fun StatusBarSection(vm: MainViewModel) {
+private fun StatusBarSection(vm: MainViewModel) {
 	val state by vm.uiState.collectAsStateWithLifecycle()
 	val context = LocalContext.current
 	// Assets read once per composition subtree; the list only changes with an APK update.
 	val options = remember(context) { oemOptions(context) }
 
 	SectionHeader(stringResource(R.string.section_status_bar))
-	if (state.busy) {
-		LinearProgressIndicator(
-			modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
-		)
-	}
 	OemPicker(
 		currentId = state.oemId,
 		currentName = state.oemName,
