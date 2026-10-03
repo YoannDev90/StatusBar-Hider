@@ -3,8 +3,11 @@ package dev.yoanndev90.statusbarhider
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
 
 private const val PREFS_NAME = "statusbarhider"
 private const val PREF_OEM_ID = "oem_id"
@@ -13,6 +16,7 @@ class OemConfigException(
 	message: String
 ) : Exception(message)
 
+@Serializable
 data class OemCommand(
 	val name: String,
 	val cmd: String,
@@ -37,6 +41,12 @@ data class OemConfig(
 		/** Config used when no file matches the device (stock AOSP defaults). */
 		private const val DEFAULT_ID = "aosp"
 
+		/** Reader shared by every config file in assets/oem. */
+		private val json = Json {
+			ignoreUnknownKeys = true
+			coerceInputValues = true
+		}
+
 		fun listAvailable(context: Context): List<String> =
 			context.assets
 				.list("oem")
@@ -50,9 +60,13 @@ data class OemConfig(
 				.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 				.getString(PREF_OEM_ID, null)
 
+		/**
+		 * Saves the chosen config id; passing `null` forgets it so the next
+		 * [detect] runs a fresh detection.
+		 */
 		fun saveId(
 			context: Context,
-			id: String
+			id: String?
 		) {
 			context
 				.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -61,9 +75,28 @@ data class OemConfig(
 				.apply()
 		}
 
+		/**
+		 * Config id to use: the saved pick when it still exists among the
+		 * shipped configs (an app update can remove files), fresh detection
+		 * otherwise.
+		 */
 		fun detect(context: Context): String {
-			getSavedId(context)?.let { return it }
+			val saved = getSavedId(context)
 			val available = listAvailable(context)
+			if (saved != null) {
+				if (saved in available) return saved
+				Log.w(TAG, "Saved OEM config '$saved' no longer exists - re-detecting")
+			}
+			return detectFresh(context, available)
+		}
+
+		/** Runs detection from scratch, ignoring any saved id. */
+		fun detectFresh(context: Context): String = detectFresh(context, listAvailable(context))
+
+		private fun detectFresh(
+			context: Context,
+			available: List<String>
+		): String {
 			if (available.isEmpty()) {
 				error("No OEM config files found in assets/oem/")
 			}
@@ -112,9 +145,11 @@ data class OemConfig(
 			id: String,
 			raw: String
 		): OemConfig {
-			val json = JSONObject(raw)
+			val root = json.parseToJsonElement(raw).jsonObject
 
-			val schemaVersion = json.optInt("schema_version", 0)
+			// Read before decoding so a too-new config is rejected with a clear
+			// message instead of a plain decoding error.
+			val schemaVersion = (root["schema_version"] as? JsonPrimitive)?.intOrNull ?: 0
 			if (schemaVersion > CURRENT_SCHEMA_VERSION) {
 				throw OemConfigException(
 					"OEM config $id requires schema_version $schemaVersion, " +
@@ -122,29 +157,17 @@ data class OemConfig(
 				)
 			}
 
-			fun parseCommands(arr: JSONArray): List<OemCommand> =
-				(0 until arr.length()).map { i ->
-					val o = arr.getJSONObject(i)
-					OemCommand(
-						name = o.getString("name"),
-						cmd = o.getString("cmd"),
-						description = o.optString("description", ""),
-						persistent = o.optBoolean("persistent", true)
-					)
-				}
-
-			fun parseStringList(arr: JSONArray?): List<String> =
-				arr?.let { a -> (0 until a.length()).map { i -> a.getString(i) } } ?: emptyList()
+			val file = json.decodeFromJsonElement(OemConfigFile.serializer(), root)
 
 			return OemConfig(
 				id = id,
-				name = json.getString("name"),
-				untested = json.optBoolean("untested", false),
-				match = parseStringList(json.optJSONArray("match")).map { it.lowercase() },
-				notes = parseStringList(json.optJSONArray("notes")),
-				hide = parseCommands(json.getJSONArray("hide")),
-				restore = parseCommands(json.getJSONArray("restore")),
-				status = parseCommands(json.getJSONArray("status"))
+				name = file.name,
+				untested = file.untested,
+				match = file.match.map { it.lowercase() },
+				notes = file.notes,
+				hide = file.hide,
+				restore = file.restore,
+				status = file.status
 			)
 		}
 
@@ -159,3 +182,15 @@ data class OemConfig(
 			)
 	}
 }
+
+/** On-disk shape of a config file under assets/oem; `id` comes from the file name. */
+@Serializable
+private data class OemConfigFile(
+	val name: String,
+	val untested: Boolean = false,
+	val match: List<String> = emptyList(),
+	val notes: List<String> = emptyList(),
+	val hide: List<OemCommand>,
+	val restore: List<OemCommand>,
+	val status: List<OemCommand>
+)

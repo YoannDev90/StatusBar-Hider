@@ -3,11 +3,25 @@ package dev.yoanndev90.statusbarhider.overlay
 import android.content.Context
 import android.content.SharedPreferences
 import dev.yoanndev90.statusbarhider.R
-import org.json.JSONObject
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 internal const val PREFS = "overlay_prefs"
 private const val KEY_ENABLED = "enabled"
 private const val KEY_SHOW_SECONDS = "show_seconds"
+private const val KEY_USE_24H = "use_24h"
+private const val KEY_SHOW_ON_LOCK_SCREEN = "show_on_lock_screen"
+private const val KEY_AUTO_HIDE_BOOT = "auto_hide_boot"
 private const val KEY_SHOW_BATTERY = "show_battery"
 private const val KEY_SHOW_BATTERY_PCT = "show_battery_pct"
 private const val KEY_SHOW_WIFI = "show_wifi"
@@ -87,6 +101,7 @@ object WidgetId {
 	}
 }
 
+@Serializable
 enum class OverlayBackground {
 	TRANSPARENT,
 	SEMI,
@@ -94,65 +109,126 @@ enum class OverlayBackground {
 }
 
 /**
+ * Keeps [OverlayPrefs.widgetOrder] stored as the legacy comma-separated string
+ * instead of a JSON array, so older builds can still read it.
+ */
+private object WidgetOrderSerializer : KSerializer<List<String>> {
+	override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("widgetOrder", PrimitiveKind.STRING)
+
+	override fun serialize(
+		encoder: Encoder,
+		value: List<String>
+	) {
+		encoder.encodeString(value.joinToString(","))
+	}
+
+	override fun deserialize(decoder: Decoder): List<String> = WidgetId.parseOrder(decoder.decodeString())
+}
+
+/**
  * Persisted config for the overlay bar. Backed by SharedPreferences so
  * BootReceiver can re-apply it without UI.
  */
+@Serializable
 data class OverlayPrefs(
+	@SerialName(KEY_ENABLED)
 	val enabled: Boolean = false,
+	@SerialName(KEY_SHOW_SECONDS)
 	val showSeconds: Boolean = false,
-	val timeFormat: String = DEFAULT_FORMAT_NO_SECONDS,
+	@SerialName(KEY_USE_24H)
+	val use24h: Boolean = true,
+	@SerialName(KEY_SHOW_BATTERY)
 	val showBattery: Boolean = true,
+	@SerialName(KEY_SHOW_BATTERY_PCT)
 	val showBatteryPct: Boolean = true,
+	@SerialName(KEY_SHOW_WIFI)
 	val showWifi: Boolean = true,
+	@SerialName(KEY_SHOW_MOBILE)
 	val showMobileData: Boolean = true,
+	@SerialName(KEY_SHOW_BLUETOOTH)
 	val showBluetooth: Boolean = true,
+	@SerialName(KEY_SHOW_AIRPLANE)
 	val showAirplane: Boolean = true,
+	@SerialName(KEY_SHOW_VPN)
 	val showVpn: Boolean = false,
+	@SerialName(KEY_SHOW_HOTSPOT)
 	val showHotspot: Boolean = false,
+	@SerialName(KEY_SHOW_ALARM)
 	val showAlarm: Boolean = true,
+	@SerialName(KEY_SHOW_BANDWIDTH)
 	val showBandwidth: Boolean = false,
+	@SerialName(KEY_BANDWIDTH_MERGED)
 	val bandwidthMerged: Boolean = false,
+	@SerialName(KEY_UPDATE_INTERVAL_SEC)
 	val updateIntervalSec: Int = 15,
+	@SerialName(KEY_BACKGROUND)
 	val background: OverlayBackground = OverlayBackground.SEMI,
+	@SerialName(KEY_DARK_TEXT)
 	val darkText: Boolean = false,
+	@SerialName(KEY_SHOW_USB)
 	val showUsb: Boolean = true,
+	@SerialName(KEY_PAD_START)
 	val padStartDp: Int = 12,
+	@SerialName(KEY_PAD_TOP)
 	val padTopDp: Int = 4,
+	@SerialName(KEY_PAD_END)
 	val padEndDp: Int = 12,
+	@SerialName(KEY_PAD_BOTTOM)
 	val padBottomDp: Int = 4,
+	@SerialName(KEY_SHOW_DATE)
 	val showDate: Boolean = true,
+	@SerialName(KEY_DATE_FORMAT)
 	val dateFormat: String = "EEE dd MMM",
+	@SerialName(KEY_SHOW_BATTERY_ICON)
 	val showBatteryIcon: Boolean = true,
+	@SerialName(KEY_SHOW_NOTIFS)
 	val showNotifs: Boolean = true,
+	@SerialName(KEY_MAX_NOTIFS)
 	val maxNotifs: Int = 5,
+	@SerialName(KEY_WIDGET_ORDER)
+	@Serializable(with = WidgetOrderSerializer::class)
 	val widgetOrder: List<String> = WidgetId.DEFAULT_ORDER,
+	@SerialName(KEY_BURN_IN_MIN)
 	val burnInMin: Int = 5,
+	@SerialName(KEY_INTERACTIVE)
 	val interactive: Boolean = false,
+	@SerialName(KEY_SHOW_ON_LOCK_SCREEN)
+	val showOnLockScreen: Boolean = true,
+	@SerialName(KEY_AUTO_HIDE_BOOT)
+	val autoHideBoot: Boolean = true,
+	@SerialName(KEY_SHOW_NFC)
 	val showNfc: Boolean = false,
+	@SerialName(KEY_SHOW_GPS)
 	val showGps: Boolean = false,
+	@SerialName(KEY_SHOW_CALENDAR)
 	val showCalendar: Boolean = false,
+	@SerialName(KEY_SHOW_MEDIA)
 	val showMedia: Boolean = false,
+	@SerialName(KEY_SHOW_DND)
 	val showDnd: Boolean = false,
+	@SerialName(KEY_SHOW_DATA_SAVER)
 	val showDataSaver: Boolean = false,
+	@SerialName(KEY_SHOW_ROTATE)
 	val showRotate: Boolean = false,
+	@SerialName(KEY_SHOW_TORCH)
 	val showTorch: Boolean = false,
+	@SerialName(KEY_FONT_SIZE)
 	val fontSizeSp: Int = 13,
+	@SerialName(KEY_FONT_WEIGHT)
 	val fontWeightName: String = "NORMAL",
+	@SerialName(KEY_WIDGET_SPACING)
 	val widgetSpacingDp: Int = 6
 ) {
-	/** Effective format honoring the seconds toggle. */
+	/** Effective clock pattern honoring the seconds and 12 / 24-hour toggles. */
 	fun effectiveTimeFormat(): String =
-		if (showSeconds) {
-			if (timeFormat.contains("ss")) timeFormat else "$timeFormat:ss"
-		} else {
-			timeFormat
-				.replace(":ss", "")
-				.replace("ss", "")
-				.trim()
-				.ifEmpty { DEFAULT_FORMAT_NO_SECONDS }
+		when {
+			use24h && showSeconds -> DEFAULT_FORMAT_WITH_SECONDS
+			use24h -> DEFAULT_FORMAT_NO_SECONDS
+			showSeconds -> FORMAT_12H_WITH_SECONDS
+			else -> FORMAT_12H
 		}
 
-	fun hasSeconds(): Boolean = effectiveTimeFormat().contains("ss")
+	fun hasSeconds(): Boolean = showSeconds
 
 	/** ARGB background for the overlay root. */
 	fun backgroundColor(): Int =
@@ -165,117 +241,63 @@ data class OverlayPrefs(
 	/** Text color honoring the dark-text toggle (for transparent bar over light apps). */
 	fun textColor(): Int = if (darkText) android.graphics.Color.BLACK else android.graphics.Color.WHITE
 
-	fun toJson(): String =
-		JSONObject()
-			.put(KEY_ENABLED, enabled)
-			.put(KEY_SHOW_SECONDS, showSeconds)
-			.put(KEY_TIME_FORMAT, timeFormat)
-			.put(KEY_SHOW_BATTERY, showBattery)
-			.put(KEY_SHOW_BATTERY_PCT, showBatteryPct)
-			.put(KEY_SHOW_WIFI, showWifi)
-			.put(KEY_SHOW_MOBILE, showMobileData)
-			.put(KEY_SHOW_BLUETOOTH, showBluetooth)
-			.put(KEY_SHOW_AIRPLANE, showAirplane)
-			.put(KEY_SHOW_VPN, showVpn)
-			.put(KEY_SHOW_HOTSPOT, showHotspot)
-			.put(KEY_SHOW_ALARM, showAlarm)
-			.put(KEY_SHOW_BANDWIDTH, showBandwidth)
-			.put(KEY_BANDWIDTH_MERGED, bandwidthMerged)
-			.put(KEY_UPDATE_INTERVAL_SEC, updateIntervalSec)
-			.put(KEY_BACKGROUND, background.name)
-			.put(KEY_DARK_TEXT, darkText)
-			.put(KEY_SHOW_USB, showUsb)
-			.put(KEY_PAD_START, padStartDp)
-			.put(KEY_PAD_TOP, padTopDp)
-			.put(KEY_PAD_END, padEndDp)
-			.put(KEY_PAD_BOTTOM, padBottomDp)
-			.put(KEY_SHOW_DATE, showDate)
-			.put(KEY_DATE_FORMAT, dateFormat)
-			.put(KEY_SHOW_BATTERY_ICON, showBatteryIcon)
-			.put(KEY_SHOW_NOTIFS, showNotifs)
-			.put(KEY_MAX_NOTIFS, maxNotifs)
-			.put(KEY_WIDGET_ORDER, widgetOrder.joinToString(","))
-			.put(KEY_BURN_IN_MIN, burnInMin)
-			.put(KEY_INTERACTIVE, interactive)
-			.put(KEY_SHOW_NFC, showNfc)
-			.put(KEY_SHOW_GPS, showGps)
-			.put(KEY_SHOW_CALENDAR, showCalendar)
-			.put(KEY_SHOW_MEDIA, showMedia)
-			.put(KEY_SHOW_DND, showDnd)
-			.put(KEY_SHOW_DATA_SAVER, showDataSaver)
-			.put(KEY_SHOW_ROTATE, showRotate)
-			.put(KEY_SHOW_TORCH, showTorch)
-			.put(KEY_FONT_SIZE, fontSizeSp)
-			.put(KEY_FONT_WEIGHT, fontWeightName)
-			.put(KEY_WIDGET_SPACING, widgetSpacingDp)
-			.toString()
+	fun toJson(): String {
+		val encoded = json.encodeToJsonElement(OverlayPrefs.serializer(), this).jsonObject
+		// Legacy key kept for downgrade compatibility; mirrors the effective pattern.
+		val withLegacy = JsonObject(encoded + (KEY_TIME_FORMAT to JsonPrimitive(effectiveTimeFormat())))
+		return json.encodeToString(JsonObject.serializer(), withLegacy)
+	}
 
 	companion object {
 		/** SharedPreferences file name, shared with [dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository]. */
 		const val PREFS_NAME = PREFS
 		const val DEFAULT_FORMAT_WITH_SECONDS = "HH:mm:ss"
 		const val DEFAULT_FORMAT_NO_SECONDS = "HH:mm"
+		const val FORMAT_12H = "h:mm a"
+		const val FORMAT_12H_WITH_SECONDS = "h:mm:ss a"
 
 		/** Accepted values of [OverlayPrefs.fontWeightName]. */
 		private val FONT_WEIGHTS = setOf("NORMAL", "MEDIUM", "BOLD")
 
+		/** Shared reader / writer for the stored blob. */
+		private val json = Json {
+			ignoreUnknownKeys = true
+			coerceInputValues = true
+			encodeDefaults = true
+		}
+
 		fun fromJson(raw: String): OverlayPrefs =
 			try {
-				val o = JSONObject(raw)
-				OverlayPrefs(
-					enabled = o.optBoolean(KEY_ENABLED, false),
-					showSeconds = o.optBoolean(KEY_SHOW_SECONDS, false),
-					timeFormat = o.optString(KEY_TIME_FORMAT, DEFAULT_FORMAT_NO_SECONDS),
-					showBattery = o.optBoolean(KEY_SHOW_BATTERY, true),
-					showBatteryPct = o.optBoolean(KEY_SHOW_BATTERY_PCT, true),
-					showWifi = o.optBoolean(KEY_SHOW_WIFI, true),
-					showMobileData = o.optBoolean(KEY_SHOW_MOBILE, true),
-					showBluetooth = o.optBoolean(KEY_SHOW_BLUETOOTH, true),
-					showAirplane = o.optBoolean(KEY_SHOW_AIRPLANE, true),
-					showVpn = o.optBoolean(KEY_SHOW_VPN, false),
-					showHotspot = o.optBoolean(KEY_SHOW_HOTSPOT, false),
-					showAlarm = o.optBoolean(KEY_SHOW_ALARM, true),
-					showBandwidth = o.optBoolean(KEY_SHOW_BANDWIDTH, false),
-					bandwidthMerged = o.optBoolean(KEY_BANDWIDTH_MERGED, false),
-					updateIntervalSec = o.optInt(KEY_UPDATE_INTERVAL_SEC, 15).coerceIn(5, 60),
-					background =
-						try {
-							OverlayBackground.valueOf(o.optString(KEY_BACKGROUND, OverlayBackground.SEMI.name))
-						} catch (_: Exception) {
-							OverlayBackground.SEMI
-						},
-					darkText = o.optBoolean(KEY_DARK_TEXT, false),
-					showUsb = o.optBoolean(KEY_SHOW_USB, true),
-					padStartDp = o.optInt(KEY_PAD_START, 12).coerceIn(0, 32),
-					padTopDp = o.optInt(KEY_PAD_TOP, 4).coerceIn(0, 32),
-					padEndDp = o.optInt(KEY_PAD_END, 12).coerceIn(0, 32),
-					padBottomDp = o.optInt(KEY_PAD_BOTTOM, 4).coerceIn(0, 32),
-					showDate = o.optBoolean(KEY_SHOW_DATE, true),
-					dateFormat = o.optString(KEY_DATE_FORMAT, "EEE dd MMM").ifEmpty { "EEE dd MMM" },
-					showBatteryIcon = o.optBoolean(KEY_SHOW_BATTERY_ICON, true),
-					showNotifs = o.optBoolean(KEY_SHOW_NOTIFS, true),
-					maxNotifs = o.optInt(KEY_MAX_NOTIFS, 5).coerceIn(1, 8),
-					widgetOrder = WidgetId.parseOrder(o.optString(KEY_WIDGET_ORDER, "").ifEmpty { null }),
-					burnInMin = o.optInt(KEY_BURN_IN_MIN, 5).coerceIn(0, 30),
-					interactive = o.optBoolean(KEY_INTERACTIVE, false),
-					showNfc = o.optBoolean(KEY_SHOW_NFC, false),
-					showGps = o.optBoolean(KEY_SHOW_GPS, false),
-					showCalendar = o.optBoolean(KEY_SHOW_CALENDAR, false),
-					showMedia = o.optBoolean(KEY_SHOW_MEDIA, false),
-					showDnd = o.optBoolean(KEY_SHOW_DND, false),
-					showDataSaver = o.optBoolean(KEY_SHOW_DATA_SAVER, false),
-					showRotate = o.optBoolean(KEY_SHOW_ROTATE, false),
-					showTorch = o.optBoolean(KEY_SHOW_TORCH, false),
-					fontSizeSp = o.optInt(KEY_FONT_SIZE, 13).coerceIn(10, 20),
-					fontWeightName =
-						o.optString(KEY_FONT_WEIGHT, "NORMAL").let { weight ->
-							if (weight in FONT_WEIGHTS) weight else "NORMAL"
-						},
-					widgetSpacingDp = o.optInt(KEY_WIDGET_SPACING, 6).coerceIn(0, 12)
-				)
+				val root = json.parseToJsonElement(raw)
+				// Builds older than the 12 / 24-hour toggle stored a raw pattern
+				// under KEY_TIME_FORMAT; "h:mm ..." means the user had a 12h clock.
+				val input =
+					if (root is JsonObject && KEY_USE_24H !in root) {
+						val legacyFormat = (root[KEY_TIME_FORMAT] as? JsonPrimitive)?.content.orEmpty()
+						JsonObject(root + (KEY_USE_24H to JsonPrimitive(!legacyFormat.contains("h:mm"))))
+					} else {
+						root
+					}
+				normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), input))
 			} catch (_: Exception) {
 				OverlayPrefs()
 			}
+
+		/** Clamps free-form fields the way the old per-key opt* parser did. */
+		private fun normalize(prefs: OverlayPrefs): OverlayPrefs =
+			prefs.copy(
+				updateIntervalSec = prefs.updateIntervalSec.coerceIn(5, 60),
+				padStartDp = prefs.padStartDp.coerceIn(0, 32),
+				padTopDp = prefs.padTopDp.coerceIn(0, 32),
+				padEndDp = prefs.padEndDp.coerceIn(0, 32),
+				padBottomDp = prefs.padBottomDp.coerceIn(0, 32),
+				dateFormat = prefs.dateFormat.ifEmpty { "EEE dd MMM" },
+				maxNotifs = prefs.maxNotifs.coerceIn(1, 8),
+				burnInMin = prefs.burnInMin.coerceIn(0, 30),
+				fontSizeSp = prefs.fontSizeSp.coerceIn(10, 20),
+				fontWeightName = prefs.fontWeightName.takeIf { it in FONT_WEIGHTS } ?: "NORMAL",
+				widgetSpacingDp = prefs.widgetSpacingDp.coerceIn(0, 12)
+			)
 
 		fun load(context: Context): OverlayPrefs =
 			load(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE))
