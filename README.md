@@ -14,9 +14,13 @@ The app reads OEM-specific commands from JSON files in `app/src/main/assets/oem/
 ## Quick start
 
 ```bash
-mise install            # install Java 21, Gradle 8.8, Android SDK
+mise install            # install dev tooling (pre-commit, ktlint)
 mise run install        # build + install release APK on device
 ```
+
+Building needs a **JDK 21** and an **Android SDK** (`ANDROID_HOME`) with the
+`platforms;android-37.0` and `build-tools;37.0.0` packages - neither is
+installed by mise.
 
 ## Mise tasks
 
@@ -35,13 +39,13 @@ mise run install        # build + install release APK on device
 ## Build without mise
 
 ```bash
-gradle assembleRelease
+./gradlew assembleRelease
 ```
 
 Requires `ANDROID_HOME` to be set and the following SDK components installed:
 
-- `platforms;android-35`
-- `build-tools;34.0.0` (or higher)
+- `platforms;android-37.0`
+- `build-tools;37.0.0` (or higher)
 
 ## Signing
 
@@ -80,21 +84,23 @@ keyPassword=<password>
 3. **Check state** -- reads back the current values of those settings.
 4. **Restore** -- deletes the settings keys and clears the disable flags.
 
-All commands are OEM-specific. The JSON files in `app/src/main/assets/oem/` define which commands to run. The app auto-detects the OEM from `Build.MANUFACTURER`/`BRAND`/`MODEL`/`DISPLAY` and saves the selection in SharedPreferences. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to discover commands on a new device.
+All commands are OEM-specific. The JSON files in `app/src/main/assets/oem/` define which commands to run. The app auto-detects the OEM from `Build.MANUFACTURER`/`BRAND`/`MODEL`/`DISPLAY` on first launch and saves the pick; the **Config** dropdown under `STATUS BAR` overrides it and **Re-detect OEM** re-runs detection. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to discover commands on a new device.
 
 ## App features
 
-- **Auto OEM detection** -- matches system properties against available JSON configs on first launch.
+- **Custom status bar overlay** -- a Compose bar with clock, date, battery, connectivity, notification and media widgets. Stays visible over the **lock screen** (toggleable) and shows over the system bar while it is hidden.
+- **Auto OEM detection** -- matches system properties against available JSON configs on first launch; override or re-detect from the UI.
 - **Untested badge** -- configs that were only researched online are labelled `untested` in the header; their troubleshooting notes are printed in the log before the commands run.
 - **Hide from launcher** -- disables the launcher activity so the app disappears from the app drawer. Re-access via `mise run show-in-drawer` or Settings > Apps > StatusBar Hider.
-- **Boot auto-hide** -- a `BOOT_COMPLETED` receiver re-applies the hide commands on reboot (requires "Start on boot" enabled in Shizuku settings).
-- **Export logs** -- copies the log output to the clipboard.
+- **Boot auto-hide** -- a `BOOT_COMPLETED` receiver re-applies the hide commands on reboot (requires "Start on boot" enabled in Shizuku settings). Disable it with the "Auto-hide after reboot" switch.
+- **Export / share logs** -- copies the log to the clipboard, or shares it as a file (the last 500 timestamped lines are kept on disk, including boot-time output).
 - **Log panel** -- shows the output of every command for debugging.
 
 ## Known limitations
 
 - Disable flags (`cmd statusbar send-disable-flag`) are volatile and reset on reboot / SystemUI restart. The `BOOT_COMPLETED` receiver handles this automatically, but **Shizuku must be configured to start on boot**.
-- `ShizukuCmd` calls `IShizukuService.newProcess()` directly via the `aidl` artifact instead of the deprecated `Shizuku.newProcess()` method (private since Shizuku 13.1.5). Stdout is read via `ParcelFileDescriptor.AutoCloseInputStream` with a timeout to avoid pipe deadlocks.
+- `ShizukuCmd` calls `IShizukuService.newProcess()` directly via the `aidl` artifact instead of the deprecated `Shizuku.newProcess()` method (private since Shizuku 13.1.5). Stdout and stderr are drained concurrently with a timeout to avoid pipe deadlocks, and the **exit code is honoured** (a failing command is reported as `FAILED`, not silently swallowed).
+- The overlay uses `FLAG_SHOW_WHEN_LOCKED` to draw above the keyguard; without the toggle it behaves like a normal overlay window.
 
 ## Credits
 

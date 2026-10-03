@@ -1,5 +1,6 @@
-# Project toolchain — `mise install` then `mise run build`.
-# AGP 8.5.2 requires Gradle >= 8.7; Kotlin 2.0.20 is fully tested on 8.8.
+# Project tooling — `mise install` then `mise run build`.
+# Only git hooks and the formatter live here; the build itself needs a JDK 21
+# and an Android SDK (ANDROID_HOME), see README.md.
 [tools]
 pre-commit = "latest"
 ktlint = "latest"
@@ -40,7 +41,7 @@ run = "adb devices"
 
 [tasks.logcat]
 description = "Stream logcat for StatusBarHider"
-run = "adb logcat -s StatusBarHider:* ActivityManager:*"
+run = "adb logcat -s StatusBarHider:* CustomBar:* ShizukuCmd:* QSTile:* OemConfig:* LogStore:*"
 
 [tasks.show-in-drawer]
 description = "Re-enable the launcher icon (reverse 'Hide from launcher')"

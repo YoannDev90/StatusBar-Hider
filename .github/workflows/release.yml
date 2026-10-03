@@ -17,10 +17,16 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      # The runner image ships an Android SDK, but not necessarily the
+      # compileSdk platform / build-tools this project needs. AGP downloads
+      # missing packages itself once the licenses are accepted.
+      - name: Accept Android SDK licenses
+        run: yes | sdkmanager --licenses > /dev/null || true
 
       - name: Decode keystore
         run: |
@@ -32,7 +38,7 @@ jobs:
           echo "keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}" >> keystore.properties
 
       - name: Build release APK
-        run: gradle assembleRelease
+        run: ./gradlew assembleRelease
 
       - name: Create release
         uses: softprops/action-gh-release@v2

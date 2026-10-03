@@ -162,15 +162,17 @@ Edit the file. The structure is:
 | `hide[].name` | yes | Short identifier (shown in logs) |
 | `hide[].cmd` | yes | Full shell command to run via Shizuku |
 | `hide[].description` | no | What this command does |
-| `hide[].persistent` | no | `true` = survives reboot, `false` = lost on reboot (default: `true`) |
+| `hide[].persistent` | no | Documentation-only flag: `true` = the setting survives a reboot, `false` = it is lost (default: `true`). The app currently runs every command regardless - the boot receiver re-applies all of them |
 | `restore[].name` | yes | Must match the corresponding `hide[]` name |
 | `restore[].cmd` | yes | Command to undo the hide |
 | `status[].name` | yes | Short identifier for the status field |
 | `status[].cmd` | yes | Command that returns the current value |
 
-The app auto-detects the OEM in three steps: saved selection > JSON file name substring >
-`match` substrings > fallback to `aosp.json` (generic defaults). The detection result is saved
-in SharedPreferences so the user can override it.
+The app auto-detects the OEM in three steps: JSON file name substring >
+`match` substrings > fallback to `aosp.json` (generic defaults). The result is saved in
+SharedPreferences, so the next launch skips detection; the **Config** dropdown under
+`STATUS BAR` overrides it and **Re-detect OEM** forgets the saved pick and runs detection
+again (a saved id that no longer exists in `assets/oem/` is re-detected automatically).
 
 ### Untested configs
 
