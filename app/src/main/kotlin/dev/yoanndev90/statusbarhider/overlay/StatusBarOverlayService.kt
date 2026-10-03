@@ -70,6 +70,12 @@ class StatusBarOverlayService : Service() {
 		private const val TAG = "CustomBar"
 		private const val NOTIF_ID = 1001
 		private const val CHANNEL_ID = "overlay"
+
+		/**
+		 * Slider drags change a pref every frame; coalescing the resulting
+		 * [refreshAll] calls keeps six widget refreshes off the frame budget.
+		 */
+		private const val REFRESH_DEBOUNCE_MS = 100L
 		const val ACTION_STOP = "dev.yoanndev90.statusbarhider.overlay.STOP"
 
 		fun start(context: Context) {
@@ -310,6 +316,8 @@ class StatusBarOverlayService : Service() {
 			}
 		}
 
+	private val refreshAllRunnable = Runnable { refreshAll() }
+
 	override fun onBind(intent: Intent?): IBinder? = null
 
 	override fun onCreate() {
@@ -348,7 +356,10 @@ class StatusBarOverlayService : Service() {
 		if (next.showMedia) ensureMediaSessions()
 		scheduleBandwidth()
 		scheduleBurnIn()
-		refreshAll()
+		// Trailing-edge debounce: a slider drag calls this per frame, and
+		// refreshAll() itself runs six widget updates.
+		handler.removeCallbacks(refreshAllRunnable)
+		handler.postDelayed(refreshAllRunnable, REFRESH_DEBOUNCE_MS)
 	}
 
 	/** Re-attaches the overlay when a toggle changed window flags (touchability, lock screen). */

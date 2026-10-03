@@ -155,8 +155,13 @@ class MainViewModel(
 	}
 
 	fun updatePrefs(transform: OverlayPrefs.() -> OverlayPrefs) {
+		// Sliders emit on every frame: restarting the already-running service
+		// each time is a startForegroundService() binder round-trip per tick.
+		// Only the off -> on edge needs it; setOverlayEnabled / BootReceiver
+		// / the tile own the other transitions.
+		val wasEnabled = prefsRepo.state.value.enabled
 		val updated = prefsRepo.update(transform)
-		if (updated.enabled) StatusBarOverlayService.start(getApplication())
+		if (updated.enabled && !wasEnabled) StatusBarOverlayService.start(getApplication())
 	}
 
 	fun setOverlayEnabled(enabled: Boolean) {
