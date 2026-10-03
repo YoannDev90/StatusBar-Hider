@@ -1,8 +1,9 @@
-package dev.yoanndev90.statusbarhider
+package dev.yoanndev90.statusbarhider.core.oem
 
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import dev.yoanndev90.statusbarhider.R
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive

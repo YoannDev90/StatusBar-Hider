@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.ui.navigation
+package dev.yoanndev90.statusbarhider.ui.shell
 
 import androidx.annotation.DrawableRes
 import dev.yoanndev90.statusbarhider.R

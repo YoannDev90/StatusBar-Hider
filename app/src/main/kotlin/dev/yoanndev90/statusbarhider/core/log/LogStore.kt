@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.log
+package dev.yoanndev90.statusbarhider.core.log
 
 import android.content.Context
 import android.content.Intent

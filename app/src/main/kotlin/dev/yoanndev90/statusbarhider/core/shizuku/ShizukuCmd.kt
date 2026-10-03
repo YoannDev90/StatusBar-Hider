@@ -1,8 +1,9 @@
-package dev.yoanndev90.statusbarhider
+package dev.yoanndev90.statusbarhider.core.shizuku
 
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.util.Log
+import dev.yoanndev90.statusbarhider.R
 import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 import java.util.concurrent.ExecutionException

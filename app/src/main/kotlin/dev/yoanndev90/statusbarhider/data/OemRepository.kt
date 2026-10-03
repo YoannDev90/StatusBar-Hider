@@ -1,7 +1,7 @@
 package dev.yoanndev90.statusbarhider.data
 
 import android.content.Context
-import dev.yoanndev90.statusbarhider.OemConfig
+import dev.yoanndev90.statusbarhider.core.oem.OemConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

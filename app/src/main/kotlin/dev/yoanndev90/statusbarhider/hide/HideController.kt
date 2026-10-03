@@ -5,7 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.service.quicksettings.TileService
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.data.CommandRunner
+import dev.yoanndev90.statusbarhider.core.command.CommandRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.tiles.CustomBarTile
 import dev.yoanndev90.statusbarhider.tiles.HideRestoreTile
@@ -15,7 +15,7 @@ import dev.yoanndev90.statusbarhider.tiles.HideRestoreTile
  * status bar is currently hidden (the platform exposes no query for it, so the
  * last successful run is persisted instead).
  *
- * Shared by the Quick Settings tiles and [dev.yoanndev90.statusbarhider.ui.MainViewModel]
+ * Shared by the Quick Settings tiles and [dev.yoanndev90.statusbarhider.features.status.StatusViewModel]
  * so the tile state and the in-app buttons can never disagree.
  */
 object HideController {

@@ -171,7 +171,7 @@ Edit the file. The structure is:
 The app auto-detects the OEM in three steps: JSON file name substring >
 `match` substrings > fallback to `aosp.json` (generic defaults). The result is saved in
 SharedPreferences, so the next launch skips detection; the **Config** dropdown under
-`STATUS BAR` overrides it and **Re-detect OEM** forgets the saved pick and runs detection
+`Status bar` overrides it and **Re-detect OEM** forgets the saved pick and runs detection
 again (a saved id that no longer exists in `assets/oem/` is re-detected automatically).
 
 ### Untested configs

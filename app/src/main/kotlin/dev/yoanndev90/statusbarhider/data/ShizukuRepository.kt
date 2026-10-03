@@ -1,6 +1,6 @@
 package dev.yoanndev90.statusbarhider.data
 
-import dev.yoanndev90.statusbarhider.ShizukuCmd
+import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,11 +50,18 @@ class ShizukuRepository private constructor() {
 		return next
 	}
 
-	fun requestPermission(requestCode: Int) {
-		Shizuku.requestPermission(requestCode)
+	/**
+	 * Shows the Shizuku authorization dialog. The result is delivered through
+	 * [permissionListener] above, so the request code is an opaque identifier
+	 * owned by this class.
+	 */
+	fun requestPermission() {
+		Shizuku.requestPermission(REQUEST_CODE)
 	}
 
 	companion object {
+		private const val REQUEST_CODE = 1001
+
 		private fun currentState(): ShizukuState =
 			when {
 				!Shizuku.pingBinder() -> ShizukuState.NOT_RUNNING

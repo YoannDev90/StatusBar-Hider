@@ -9,14 +9,14 @@
     <string name="shizuku_not_granted">Shizuku: waiting for authorization</string>
     <string name="shizuku_ready">Shizuku: ready</string>
 
-    <!-- Section titles -->
-    <string name="section_shizuku">SHIZUKU</string>
-    <string name="section_status_bar">STATUS BAR</string>
-    <string name="section_custom_bar">CUSTOM BAR</string>
-    <string name="section_widget_order">WIDGET ORDER</string>
-    <string name="section_cutout">CUTOUT</string>
-    <string name="section_app">APP</string>
-    <string name="section_log">LOG</string>
+    <!-- Section titles (card headings on the settings screens) -->
+    <string name="section_shizuku">Shizuku</string>
+    <string name="section_status_bar">Status bar</string>
+    <string name="section_custom_bar">Custom bar</string>
+    <string name="section_widget_order">Widget order</string>
+    <string name="section_cutout">Cutout</string>
+    <string name="section_app">App</string>
+    <string name="section_log">Log</string>
 
     <!-- Bottom navigation tabs (also used as top bar titles) -->
     <string name="nav_status">Status</string>
@@ -83,7 +83,6 @@
     <string name="label_widget_order_hint">Drag the handle to reorder</string>
     <string name="label_oem_config">Config: %1$s</string>
     <string name="hint_authorize_shizuku">Authorize Shizuku first: the hide / restore commands cannot run without it.</string>
-    <string name="hint_oem_untested">Commands may need adjustment on this device.</string>
     <string name="slider_max_notification_icons">Max notification icons</string>
     <string name="slider_burn_in_shift">Burn-in shift: every</string>
     <string name="slider_update_interval">Status refresh: every</string>
@@ -198,6 +197,7 @@
     <string name="log_ok">ok</string>
     <string name="log_exit_code">exit %1$d</string>
     <string name="log_busy">Busy - wait for the current command to finish.</string>
+    <string name="log_empty">No output yet - run a command first.</string>
     <string name="log_oem_selected">OEM config: %1$s</string>
     <string name="log_oem_redetected">OEM config re-detected: %1$s</string>
 

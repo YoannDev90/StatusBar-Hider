@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.ui
+package dev.yoanndev90.statusbarhider.ui.shell
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,37 +24,34 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import dev.yoanndev90.statusbarhider.ui.navigation.AppDestination
-import dev.yoanndev90.statusbarhider.ui.screens.AppearanceScreen
-import dev.yoanndev90.statusbarhider.ui.screens.BarScreen
-import dev.yoanndev90.statusbarhider.ui.screens.LogsScreen
-import dev.yoanndev90.statusbarhider.ui.screens.StatusScreen
+import dev.yoanndev90.statusbarhider.core.command.CommandExecutor
+import dev.yoanndev90.statusbarhider.features.bar.BarScreen
+import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
+import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
+import dev.yoanndev90.statusbarhider.features.status.StatusScreen
+import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.features.style.StyleScreen
+import dev.yoanndev90.statusbarhider.features.style.StyleViewModel
 
 /**
  * Shell of the app: a top bar titled after the current tab, a bottom
- * navigation bar over four destinations, and the NavHost wiring them to
- * [MainViewModel] — one instance, shared by every screen.
+ * navigation bar over four destinations, and the NavHost wiring them to one
+ * ViewModel per screen (each scoped to its own back stack entry).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(
-	vm: MainViewModel = viewModel(),
-	shizukuRequestCode: Int,
-	onCalendarToggle: (Boolean) -> Unit,
-	onShowBar: () -> Unit,
-	onHideFromLauncher: () -> Unit
-) {
+fun MainScreen() {
 	val navController = rememberNavController()
-	val state by vm.uiState.collectAsStateWithLifecycle()
 	val backStackEntry by navController.currentBackStackEntryAsState()
 	val current = AppDestination.fromRoute(backStackEntry?.destination?.route)
+	val busy by CommandExecutor.busy.collectAsStateWithLifecycle()
 
 	Scaffold(
 		modifier = Modifier.fillMaxSize(),
 		topBar = {
 			Column {
 				TopAppBar(title = { Text(stringResource(current.titleRes)) })
-				if (state.busy) {
+				if (busy) {
 					LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 				}
 			}
@@ -77,10 +74,10 @@ fun MainScreen(
 			startDestination = AppDestination.START.route,
 			modifier = Modifier.padding(inner)
 		) {
-			composable(AppDestination.STATUS.route) { StatusScreen(vm, shizukuRequestCode) }
-			composable(AppDestination.BAR.route) { BarScreen(vm, onCalendarToggle) }
-			composable(AppDestination.STYLE.route) { AppearanceScreen(vm, onShowBar) }
-			composable(AppDestination.LOG.route) { LogsScreen(vm, onHideFromLauncher) }
+			composable(AppDestination.STATUS.route) { StatusScreen(viewModel<StatusViewModel>()) }
+			composable(AppDestination.BAR.route) { BarScreen(viewModel<BarViewModel>()) }
+			composable(AppDestination.STYLE.route) { StyleScreen(viewModel<StyleViewModel>()) }
+			composable(AppDestination.LOG.route) { LogsScreen() }
 		}
 	}
 }

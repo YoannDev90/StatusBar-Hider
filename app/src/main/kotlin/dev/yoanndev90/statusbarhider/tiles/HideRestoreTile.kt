@@ -5,7 +5,7 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.ShizukuCmd
+import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
 import dev.yoanndev90.statusbarhider.hide.HideController
 import kotlinx.coroutines.runBlocking
 import rikka.shizuku.Shizuku

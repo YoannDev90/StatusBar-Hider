@@ -1,7 +1,7 @@
-package dev.yoanndev90.statusbarhider.data
+package dev.yoanndev90.statusbarhider.core.command
 
 import android.content.Context
-import dev.yoanndev90.statusbarhider.ShizukuCmd
+import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider.ui.components
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -31,18 +32,8 @@ import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 
 @Composable
-fun SectionHeader(title: String) {
-	Text(
-		text = title,
-		style = MaterialTheme.typography.labelMedium,
-		color = MaterialTheme.colorScheme.onSurfaceVariant,
-		modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
-	)
-}
-
-@Composable
 fun SettingSwitch(
-	label: String,
+	@StringRes label: Int,
 	checked: Boolean,
 	onCheckedChange: (Boolean) -> Unit
 ) {
@@ -58,7 +49,7 @@ fun SettingSwitch(
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		Text(
-			text = label,
+			text = stringResource(label),
 			modifier = Modifier.weight(1f),
 			style = MaterialTheme.typography.bodyLarge
 		)
@@ -69,18 +60,29 @@ fun SettingSwitch(
 	}
 }
 
+/**
+ * Slider labelled "label valueUnit".
+ *
+ * @param suffix optional unit resource (dp, sp, %, ...) appended to the value.
+ */
 @Composable
 fun SettingSlider(
-	label: String,
+	@StringRes label: Int,
 	value: Int,
 	min: Int,
 	max: Int,
-	suffix: String = "",
+	@StringRes suffix: Int = 0,
 	onValueChange: (Int) -> Unit
 ) {
 	Column(modifier = Modifier.fillMaxWidth()) {
 		Text(
-			text = stringResource(R.string.slider_value, label, value, suffix),
+			text =
+				stringResource(
+					R.string.slider_value,
+					stringResource(label),
+					value,
+					if (suffix != 0) stringResource(suffix) else ""
+				),
 			style = MaterialTheme.typography.bodyMedium
 		)
 		Slider(
@@ -94,7 +96,7 @@ fun SettingSlider(
 
 @Composable
 fun SettingAction(
-	label: String,
+	@StringRes label: Int,
 	onClick: () -> Unit
 ) {
 	Button(
@@ -104,7 +106,7 @@ fun SettingAction(
 				.fillMaxWidth()
 				.padding(vertical = 2.dp)
 	) {
-		Text(label)
+		Text(stringResource(label))
 	}
 }
 

@@ -7,8 +7,8 @@ import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 
 /**
  * Quick Settings tile: shows or hides the custom Compose status bar.
@@ -35,12 +35,7 @@ class CustomBarTile : TileService() {
 			}
 			return
 		}
-		repo.update { copy(enabled = next) }
-		if (next) {
-			StatusBarOverlayService.start(applicationContext)
-		} else {
-			StatusBarOverlayService.stop(applicationContext)
-		}
+		OverlayController.setEnabled(applicationContext, next)
 		refresh()
 	}
 
