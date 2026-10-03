@@ -32,7 +32,7 @@ installed by mise.
 | `mise run install-debug`  | Build + install debug APK        |
 | `mise run clean`          | Clean Gradle outputs             |
 | `mise run devices`        | List connected ADB devices       |
-| `mise run logcat`         | Stream logcat for StatusBarHider |
+| `mise run logs`           | Live log TUI (logstream)         |
 | `mise run show-in-drawer` | Re-enable the launcher icon      |
 | `mise run uninstall`      | Uninstall the app from device    |
 
