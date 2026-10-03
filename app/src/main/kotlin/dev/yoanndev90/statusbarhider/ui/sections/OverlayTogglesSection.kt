@@ -46,6 +46,12 @@ fun OverlayTogglesSection(
 	SettingSwitch(stringResource(R.string.switch_show_seconds), prefs.showSeconds) {
 		vm.updatePrefs { copy(showSeconds = it) }
 	}
+	SettingSwitch(stringResource(R.string.switch_use_24h), prefs.use24h) {
+		vm.updatePrefs { copy(use24h = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_show_on_lock_screen), prefs.showOnLockScreen) {
+		vm.updatePrefs { copy(showOnLockScreen = it) }
+	}
 	SettingSwitch(stringResource(R.string.switch_battery), prefs.showBattery) {
 		vm.updatePrefs { copy(showBattery = it) }
 	}
@@ -150,11 +156,23 @@ fun OverlayTogglesSection(
 	SettingSwitch(stringResource(R.string.switch_bandwidth), prefs.showBandwidth) {
 		vm.updatePrefs { copy(showBandwidth = it) }
 	}
+	SettingSlider(
+		stringResource(R.string.slider_update_interval),
+		prefs.updateIntervalSec,
+		5,
+		60,
+		stringResource(R.string.suffix_seconds)
+	) {
+		vm.updatePrefs { copy(updateIntervalSec = it) }
+	}
 	SettingSwitch(stringResource(R.string.switch_merged_speed), prefs.bandwidthMerged) {
 		vm.updatePrefs { copy(bandwidthMerged = it) }
 	}
 	SettingSwitch(stringResource(R.string.switch_touchable_bar), prefs.interactive) {
 		vm.updatePrefs { copy(interactive = it) }
+	}
+	SettingSwitch(stringResource(R.string.switch_auto_hide_boot), prefs.autoHideBoot) {
+		vm.updatePrefs { copy(autoHideBoot = it) }
 	}
 	SettingSlider(
 		stringResource(R.string.slider_burn_in_shift),

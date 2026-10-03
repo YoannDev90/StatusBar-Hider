@@ -26,6 +26,8 @@
     <string name="action_enable_notification_access">Enable notification access</string>
     <string name="action_hide_from_launcher">Hide from launcher</string>
     <string name="action_export_logs">Export logs</string>
+    <string name="action_share_logs">Share logs as file</string>
+    <string name="action_redetect_oem">Re-detect OEM</string>
     <string name="action_show_custom_bar">Show custom bar</string>
     <string name="action_hide_custom_bar">Hide custom bar</string>
 
@@ -54,13 +56,20 @@
     <string name="switch_merged_speed">Merged up/down speed</string>
     <string name="switch_touchable_bar">Touchable bar (tap clock/date, may block swipe)</string>
     <string name="switch_dark_text">Dark text (for transparent bar)</string>
+    <string name="switch_use_24h">24-hour clock</string>
+    <string name="switch_show_on_lock_screen">Show on lock screen</string>
+    <string name="switch_auto_hide_boot">Auto-hide after reboot</string>
 
     <!-- Sliders, labels and hints -->
     <string name="label_date_format">Date format (EEE dd MMM)</string>
     <string name="label_text_weight">Text weight</string>
     <string name="label_widget_order_hint">Drag the handle to reorder</string>
+    <string name="label_oem_config">Config: %1$s</string>
+    <string name="hint_authorize_shizuku">Authorize Shizuku first: the hide / restore commands cannot run without it.</string>
+    <string name="hint_oem_untested">Commands may need adjustment on this device.</string>
     <string name="slider_max_notification_icons">Max notification icons</string>
     <string name="slider_burn_in_shift">Burn-in shift: every</string>
+    <string name="slider_update_interval">Status refresh: every</string>
     <string name="slider_padding_start">Padding start</string>
     <string name="slider_padding_top">Padding top</string>
     <string name="slider_padding_end">Padding end</string>
@@ -72,6 +81,7 @@
     <!-- Units and option labels -->
     <string name="suffix_dp">dp</string>
     <string name="suffix_sp">sp</string>
+    <string name="suffix_seconds">" s (5 - 60)"</string>
     <string name="suffix_minutes">" min (0 = off)"</string>
     <string name="background_transparent">Transparent</string>
     <string name="background_semi">Semi</string>
@@ -113,6 +123,7 @@
     <string name="toast_hidden_from_launcher">Hidden! Access via Settings &gt; Apps &gt; StatusBar Hider</string>
     <string name="toast_launcher_icon_restored">Launcher icon restored</string>
     <string name="toast_logs_copied">Logs copied to clipboard</string>
+    <string name="toast_cannot_share_logs">Cannot share logs</string>
     <string name="clipboard_label">StatusBarHider logs</string>
 
     <!-- Content descriptions (accessibility) -->
@@ -160,6 +171,9 @@
     <string name="log_command_failed">%1$s -&gt; FAILED (%2$s)</string>
     <string name="log_ok">ok</string>
     <string name="log_exit_code">exit %1$d</string>
+    <string name="log_busy">Busy - wait for the current command to finish.</string>
+    <string name="log_oem_selected">OEM config: %1$s</string>
+    <string name="log_oem_redetected">OEM config re-detected: %1$s</string>
 
     <!-- Shell command failures -->
     <string name="err_shizuku_binder_unavailable">Shizuku binder not available</string>

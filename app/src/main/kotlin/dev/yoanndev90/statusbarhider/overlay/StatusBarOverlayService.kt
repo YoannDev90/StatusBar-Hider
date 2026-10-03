@@ -227,11 +227,13 @@ class StatusBarOverlayService : Service() {
 						barState = barState.copy(screenOn = false)
 						handler.removeCallbacks(pollRunnable)
 						handler.removeCallbacks(burnInRunnable)
+						handler.removeCallbacks(bandwidthRunnable)
 					}
 					Intent.ACTION_SCREEN_ON -> {
 						barState = barState.copy(screenOn = true)
 						refreshAll()
 						schedulePoll()
+						scheduleBandwidth()
 						scheduleBurnIn()
 					}
 				}
@@ -312,6 +314,9 @@ class StatusBarOverlayService : Service() {
 
 	override fun onCreate() {
 		super.onCreate()
+		// attachOverlay() needs the stored prefs (lock screen / touchability flags);
+		// the flow below keeps them up to date afterwards.
+		prefs = prefsRepo.state.value
 		startFg()
 		attachOverlay()
 		registerReceivers()
@@ -321,6 +326,7 @@ class StatusBarOverlayService : Service() {
 		}
 		refreshAll()
 		schedulePoll()
+		scheduleBandwidth()
 	}
 
 	override fun onStartCommand(
@@ -338,20 +344,17 @@ class StatusBarOverlayService : Service() {
 
 	private fun onPrefsChanged(next: OverlayPrefs) {
 		prefs = next
-		ensureTouchableFlags()
+		ensureWindowFlags()
 		if (next.showMedia) ensureMediaSessions()
-		handler.removeCallbacks(bandwidthRunnable)
-		if (next.showBandwidth && barState.screenOn) handler.post(bandwidthRunnable)
+		scheduleBandwidth()
 		scheduleBurnIn()
 		refreshAll()
 	}
 
-	/** Re-attaches the overlay when the interactive toggle changed window flags. */
-	private fun ensureTouchableFlags() {
+	/** Re-attaches the overlay when a toggle changed window flags (touchability, lock screen). */
+	private fun ensureWindowFlags() {
 		val p = overlayParams ?: return
-		val wantTouchable = prefs.interactive
-		val isTouchable = (p.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE) == 0
-		if (wantTouchable != isTouchable) {
+		if (desiredFlags() != p.flags) {
 			detachOverlay()
 			attachOverlay()
 		}
@@ -451,32 +454,43 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
+	/**
+	 * Window flags the overlay currently needs. [WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED]
+	 * is what keeps the bar drawn above the keyguard (the Activity-only
+	 * `setShowWhenLocked` does not exist for WindowManager-added views).
+	 */
+	@Suppress("DEPRECATION")
+	private fun desiredFlags(): Int {
+		val lockFlag =
+			if (prefs.showOnLockScreen) {
+				WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+			} else {
+				0
+			}
+		val touchFlag =
+			if (prefs.interactive) {
+				WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+					WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+					WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
+			} else {
+				WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+					WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+			}
+		return WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+			WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+			lockFlag or
+			touchFlag
+	}
+
 	private fun attachOverlay() {
 		if (overlayView != null) return
 		val wm = getSystemService(WindowManager::class.java) ?: return
-		val touchable = prefs.interactive
-		val flags =
-			WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-				WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-				if (touchable) {
-					WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-						WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-						WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
-				} else {
-					WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-						WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-				}
 		val params =
 			WindowManager.LayoutParams(
 				WindowManager.LayoutParams.MATCH_PARENT,
 				WindowManager.LayoutParams.WRAP_CONTENT,
-				if (Build.VERSION.SDK_INT >= 26) {
-					WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-				} else {
-					@Suppress("DEPRECATION")
-					WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY
-				},
-				flags,
+				WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+				desiredFlags(),
 				PixelFormat.TRANSLUCENT
 			)
 		params.gravity = Gravity.TOP
@@ -698,6 +712,16 @@ class StatusBarOverlayService : Service() {
 	private fun schedulePoll() {
 		handler.removeCallbacks(pollRunnable)
 		handler.post(pollRunnable)
+	}
+
+	/**
+	 * (Re)arms the 1s bandwidth sampler. Every path that can turn the screen or
+	 * the toggle back on must call it, otherwise the loop dies on the first
+	 * screen-off / screen-on cycle.
+	 */
+	private fun scheduleBandwidth() {
+		handler.removeCallbacks(bandwidthRunnable)
+		if (prefs.showBandwidth && barState.screenOn) handler.post(bandwidthRunnable)
 	}
 
 	private fun updateBattery() {
