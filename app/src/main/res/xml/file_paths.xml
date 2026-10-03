@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Only the app log is ever shared; no other cache or data path is exposed. -->
+    <cache-path
+        name="logs"
+        path="logs/" />
+</paths>

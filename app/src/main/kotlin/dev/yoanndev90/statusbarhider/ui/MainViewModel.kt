@@ -11,10 +11,10 @@ import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.log.LogStore
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +25,7 @@ import kotlinx.coroutines.launch
 data class MainUiState(
 	val shizuku: ShizukuState = ShizukuState.NOT_RUNNING,
 	val shizukuText: String = "",
+	val oemId: String = "",
 	val oemName: String = "",
 	val oemUntested: Boolean = false,
 	val prefs: OverlayPrefs = OverlayPrefs(),
@@ -43,16 +44,14 @@ class MainViewModel(
 	private val oemRepo = OemRepository.getInstance(application)
 	private val prefsRepo = OverlayPrefsRepository.getInstance(application)
 
-	private val logsFlow = MutableStateFlow<List<String>>(emptyList())
 	private val busyFlow = MutableStateFlow(false)
-	private var cmdJob: Job? = null
 
 	val uiState: StateFlow<MainUiState> =
 		combine(
 			shizukuRepo.state,
 			oemRepo.config,
 			prefsRepo.state,
-			logsFlow,
+			LogStore.lines,
 			busyFlow
 		) { shizuku, oem, prefs, logs, busy ->
 			MainUiState(
@@ -63,6 +62,7 @@ class MainViewModel(
 						ShizukuState.NOT_GRANTED -> str(R.string.shizuku_not_granted)
 						ShizukuState.READY -> str(R.string.shizuku_ready)
 					},
+				oemId = oem.id,
 				oemName = oem.name,
 				oemUntested = oem.untested,
 				prefs = prefs,
@@ -73,6 +73,8 @@ class MainViewModel(
 
 	init {
 		shizukuRepo.start()
+		// Persisted lines (from a previous run, or a boot auto-hide) are shown too.
+		LogStore.ensureLoaded(getApplication())
 	}
 
 	override fun onCleared() {
@@ -131,9 +133,25 @@ class MainViewModel(
 		runCommand(R.string.log_restoring) { _ ->
 			val result = HideController.restore(getApplication())
 			result.lines.forEach { appendLog(it) }
-			prefsRepo.update { copy(enabled = false) }
-			StatusBarOverlayService.stop(getApplication())
+			// Restore the system bar and the custom bar are alternatives: only
+			// touch the overlay state when it is actually on.
+			if (prefsRepo.state.value.enabled) {
+				prefsRepo.update { copy(enabled = false) }
+				StatusBarOverlayService.stop(getApplication())
+			}
 		}
+	}
+
+	/** Switches to another shipped OEM config. */
+	fun selectOem(id: String) {
+		val config = oemRepo.select(id)
+		appendLog(str(R.string.log_oem_selected, config.name))
+	}
+
+	/** Forgets the saved pick and re-runs device detection. */
+	fun redetectOem() {
+		val config = oemRepo.redetect()
+		appendLog(str(R.string.log_oem_redetected, config.name))
 	}
 
 	fun updatePrefs(transform: OverlayPrefs.() -> OverlayPrefs) {
@@ -152,10 +170,16 @@ class MainViewModel(
 	}
 
 	fun appendLog(line: String) {
-		logsFlow.value += line
+		LogStore.append(getApplication(), line)
 	}
 
-	/** @param labelRes resource id of the progress line shown before [block] runs. */
+	/**
+	 * @param labelRes resource id of the progress line shown before [block] runs.
+	 *
+	 * Commands are blocking shell calls, so a second request while one is in
+	 * flight is refused instead of silently interleaved (and [MainUiState.busy]
+	 * can then never be cleared by the wrong job).
+	 */
 	private fun runCommand(
 		labelRes: Int,
 		block: suspend (oem: dev.yoanndev90.statusbarhider.OemConfig) -> Unit
@@ -164,19 +188,21 @@ class MainViewModel(
 			appendLog(str(R.string.log_shizuku_not_authorized))
 			return
 		}
-		cmdJob?.cancel()
-		cmdJob =
-			viewModelScope.launch(Dispatchers.IO) {
-				busyFlow.value = true
-				try {
-					appendLog(str(R.string.log_progress, str(labelRes)))
-					block(oemRepo.config.value)
-				} catch (e: Exception) {
-					if (e is kotlinx.coroutines.CancellationException) throw e
-					appendLog(str(R.string.log_error, e.message))
-				} finally {
-					busyFlow.value = false
-				}
+		if (busyFlow.value) {
+			appendLog(str(R.string.log_busy))
+			return
+		}
+		viewModelScope.launch(Dispatchers.IO) {
+			busyFlow.value = true
+			try {
+				appendLog(str(R.string.log_progress, str(labelRes)))
+				block(oemRepo.config.value)
+			} catch (e: Exception) {
+				if (e is kotlinx.coroutines.CancellationException) throw e
+				appendLog(str(R.string.log_error, e.message))
+			} finally {
+				busyFlow.value = false
 			}
+		}
 	}
 }

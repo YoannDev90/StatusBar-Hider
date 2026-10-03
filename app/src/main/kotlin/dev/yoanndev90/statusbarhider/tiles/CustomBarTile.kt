@@ -1,6 +1,9 @@
 package dev.yoanndev90.statusbarhider.tiles
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import dev.yoanndev90.statusbarhider.R
@@ -21,6 +24,17 @@ class CustomBarTile : TileService() {
 	override fun onClick() {
 		val repo = OverlayPrefsRepository.getInstance(applicationContext)
 		val next = !repo.state.value.enabled
+		if (next && !Settings.canDrawOverlays(this)) {
+			// Without the permission the overlay window cannot be attached, so
+			// enabling the switch would do nothing: send the user to the system
+			// screen and leave the state untouched.
+			unlockAndRun {
+				val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+				intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+				startActivity(intent)
+			}
+			return
+		}
 		repo.update { copy(enabled = next) }
 		if (next) {
 			StatusBarOverlayService.start(applicationContext)
