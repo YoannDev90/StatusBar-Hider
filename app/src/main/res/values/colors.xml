@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <!-- Window background: must not flash white when the system starts the
+         Activity in dark mode (the Compose theme handles the UI itself). -->
+    <color name="window_background">#FFFFFFFF</color>
+    <color name="ic_launcher_background">#15171D</color>
+</resources>
