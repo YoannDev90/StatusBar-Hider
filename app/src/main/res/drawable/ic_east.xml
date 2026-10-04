@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <!-- Material Symbols "east" (Apache-2.0), viewBox y shifted from -960..0 -->
+  <group android:translateY="960">
+    <path
+        android:pathData="m600-200-57-56 184-184H80v-80h647L544-704l56-56 280 280-280 280Z"
+        android:fillColor="#e3e3e3" />
+  </group>
+</vector>

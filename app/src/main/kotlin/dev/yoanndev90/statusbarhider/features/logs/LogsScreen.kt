@@ -35,12 +35,12 @@ fun LogsScreen() {
 
 	SettingsScreen {
 		SettingGroup(R.string.section_log) {
-			SettingAction(R.string.action_export_logs) {
+			SettingAction(R.drawable.ic_content_copy, R.string.action_export_logs) {
 				val clip = ClipData.newPlainText(clipboardLabel, logs.joinToString("\n"))
 				context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
 				Toast.makeText(context, logsCopiedToast, Toast.LENGTH_SHORT).show()
 			}
-			SettingAction(R.string.action_share_logs) {
+			SettingAction(R.drawable.ic_share, R.string.action_share_logs) {
 				val intent = LogStore.shareIntent(context)
 				if (intent == null) {
 					Toast.makeText(context, cannotShareToast, Toast.LENGTH_SHORT).show()

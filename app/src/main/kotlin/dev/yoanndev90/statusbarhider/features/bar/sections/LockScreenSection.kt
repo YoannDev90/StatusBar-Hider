@@ -17,10 +17,11 @@ fun LockScreenSection(
 	vm: BarViewModel
 ) {
 	SettingGroup(R.string.group_lock_screen) {
-		SettingSwitch(R.string.switch_show_on_lock_screen, prefs.showOnLockScreen) {
+		SettingSwitch(R.drawable.ic_lock, R.string.switch_show_on_lock_screen, prefs.showOnLockScreen) {
 			vm.updatePrefs { copy(showOnLockScreen = it) }
 		}
 		SettingRadioRow(
+			icon = R.drawable.ic_visibility,
 			options =
 				listOf(
 					stringResource(R.string.lock_mode_full),
@@ -32,7 +33,7 @@ fun LockScreenSection(
 				vm.updatePrefs { copy(lockScreenMode = mode) }
 			}
 		)
-		SettingSwitch(R.string.switch_hide_notifs_on_lock, prefs.hideNotifsOnLock) {
+		SettingSwitch(R.drawable.ic_notifications_off, R.string.switch_hide_notifs_on_lock, prefs.hideNotifsOnLock) {
 			vm.updatePrefs { copy(hideNotifsOnLock = it) }
 		}
 	}

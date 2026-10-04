@@ -27,11 +27,12 @@ fun LookSection(
 	vm: StyleViewModel
 ) {
 	SettingGroup(R.string.section_custom_bar) {
-		SettingAction(R.string.action_show_custom_bar) { vm.showOverlayBar() }
-		SettingAction(R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
+		SettingAction(R.drawable.ic_visibility, R.string.action_show_custom_bar) { vm.showOverlayBar() }
+		SettingAction(R.drawable.ic_visibility_off, R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
 
-		SettingSwitch(R.string.switch_dark_text, prefs.darkText) { vm.updatePrefs { copy(darkText = it) } }
+		SettingSwitch(R.drawable.ic_contrast, R.string.switch_dark_text, prefs.darkText) { vm.updatePrefs { copy(darkText = it) } }
 		SettingRadioRow(
+			icon = R.drawable.ic_palette,
 			options =
 				listOf(
 					stringResource(R.string.background_transparent),
@@ -50,22 +51,22 @@ fun LookSection(
 			}
 		)
 
-		SettingSlider(R.string.slider_padding_start, prefs.padStartDp, 0, 32, R.string.suffix_dp) {
+		SettingSlider(R.drawable.ic_west, R.string.slider_padding_start, prefs.padStartDp, 0, 32, R.string.suffix_dp) {
 			vm.updatePrefs { copy(padStartDp = it) }
 		}
-		SettingSlider(R.string.slider_padding_top, prefs.padTopDp, 0, 32, R.string.suffix_dp) {
+		SettingSlider(R.drawable.ic_north, R.string.slider_padding_top, prefs.padTopDp, 0, 32, R.string.suffix_dp) {
 			vm.updatePrefs { copy(padTopDp = it) }
 		}
-		SettingSlider(R.string.slider_padding_end, prefs.padEndDp, 0, 32, R.string.suffix_dp) {
+		SettingSlider(R.drawable.ic_east, R.string.slider_padding_end, prefs.padEndDp, 0, 32, R.string.suffix_dp) {
 			vm.updatePrefs { copy(padEndDp = it) }
 		}
-		SettingSlider(R.string.slider_padding_bottom, prefs.padBottomDp, 0, 32, R.string.suffix_dp) {
+		SettingSlider(R.drawable.ic_south, R.string.slider_padding_bottom, prefs.padBottomDp, 0, 32, R.string.suffix_dp) {
 			vm.updatePrefs { copy(padBottomDp = it) }
 		}
-		SettingSlider(R.string.slider_text_size, prefs.fontSizeSp, 10, 20, R.string.suffix_sp) {
+		SettingSlider(R.drawable.ic_format_size, R.string.slider_text_size, prefs.fontSizeSp, 10, 20, R.string.suffix_sp) {
 			vm.updatePrefs { copy(fontSizeSp = it) }
 		}
-		SettingSlider(R.string.slider_widget_spacing, prefs.widgetSpacingDp, 0, 12, R.string.suffix_dp) {
+		SettingSlider(R.drawable.ic_space_bar, R.string.slider_widget_spacing, prefs.widgetSpacingDp, 0, 12, R.string.suffix_dp) {
 			vm.updatePrefs { copy(widgetSpacingDp = it) }
 		}
 
@@ -75,6 +76,7 @@ fun LookSection(
 			modifier = Modifier.padding(top = 8.dp)
 		)
 		SettingRadioRow(
+			icon = R.drawable.ic_format_bold,
 			options =
 				listOf(
 					stringResource(R.string.font_weight_normal),

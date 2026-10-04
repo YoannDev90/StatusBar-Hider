@@ -47,7 +47,7 @@ object TestNotifier {
 			val notification =
 				Notification
 					.Builder(app, CHANNEL_ID)
-					.setSmallIcon(android.R.drawable.stat_notify_more)
+					.setSmallIcon(R.drawable.ic_tile_bar)
 					.setContentTitle(app.getString(R.string.test_notif_title))
 					.setContentText(app.getString(R.string.test_notif_text))
 					.setContentIntent(contentIntent)

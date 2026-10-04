@@ -45,7 +45,7 @@ fun TestSection(
 		}
 
 	SettingGroup(R.string.section_test) {
-		SettingAction(R.string.action_test_notification) {
+		SettingAction(R.drawable.ic_campaign, R.string.action_test_notification) {
 			if (Build.VERSION.SDK_INT >= 33 &&
 				context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
 			) {
@@ -54,7 +54,7 @@ fun TestSection(
 				postTest(context, sentOk, sentNoListener)
 			}
 		}
-		SettingSwitch(R.string.switch_ring_preview, prefs.cameraRingPreview) { on ->
+		SettingSwitch(R.drawable.ic_preview, R.string.switch_ring_preview, prefs.cameraRingPreview) { on ->
 			// Flag first: when the bar still has to be started (or the overlay
 			// permission granted), the preview must already be in the state.
 			vm.updatePrefs { copy(cameraRingPreview = on) }

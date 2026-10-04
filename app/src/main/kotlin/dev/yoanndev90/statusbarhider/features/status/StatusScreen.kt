@@ -52,12 +52,12 @@ fun StatusScreen(
 
 		// First screen, first controls: show / hide without hunting in Style.
 		SettingGroup(R.string.section_custom_bar) {
-			SettingAction(R.string.action_show_custom_bar) { vm.showOverlayBar() }
-			SettingAction(R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
+			SettingAction(R.drawable.ic_visibility, R.string.action_show_custom_bar) { vm.showOverlayBar() }
+			SettingAction(R.drawable.ic_visibility_off, R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
 		}
 
 		SettingGroup(R.string.section_shizuku) {
-			SettingAction(R.string.action_authorize_shizuku) { vm.requestShizukuPermission() }
+			SettingAction(R.drawable.ic_adb, R.string.action_authorize_shizuku) { vm.requestShizukuPermission() }
 			if (state.shizuku != ShizukuState.READY) {
 				Text(
 					text = stringResource(R.string.hint_authorize_shizuku),
@@ -74,16 +74,16 @@ fun StatusScreen(
 				currentName = state.oemName,
 				onSelect = vm::selectOem
 			)
-			SettingAction(R.string.action_redetect_oem) { vm.redetectOem() }
-			SettingAction(R.string.action_hide_status_bar) { vm.applyHide() }
-			SettingAction(R.string.action_check_state) { vm.checkState() }
-			SettingAction(R.string.action_restore) { vm.restore() }
+			SettingAction(R.drawable.ic_refresh, R.string.action_redetect_oem) { vm.redetectOem() }
+			SettingAction(R.drawable.ic_hide_source, R.string.action_hide_status_bar) { vm.applyHide() }
+			SettingAction(R.drawable.ic_fact_check, R.string.action_check_state) { vm.checkState() }
+			SettingAction(R.drawable.ic_restore, R.string.action_restore) { vm.restore() }
 		}
 
 		SettingGroup(R.string.section_app) {
-			SettingAction(R.string.action_open_setup) { onOpenSetup() }
-			SettingAction(R.string.action_export_settings) { exportSettings(context) }
-			SettingAction(R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
+			SettingAction(R.drawable.ic_settings, R.string.action_open_setup) { onOpenSetup() }
+			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) { exportSettings(context) }
+			SettingAction(R.drawable.ic_upload, R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
 		}
 	}
 }

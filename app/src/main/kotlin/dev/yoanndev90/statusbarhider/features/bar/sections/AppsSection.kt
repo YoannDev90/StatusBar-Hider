@@ -62,7 +62,7 @@ fun AppsSection(
 	}
 
 	SettingGroup(R.string.group_apps) {
-		SettingSwitch(R.string.switch_hide_bar_in_apps, prefs.hideBarInApps) {
+		SettingSwitch(R.drawable.ic_app_blocking, R.string.switch_hide_bar_in_apps, prefs.hideBarInApps) {
 			vm.updatePrefs { copy(hideBarInApps = it) }
 		}
 		if (!usageGranted) {
@@ -72,14 +72,14 @@ fun AppsSection(
 				color = MaterialTheme.colorScheme.onSurfaceVariant,
 				modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
 			)
-			SettingAction(R.string.action_grant_usage_access) {
+			SettingAction(R.drawable.ic_query_stats, R.string.action_grant_usage_access) {
 				try {
 					context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 				} catch (_: Exception) {
 				}
 			}
 		}
-		SettingAction(R.string.action_choose_apps) { pickerOpen = true }
+		SettingAction(R.drawable.ic_apps, R.string.action_choose_apps) { pickerOpen = true }
 		Text(
 			text =
 				if (prefs.hiddenApps.isEmpty()) {

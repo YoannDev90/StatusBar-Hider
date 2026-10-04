@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider.ui.components
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
@@ -24,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -32,7 +35,20 @@ import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 
 @Composable
+private fun SettingIcon(
+	@DrawableRes icon: Int
+) {
+	Icon(
+		painter = painterResource(icon),
+		contentDescription = null,
+		tint = MaterialTheme.colorScheme.onSurfaceVariant,
+		modifier = Modifier.size(20.dp)
+	)
+}
+
+@Composable
 fun SettingSwitch(
+	@DrawableRes icon: Int,
 	@StringRes label: Int,
 	checked: Boolean,
 	onCheckedChange: (Boolean) -> Unit
@@ -48,6 +64,8 @@ fun SettingSwitch(
 				).padding(vertical = 4.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
+		SettingIcon(icon)
+		Spacer(Modifier.width(12.dp))
 		Text(
 			text = stringResource(label),
 			modifier = Modifier.weight(1f),
@@ -67,6 +85,7 @@ fun SettingSwitch(
  */
 @Composable
 fun SettingSlider(
+	@DrawableRes icon: Int,
 	@StringRes label: Int,
 	value: Int,
 	min: Int,
@@ -74,28 +93,33 @@ fun SettingSlider(
 	@StringRes suffix: Int = 0,
 	onValueChange: (Int) -> Unit
 ) {
-	Column(modifier = Modifier.fillMaxWidth()) {
-		Text(
-			text =
-				stringResource(
-					R.string.slider_value,
-					stringResource(label),
-					value,
-					if (suffix != 0) stringResource(suffix) else ""
-				),
-			style = MaterialTheme.typography.bodyMedium
-		)
-		Slider(
-			value = value.toFloat(),
-			onValueChange = { onValueChange(it.toInt().coerceIn(min, max)) },
-			valueRange = min.toFloat()..max.toFloat(),
-			steps = (max - min - 1).coerceAtLeast(0)
-		)
+	Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+		SettingIcon(icon)
+		Spacer(Modifier.width(12.dp))
+		Column(modifier = Modifier.weight(1f)) {
+			Text(
+				text =
+					stringResource(
+						R.string.slider_value,
+						stringResource(label),
+						value,
+						if (suffix != 0) stringResource(suffix) else ""
+					),
+				style = MaterialTheme.typography.bodyMedium
+			)
+			Slider(
+				value = value.toFloat(),
+				onValueChange = { onValueChange(it.toInt().coerceIn(min, max)) },
+				valueRange = min.toFloat()..max.toFloat(),
+				steps = (max - min - 1).coerceAtLeast(0)
+			)
+		}
 	}
 }
 
 @Composable
 fun SettingAction(
+	@DrawableRes icon: Int,
 	@StringRes label: Int,
 	onClick: () -> Unit
 ) {
@@ -106,17 +130,22 @@ fun SettingAction(
 				.fillMaxWidth()
 				.padding(vertical = 2.dp)
 	) {
+		Icon(painter = painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
+		Spacer(Modifier.width(8.dp))
 		Text(stringResource(label))
 	}
 }
 
 @Composable
 fun SettingRadioRow(
+	@DrawableRes icon: Int,
 	options: List<String>,
 	selected: Int,
 	onSelect: (Int) -> Unit
 ) {
-	Row(modifier = Modifier.fillMaxWidth()) {
+	Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+		SettingIcon(icon)
+		Spacer(Modifier.width(12.dp))
 		options.forEachIndexed { index, option ->
 			Row(
 				modifier =
@@ -136,6 +165,8 @@ fun SettingRadioRow(
 				Spacer(Modifier.width(4.dp))
 				Text(
 					text = option,
+					modifier = Modifier.weight(1f),
+					maxLines = 1,
 					style = MaterialTheme.typography.bodyMedium
 				)
 			}

@@ -487,14 +487,14 @@ class StatusBarOverlayService : Service() {
 					.Builder(this, CHANNEL_ID)
 					.setContentTitle(getString(R.string.notif_content_title))
 					.setContentText(getString(R.string.notif_content_text))
-					.setSmallIcon(android.R.drawable.stat_notify_more)
+					.setSmallIcon(R.drawable.ic_tile_bar)
 					.build()
 			} else {
 				@Suppress("DEPRECATION")
 				Notification
 					.Builder(this)
 					.setContentTitle(getString(R.string.notif_content_title))
-					.setSmallIcon(android.R.drawable.stat_notify_more)
+					.setSmallIcon(R.drawable.ic_tile_bar)
 					.build()
 			}
 		try {

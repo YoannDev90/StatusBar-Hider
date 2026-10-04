@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
@@ -50,9 +53,9 @@ fun ClockSection(
 		}
 
 	SettingGroup(R.string.group_clock_date) {
-		SettingSwitch(R.string.switch_show_seconds, prefs.showSeconds) { vm.updatePrefs { copy(showSeconds = it) } }
-		SettingSwitch(R.string.switch_use_24h, prefs.use24h) { vm.updatePrefs { copy(use24h = it) } }
-		SettingSwitch(R.string.switch_date, prefs.showDate) { vm.updatePrefs { copy(showDate = it) } }
+		SettingSwitch(R.drawable.ic_timer, R.string.switch_show_seconds, prefs.showSeconds) { vm.updatePrefs { copy(showSeconds = it) } }
+		SettingSwitch(R.drawable.ic_schedule, R.string.switch_use_24h, prefs.use24h) { vm.updatePrefs { copy(use24h = it) } }
+		SettingSwitch(R.drawable.ic_event, R.string.switch_date, prefs.showDate) { vm.updatePrefs { copy(showDate = it) } }
 		Row(
 			modifier = Modifier.fillMaxWidth(),
 			verticalAlignment = Alignment.CenterVertically
@@ -61,6 +64,13 @@ fun ClockSection(
 				value = dateFormat,
 				onValueChange = { dateFormat = it },
 				label = { Text(stringResource(R.string.label_date_format)) },
+				leadingIcon = {
+					Icon(
+						painter = painterResource(R.drawable.ic_edit),
+						contentDescription = null,
+						tint = MaterialTheme.colorScheme.onSurfaceVariant
+					)
+				},
 				singleLine = true,
 				modifier = Modifier.weight(1f).padding(end = 8.dp)
 			)
@@ -79,8 +89,8 @@ fun ClockSection(
 				Text(stringResource(R.string.action_set))
 			}
 		}
-		SettingSwitch(R.string.switch_next_alarm, prefs.showAlarm) { vm.updatePrefs { copy(showAlarm = it) } }
-		SettingSwitch(R.string.switch_next_calendar_event, prefs.showCalendar) { checked ->
+		SettingSwitch(R.drawable.ic_alarm, R.string.switch_next_alarm, prefs.showAlarm) { vm.updatePrefs { copy(showAlarm = it) } }
+		SettingSwitch(R.drawable.ic_calendar, R.string.switch_next_calendar_event, prefs.showCalendar) { checked ->
 			if (checked && context.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
 				calendarPermission.launch(Manifest.permission.READ_CALENDAR)
 			} else {
