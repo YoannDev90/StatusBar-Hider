@@ -23,6 +23,13 @@ enum class AppDestination(
 		/** First tab, and the one back navigations pop up to. */
 		val START = STATUS
 
+		/**
+		 * Setup checklist route. Deliberately not an [AppDestination]: it is the
+		 * start destination on first launch and re-openable from the Status tab,
+		 * but it never appears in the bottom navigation bar.
+		 */
+		const val SETUP_ROUTE = "setup"
+
 		/** Resolves a NavHost route; unknown / not-yet-composed routes fall back to [START]. */
 		fun fromRoute(route: String?): AppDestination = entries.firstOrNull { it.route == route } ?: START
 	}

@@ -5,10 +5,11 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.features.style.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.features.style.sections.LookSection
+import dev.yoanndev90.statusbarhider.features.style.sections.TestSection
 import dev.yoanndev90.statusbarhider.features.style.sections.WidgetOrderSection
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 
-/** Style tab: widget order, then the look of the custom bar (background, paddings, type, cutout). */
+/** Style tab: widget order, then the look of the custom bar (background, paddings, type, cutout) and tests. */
 @Composable
 fun StyleScreen(vm: StyleViewModel) {
 	val prefs by vm.prefs.collectAsStateWithLifecycle()
@@ -17,5 +18,6 @@ fun StyleScreen(vm: StyleViewModel) {
 		WidgetOrderSection(prefs, vm)
 		LookSection(prefs, vm)
 		CutoutSection(prefs, vm)
+		TestSection(prefs, vm)
 	}
 }

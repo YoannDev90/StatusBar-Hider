@@ -37,6 +37,15 @@ class OverlayPrefsRepository private constructor(
 		return updated
 	}
 
+	/**
+	 * Replaces the whole state (backup import). Same contract as [update]:
+	 * persist first, then emit, so every observer sees the imported value.
+	 */
+	fun replace(value: OverlayPrefs) {
+		OverlayPrefs.save(prefs, value)
+		_state.value = value
+	}
+
 	private fun load(): OverlayPrefs = OverlayPrefs.load(prefs)
 
 	companion object {

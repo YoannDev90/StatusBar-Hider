@@ -49,6 +49,9 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
+import dev.yoanndev90.statusbarhider.core.watcher.SystemUiWatcher
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideController
 import kotlinx.coroutines.CoroutineScope
@@ -77,6 +80,12 @@ class StatusBarOverlayService : Service() {
 		 * [refreshAll] calls keeps six widget refreshes off the frame budget.
 		 */
 		private const val REFRESH_DEBOUNCE_MS = 100L
+
+		/**
+		 * Foreground-app blacklist poll. Cheap (an in-process UsageStats query,
+		 * no shell), so 2 s keeps app switches from being missed for long.
+		 */
+		private const val FOREGROUND_POLL_MS = 2_000L
 		const val ACTION_STOP = "dev.yoanndev90.statusbarhider.overlay.STOP"
 
 		fun start(context: Context) {
@@ -127,6 +136,12 @@ class StatusBarOverlayService : Service() {
 	private val torchIds = ConcurrentHashMap.newKeySet<String>()
 	private var cameraManager: CameraManager? = null
 	private var torchRegistered = false
+
+	/** True while the overlay window is detached because a blacklisted app is up front. */
+	private var suppressed = false
+
+	/** The missing-usage-access hint is logged once per service run, not per poll. */
+	private var usageHintLogged = false
 
 	/** DND / auto-rotate changes land here so the icons react immediately. */
 	private val systemObserver =
@@ -231,17 +246,24 @@ class StatusBarOverlayService : Service() {
 			) {
 				when (intent.action) {
 					Intent.ACTION_SCREEN_OFF -> {
-						barState = barState.copy(screenOn = false)
+						// The screen going off always puts the keyguard back up.
+						barState = barState.copy(screenOn = false, locked = true)
 						handler.removeCallbacks(pollRunnable)
 						handler.removeCallbacks(burnInRunnable)
 						handler.removeCallbacks(bandwidthRunnable)
+						handler.removeCallbacks(foregroundRunnable)
 					}
 					Intent.ACTION_SCREEN_ON -> {
-						barState = barState.copy(screenOn = true)
+						barState = barState.copy(screenOn = true, locked = isDeviceLocked())
 						refreshAll()
 						schedulePoll()
 						scheduleBandwidth()
 						scheduleBurnIn()
+						scheduleForegroundPoll()
+					}
+					Intent.ACTION_USER_PRESENT -> {
+						barState = barState.copy(locked = false)
+						updateNotifs()
 					}
 				}
 			}
@@ -317,6 +339,15 @@ class StatusBarOverlayService : Service() {
 			}
 		}
 
+	private val foregroundRunnable =
+		object : Runnable {
+			override fun run() {
+				if (!barState.screenOn || !prefs.hideBarInApps || prefs.hiddenApps.isEmpty()) return
+				updateSuppressed()
+				handler.postDelayed(this, FOREGROUND_POLL_MS)
+			}
+		}
+
 	private val refreshAllRunnable = Runnable { refreshAll() }
 
 	override fun onBind(intent: Intent?): IBinder? = null
@@ -326,6 +357,8 @@ class StatusBarOverlayService : Service() {
 		// attachOverlay() needs the stored prefs (lock screen / touchability flags);
 		// the flow below keeps them up to date afterwards.
 		prefs = prefsRepo.state.value
+		// The lock state decides the layout from the very first frame.
+		barState = barState.copy(locked = isDeviceLocked())
 		startFg()
 		attachOverlay()
 		registerReceivers()
@@ -336,6 +369,9 @@ class StatusBarOverlayService : Service() {
 		refreshAll()
 		schedulePoll()
 		scheduleBandwidth()
+		scheduleForegroundPoll()
+		// The overlay is up for hours: it is the natural owner of the SystemUI watcher.
+		SystemUiWatcher.start(this, this)
 	}
 
 	override fun onStartCommand(
@@ -363,6 +399,7 @@ class StatusBarOverlayService : Service() {
 		if (next.showMedia) ensureMediaSessions()
 		scheduleBandwidth()
 		scheduleBurnIn()
+		scheduleForegroundPoll()
 		// Trailing-edge debounce: a slider drag calls this per frame, and
 		// refreshAll() itself runs six widget updates.
 		handler.removeCallbacks(refreshAllRunnable)
@@ -424,6 +461,7 @@ class StatusBarOverlayService : Service() {
 			} catch (_: Exception) {
 			}
 		}
+		SystemUiWatcher.stop(this)
 		detachOverlay()
 		// The overlay is gone: let SystemUI re-read the "Custom bar" tile state.
 		HideController.notifyTiles(this)
@@ -670,6 +708,7 @@ class StatusBarOverlayService : Service() {
 			val f = IntentFilter()
 			f.addAction(Intent.ACTION_SCREEN_ON)
 			f.addAction(Intent.ACTION_SCREEN_OFF)
+			f.addAction(Intent.ACTION_USER_PRESENT)
 			registerReceiver(screenReceiver, f)
 		} catch (_: Exception) {
 		}
@@ -748,6 +787,70 @@ class StatusBarOverlayService : Service() {
 		if (prefs.showBandwidth && barState.screenOn) handler.post(bandwidthRunnable)
 	}
 
+	/**
+	 * (Re)arms the 2 s foreground-app poll. Turning the feature off, emptying
+	 * the list or switching the screen off must go through here, otherwise the
+	 * loop either dies or keeps a suppressed bar suppressed forever.
+	 */
+	private fun scheduleForegroundPoll() {
+		handler.removeCallbacks(foregroundRunnable)
+		val active = prefs.hideBarInApps && prefs.hiddenApps.isNotEmpty() && barState.screenOn
+		if (active && !UsageAccess.granted(this)) {
+			if (!usageHintLogged) {
+				usageHintLogged = true
+				Log.w(TAG, "Usage access not granted - app blacklist inactive")
+				LogStore.append(this, getString(R.string.log_usage_access_missing))
+			}
+			if (suppressed) setSuppressed(false)
+			return
+		}
+		if (active) {
+			handler.post(foregroundRunnable)
+		} else if (suppressed) {
+			setSuppressed(false)
+		}
+	}
+
+	/** Recomputes the suppression state from the app currently in front. */
+	private fun updateSuppressed() {
+		val pkg = foregroundPackage() ?: return
+		setSuppressed(pkg in prefs.hiddenApps)
+	}
+
+	/**
+	 * Attaches / detaches the whole overlay window: a half-empty bar would
+	 * still take touch space and paint its background over the app.
+	 */
+	private fun setSuppressed(value: Boolean) {
+		if (suppressed == value) return
+		suppressed = value
+		if (value) {
+			detachOverlay()
+		} else {
+			attachOverlay()
+		}
+	}
+
+	/** Package of the last resumed activity in the trailing window, or null when unknown. */
+	private fun foregroundPackage(): String? =
+		try {
+			val usm = getSystemService(android.app.usage.UsageStatsManager::class.java) ?: return null
+			val now = System.currentTimeMillis()
+			val events = usm.queryEvents(now - 10_000L, now)
+			val event = android.app.usage.UsageEvents
+				.Event()
+			var pkg: String? = null
+			while (events.hasNextEvent()) {
+				events.getNextEvent(event)
+				if (event.eventType == android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED) {
+					pkg = event.packageName
+				}
+			}
+			pkg
+		} catch (_: Exception) {
+			null
+		}
+
 	private fun updateBattery() {
 		barState =
 			barState.copy(
@@ -758,7 +861,10 @@ class StatusBarOverlayService : Service() {
 
 	private fun updateNotifs() {
 		val listenerOn = NotifListenerService.isEnabled(this)
-		val enabled = prefs.showNotifs && listenerOn
+		// Privacy filter: while the keyguard is up the icons (and the progress
+		// ring they feed) would leak what the notifications are about.
+		val privateFilter = barState.locked && prefs.hideNotifsOnLock
+		val enabled = prefs.showNotifs && listenerOn && !privateFilter
 		val icons =
 			if (!enabled) {
 				emptyList()
@@ -776,9 +882,17 @@ class StatusBarOverlayService : Service() {
 			NotifIcons
 				.progress()
 				?.let { OverlayProgress(it.fraction, it.indeterminate, it.pkg) }
-				?.takeIf { listenerOn }
+				?.takeIf { listenerOn && !privateFilter }
 		barState = barState.copy(notifsEnabled = enabled, notifs = icons, progress = progress)
 	}
+
+	/** True while the keyguard is up (no screen lock at all = never locked). */
+	private fun isDeviceLocked(): Boolean =
+		try {
+			getSystemService(android.app.KeyguardManager::class.java)?.isDeviceLocked == true
+		} catch (_: Exception) {
+			false
+		}
 
 	/** Next calendar event in the next 24h as "HH:mm Title". */
 	private fun updateCalendar() {

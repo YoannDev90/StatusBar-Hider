@@ -33,13 +33,13 @@ installed by mise.
 | `mise run clean`          | Clean Gradle outputs             |
 | `mise run devices`        | List connected ADB devices       |
 | `mise run logs`           | Live log TUI (logstream)         |
-| `mise run show-in-drawer` | Re-enable the launcher icon      |
 | `mise run uninstall`      | Uninstall the app from device    |
 
 ## Build without mise
 
 ```bash
-./gradlew assembleRelease
+./gradlew assembleRelease   # APK
+./gradlew testDebugUnitTest # unit tests (prefs, backup, control API)
 ```
 
 Requires `ANDROID_HOME` to be set and the following SDK components installed:
@@ -88,19 +88,53 @@ All commands are OEM-specific. The JSON files in `app/src/main/assets/oem/` defi
 
 ## App features
 
+- **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications and usage access (re-openable from the Status tab).
+- **Show / hide from the first screen** -- the Status tab opens with Show custom bar / Hide custom bar actions, no need to dig into Style.
 - **Custom status bar overlay** -- a Compose bar with clock, date, battery, connectivity, notification and media widgets. Stays visible over the **lock screen** (toggleable) and shows over the system bar while it is hidden.
+- **Auto-start bar on boot** -- optional switch (Bar tab, Behavior): brings the custom bar back after every reboot on its own, without Shizuku and independently of "Auto-hide after reboot".
+- **Lock screen modes** -- "Full" keeps every widget above the keyguard, "Clock only" draws strictly the clock; "Hide notification contents on lock screen" blanks icons and strips progress so the bar leaks no content while locked.
+- **Hide the bar inside selected apps** -- a blacklist (usage access) suppresses the overlay while a chosen app is in the foreground; polling every 2 s keeps the transition quick without a background service.
+- **SystemUI restart watcher** -- detects a SystemUI restart / crash by PID and re-applies the hide commands so the status bar does not come back (up to 60 s delay).
+- **Control API + widget** -- Tasker/automation broadcasts and a home-screen widget toggle the bar or the system bar (see below).
+- **Backup / restore** -- exports all settings and the OEM pick as a JSON file and re-imports it through the system file picker.
+- **Style test tools** -- "Send test notification" posts a 42% progress notification (drives the notification widget and the camera ring), and "Preview camera ring" draws a full circle around the detected cutout so the gap / position / stroke sliders can be tuned live. The preview is a test mode: it never persists and disappears on restart.
 - **Auto OEM detection** -- matches system properties against available JSON configs on first launch; override or re-detect from the UI.
 - **Untested badge** -- configs that were only researched online are labelled `untested` in the header; their troubleshooting notes are printed in the log before the commands run.
-- **Hide from launcher** -- disables the launcher activity so the app disappears from the app drawer. Re-access via `mise run show-in-drawer` or Settings > Apps > StatusBar Hider.
 - **Boot auto-hide** -- a `BOOT_COMPLETED` receiver re-applies the hide commands on reboot (requires "Start on boot" enabled in Shizuku settings). Disable it with the "Auto-hide after reboot" switch.
 - **Export / share logs** -- copies the log to the clipboard, or shares it as a file (the last 500 timestamped lines are kept on disk, including boot-time output).
 - **Log panel** -- shows the output of every command for debugging.
+
+## Control API (Tasker, automations, shell)
+
+Receivers are exported but never registered as filters, so only **explicit**
+broadcasts (targeting the component) reach them.
+
+```bash
+# Custom bar
+adb shell am broadcast -a dev.yoanndev90.statusbarhider.SHOW_BAR
+adb shell am broadcast -a dev.yoanndev90.statusbarhider.HIDE_BAR
+adb shell am broadcast -a dev.yoanndev90.statusbarhider.TOGGLE_BAR
+
+# System status bar (Shizuku hide / restore set)
+adb shell am broadcast -a dev.yoanndev90.statusbarhider.HIDE_SYSTEM_BAR
+adb shell am broadcast -a dev.yoanndev90.statusbarhider.RESTORE_SYSTEM_BAR
+adb shell am broadcast -a dev.yoanndev90.statusbarhider.TOGGLE_SYSTEM_BAR
+```
+
+In Tasker, use *Send intent* with the same action and
+`dev.yoanndev90.statusbarhider` as the package. Every dispatch is written to
+the app log. The home-screen widget (add it from the launcher's widget picker)
+sends the show/hide and hide/restore intents through the same code path.
 
 ## Known limitations
 
 - Disable flags (`cmd statusbar send-disable-flag`) are volatile and reset on reboot / SystemUI restart. The `BOOT_COMPLETED` receiver handles this automatically, but **Shizuku must be configured to start on boot**.
 - `ShizukuCmd` calls `IShizukuService.newProcess()` directly via the `aidl` artifact instead of the deprecated `Shizuku.newProcess()` method (private since Shizuku 13.1.5). Stdout and stderr are drained concurrently with a timeout to avoid pipe deadlocks, and the **exit code is honoured** (a failing command is reported as `FAILED`, not silently swallowed).
-- The overlay uses `FLAG_SHOW_WHEN_LOCKED` to draw above the keyguard; without the toggle it behaves like a normal overlay window.
+- The overlay uses `FLAG_SHOW_WHEN_LOCKED` to draw above the keyguard; without the toggle it behaves like a normal overlay window. "Clock only" is strict: the clock widget is the only thing drawn while locked.
+- The app blacklist needs **usage access** (Settings > Apps > Special access > Usage access) and polls the foreground package every 2 s while the feature is on; without the grant the feature stays inert and says so in the log.
+- The SystemUI watcher polls the SystemUI PID (no system callback exists for it), so a restart can take up to **60 s** to be noticed, and the hide commands are re-applied only while the app is running (the `BOOT_COMPLETED` receiver covers reboots).
+- Backup files carry a `schema_version`; a backup written by a newer build is refused instead of being half-applied.
+- The camera ring (including the Style-tab preview) can only be drawn around a **detected** cutout; devices without a punch-hole / notch get no ring geometry to place. The preview also requires the custom bar to be visible.
 
 ## Credits
 

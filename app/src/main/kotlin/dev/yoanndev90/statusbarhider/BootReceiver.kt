@@ -9,6 +9,7 @@ import android.util.Log
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
 import dev.yoanndev90.statusbarhider.data.OemRepository
+import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideController
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
@@ -49,10 +50,18 @@ class BootReceiver : BroadcastReceiver() {
 		if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
 		val app = context.applicationContext
-		if (!OverlayPrefsRepository
-				.getInstance(app)
-				.state.value.autoHideBoot
-		) {
+		val prefs = OverlayPrefsRepository
+			.getInstance(app)
+			.state.value
+
+		// The overlay is a plain window - no Shizuku needed, so it can come back
+		// even when the hide pass below is disabled or fails.
+		if (prefs.autoStartBar) {
+			log(app, "Auto-starting the custom bar on boot")
+			OverlayController.setEnabled(app, true)
+		}
+
+		if (!prefs.autoHideBoot) {
 			Log.i(TAG, "Auto-hide on boot is disabled - skipping")
 			return
 		}

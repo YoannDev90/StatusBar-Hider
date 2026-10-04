@@ -3,10 +3,12 @@ package dev.yoanndev90.statusbarhider.features.bar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.yoanndev90.statusbarhider.features.bar.sections.AppsSection
 import dev.yoanndev90.statusbarhider.features.bar.sections.BatterySection
 import dev.yoanndev90.statusbarhider.features.bar.sections.BehaviorSection
 import dev.yoanndev90.statusbarhider.features.bar.sections.ClockSection
 import dev.yoanndev90.statusbarhider.features.bar.sections.ConnectivitySection
+import dev.yoanndev90.statusbarhider.features.bar.sections.LockScreenSection
 import dev.yoanndev90.statusbarhider.features.bar.sections.NotificationsSection
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 
@@ -21,9 +23,11 @@ fun BarScreen(vm: BarViewModel) {
 
 	SettingsScreen {
 		ClockSection(prefs, vm)
+		LockScreenSection(prefs, vm)
 		BatterySection(prefs, vm)
 		NotificationsSection(prefs, vm)
 		ConnectivitySection(prefs, vm)
+		AppsSection(prefs, vm)
 		BehaviorSection(prefs, vm)
 	}
 }

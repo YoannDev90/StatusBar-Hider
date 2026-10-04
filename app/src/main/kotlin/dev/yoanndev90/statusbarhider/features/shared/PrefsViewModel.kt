@@ -1,6 +1,10 @@
 package dev.yoanndev90.statusbarhider.features.shared
 
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import dev.yoanndev90.statusbarhider.R
@@ -34,6 +38,22 @@ abstract class PrefsViewModel(
 	fun setOverlayEnabled(enabled: Boolean) {
 		OverlayController.setEnabled(getApplication(), enabled)
 		log(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden)
+	}
+
+	/**
+	 * Shows the custom bar: the window cannot be attached without its
+	 * permission, so ask for it first instead of failing silently. Shared by
+	 * the Status, Style and widget entry points.
+	 */
+	fun showOverlayBar() {
+		val app = getApplication<Application>()
+		if (!Settings.canDrawOverlays(app)) {
+			Toast.makeText(app, R.string.toast_grant_overlay_permission, Toast.LENGTH_LONG).show()
+			val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${app.packageName}"))
+			app.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+			return
+		}
+		setOverlayEnabled(true)
 	}
 
 	/** Appends a raw line to the app log. */

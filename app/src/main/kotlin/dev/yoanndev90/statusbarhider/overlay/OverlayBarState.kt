@@ -29,6 +29,8 @@ data class OverlayBarState(
 	val batteryCharging: Boolean = false,
 	val usbConnected: Boolean = false,
 	val screenOn: Boolean = true,
+	/** Keyguard is up: drives the lock screen layout and the privacy filter. */
+	val locked: Boolean = false,
 	val notifsEnabled: Boolean = false,
 	val notifs: List<OverlayNotifIcon> = emptyList(),
 	val bandwidthText: String = "",

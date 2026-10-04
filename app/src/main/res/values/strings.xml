@@ -15,6 +15,7 @@
     <string name="section_custom_bar">Custom bar</string>
     <string name="section_widget_order">Widget order</string>
     <string name="section_cutout">Cutout</string>
+    <string name="section_test">Test</string>
     <string name="section_app">App</string>
     <string name="section_log">Log</string>
 
@@ -26,9 +27,11 @@
 
     <!-- Custom bar setting groups -->
     <string name="group_clock_date">Clock &amp; date</string>
+    <string name="group_lock_screen">Lock screen</string>
     <string name="group_battery">Battery</string>
     <string name="group_notifications">Notifications &amp; media</string>
     <string name="group_connectivity">Connectivity</string>
+    <string name="group_apps">Hidden apps</string>
     <string name="group_behavior">Behavior</string>
 
     <!-- Buttons -->
@@ -38,12 +41,33 @@
     <string name="action_restore">Restore (undo)</string>
     <string name="action_set">Set</string>
     <string name="action_enable_notification_access">Enable notification access</string>
-    <string name="action_hide_from_launcher">Hide from launcher</string>
     <string name="action_export_logs">Export logs</string>
     <string name="action_share_logs">Share logs as file</string>
     <string name="action_redetect_oem">Re-detect OEM</string>
+    <string name="action_choose_apps">Choose apps</string>
+    <string name="action_grant_usage_access">Grant usage access</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
     <string name="action_show_custom_bar">Show custom bar</string>
     <string name="action_hide_custom_bar">Hide custom bar</string>
+    <string name="action_test_notification">Send test notification</string>
+    <string name="action_grant">Grant</string>
+    <string name="action_setup_done">All done</string>
+    <string name="action_setup_later">Not now</string>
+    <string name="action_open_setup">Run setup checklist</string>
+    <string name="action_export_settings">Export settings (JSON)</string>
+    <string name="action_import_settings">Import settings</string>
+
+    <!-- Setup checklist -->
+    <string name="setup_title">Setup</string>
+    <string name="setup_subtitle">Grant what the app needs. Every step can be done later from the Status tab.</string>
+    <string name="setup_shizuku">Shizuku running and authorized</string>
+    <string name="setup_group_permissions">Permissions</string>
+    <string name="setup_overlay">Display over other apps</string>
+    <string name="setup_notif_access">Notification access</string>
+    <string name="setup_calendar">Calendar (next event widget)</string>
+    <string name="setup_post_notifs">Notifications (foreground service)</string>
+    <string name="setup_usage">Usage access (app blacklist, optional)</string>
 
     <!-- Switches -->
     <string name="switch_show_seconds">Show seconds (extra battery)</string>
@@ -72,15 +96,25 @@
     <string name="switch_dark_text">Dark text (for transparent bar)</string>
     <string name="switch_use_24h">24-hour clock</string>
     <string name="switch_show_on_lock_screen">Show on lock screen</string>
+    <string name="switch_hide_notifs_on_lock">Hide notification icons while locked</string>
     <string name="switch_auto_hide_boot">Auto-hide after reboot</string>
+    <string name="switch_auto_start_bar">Auto-start bar on boot</string>
     <string name="switch_camera_auto">Auto-detect cutout</string>
     <string name="switch_camera_ring">Progress ring around camera</string>
+    <string name="switch_ring_preview">Preview camera ring</string>
+    <string name="switch_hide_bar_in_apps">Hide the bar in selected apps</string>
+
+    <!-- Hints -->
+    <string name="hint_usage_access">Usage access is needed to know which app is in front. The blacklist stays inactive without it.</string>
+    <string name="hint_no_apps_selected">No app selected yet.</string>
+    <string name="hint_ring_preview">Draws a full circle around the detected cutout, without waiting for a progress notification. The bar turns on automatically.</string>
+    <string name="dialog_pick_apps">Hide the bar in…</string>
 
     <!-- Sliders, labels and hints -->
     <string name="label_date_format">Date format (EEE dd MMM)</string>
     <string name="label_text_weight">Text weight</string>
     <string name="label_ring_color">Ring color</string>
-    <string name="label_widget_order_hint">Drag the handle to reorder</string>
+    <string name="label_widget_order_hint">Long-press a row, then drag. The first row is the left edge of the bar.</string>
     <string name="label_oem_config">Config: %1$s</string>
     <string name="hint_authorize_shizuku">Authorize Shizuku first: the hide / restore commands cannot run without it.</string>
     <string name="slider_max_notification_icons">Max notification icons</string>
@@ -111,6 +145,8 @@
     <string name="background_transparent">Transparent</string>
     <string name="background_semi">Semi</string>
     <string name="background_black">Black</string>
+    <string name="lock_mode_full">Full layout</string>
+    <string name="lock_mode_clock_only">Clock only</string>
     <string name="font_weight_normal">Normal</string>
     <string name="font_weight_medium">Medium</string>
     <string name="font_weight_bold">Bold</string>
@@ -121,7 +157,7 @@
     <string name="widget_calendar">Next event</string>
     <string name="widget_notifications">Notifications</string>
     <string name="widget_media">Now playing</string>
-    <string name="widget_spacer">— Flexible space —</string>
+    <string name="widget_spacer">Flexible space</string>
     <string name="widget_connectivity">Connectivity</string>
     <string name="widget_battery">Battery</string>
     <string name="widget_alarm">Next alarm</string>
@@ -134,6 +170,10 @@
     <string name="tile_tap_to_show">Tap to show</string>
     <string name="tile_tap_to_restore">Tap to restore</string>
 
+    <!-- Home screen widget -->
+    <string name="widget_label">StatusBar Hider controls</string>
+    <string name="widget_description">Toggle the custom bar, hide or restore the system status bar</string>
+
     <!-- Foreground service notification -->
     <string name="notif_channel_name">Custom status bar</string>
     <string name="notif_content_title">Custom status bar active</string>
@@ -145,14 +185,26 @@
     <string name="toast_cannot_open_notification_settings">Cannot open notification settings</string>
     <string name="toast_calendar_permission_denied">Calendar permission denied</string>
     <string name="toast_grant_overlay_permission">Grant overlay permission first</string>
-    <string name="toast_hidden_from_launcher">Hidden! Access via Settings &gt; Apps &gt; StatusBar Hider</string>
-    <string name="toast_launcher_icon_restored">Launcher icon restored</string>
     <string name="toast_logs_copied">Logs copied to clipboard</string>
     <string name="toast_cannot_share_logs">Cannot share logs</string>
+    <string name="toast_export_failed">Cannot export settings</string>
+    <string name="toast_import_failed">Cannot import these settings</string>
+    <string name="toast_import_ok">Settings imported</string>
+    <string name="toast_test_notif_sent">Test notification sent - watch the bar</string>
+    <string name="toast_test_notif_no_listener">Sent, but notification access is off: the bar will not react</string>
+    <string name="toast_test_notif_denied">Notifications permission denied</string>
+    <string name="toast_test_notif_failed">Cannot send the test notification</string>
+
+    <!-- Test notification (Style tab) -->
+    <string name="test_notif_channel">Tests</string>
+    <string name="test_notif_title">StatusBar Hider</string>
+    <string name="test_notif_text">Test - progress at 42%</string>
     <string name="clipboard_label">StatusBarHider logs</string>
 
     <!-- Content descriptions (accessibility) -->
     <string name="cd_reorder">Reorder</string>
+    <string name="cd_granted">Granted</string>
+    <string name="cd_missing">Missing</string>
     <string name="cd_next_event">Next event</string>
     <string name="cd_now_playing">Now playing</string>
     <string name="cd_next_alarm">Next alarm</string>
@@ -200,6 +252,12 @@
     <string name="log_empty">No output yet - run a command first.</string>
     <string name="log_oem_selected">OEM config: %1$s</string>
     <string name="log_oem_redetected">OEM config re-detected: %1$s</string>
+    <string name="log_usage_access_missing">Usage access not granted - app blacklist inactive.</string>
+    <string name="log_systemui_restarted">SystemUI restarted (%1$s -&gt; %2$s) - re-applying hide commands</string>
+    <string name="log_reapply_hide">Re-applying hide after a SystemUI restart...</string>
+    <string name="log_overlay_permission_missing">Overlay permission missing - the custom bar was not started.</string>
+    <string name="log_settings_exported">Settings exported to a JSON file</string>
+    <string name="log_settings_imported">Settings imported</string>
 
     <!-- Shell command failures -->
     <string name="err_shizuku_binder_unavailable">Shizuku binder not available</string>

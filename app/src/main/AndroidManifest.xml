@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -11,6 +12,11 @@
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.NFC" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Detects the app in front of the overlay (app blacklist). Granted by the
+         user in Settings > Special app access > Usage access, never at install. -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <uses-feature
         android:name="android.hardware.nfc"
@@ -18,6 +24,14 @@
     <uses-feature
         android:name="android.hardware.location.gps"
         android:required="false" />
+
+    <!-- Launcher apps list (the app blacklist picker); required on API 30+. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
 
     <application
         android:label="@string/app_name"
@@ -66,13 +80,27 @@
             </intent-filter>
         </receiver>
 
-        <!-- Re-enables the launcher icon via explicit component broadcast.
-             No intent filter: only explicit broadcasts targeting this component
-             are accepted (e.g. `am broadcast -n .../.ShowInDrawerReceiver`). -->
+        <!-- External control API for Tasker / `am broadcast`. No intent filter:
+             only explicit broadcasts targeting this component are accepted,
+             actions documented in README.md. -->
         <receiver
-            android:name="dev.yoanndev90.statusbarhider.ShowInDrawerReceiver"
+            android:name="dev.yoanndev90.statusbarhider.control.ControlReceiver"
             android:enabled="true"
             android:exported="true" />
+
+        <!-- Home screen widget: toggles the custom bar and the system bar. -->
+        <receiver
+            android:name="dev.yoanndev90.statusbarhider.widget.BarWidgetProvider"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/appwidget_bar_info" />
+        </receiver>
 
         <service
             android:name="dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService"

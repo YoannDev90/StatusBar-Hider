@@ -1,6 +1,11 @@
 package dev.yoanndev90.statusbarhider.features.status
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,8 +20,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import dev.yoanndev90.statusbarhider.MainActivity
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.backup.SettingsBackup
+import dev.yoanndev90.statusbarhider.core.backup.SettingsBackupException
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
@@ -27,12 +34,27 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
  * hide / restore commands. App-wide actions live at the bottom.
  */
 @Composable
-fun StatusScreen(vm: StatusViewModel) {
+fun StatusScreen(
+	vm: StatusViewModel,
+	onOpenSetup: () -> Unit = {}
+) {
 	val state by vm.uiState.collectAsStateWithLifecycle()
 	val context = LocalContext.current
+	val importFailedToast = stringResource(R.string.toast_import_failed)
+	val importOkToast = stringResource(R.string.toast_import_ok)
+	val importLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+			if (uri != null) importSettings(context, uri, importOkToast, importFailedToast)
+		}
 
 	SettingsScreen {
 		SettingGroup { DeviceHeader(state) }
+
+		// First screen, first controls: show / hide without hunting in Style.
+		SettingGroup(R.string.section_custom_bar) {
+			SettingAction(R.string.action_show_custom_bar) { vm.showOverlayBar() }
+			SettingAction(R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
+		}
 
 		SettingGroup(R.string.section_shizuku) {
 			SettingAction(R.string.action_authorize_shizuku) { vm.requestShizukuPermission() }
@@ -59,11 +81,44 @@ fun StatusScreen(vm: StatusViewModel) {
 		}
 
 		SettingGroup(R.string.section_app) {
-			SettingAction(R.string.action_hide_from_launcher) {
-				MainActivity.hideFromLauncher(context)
-				Toast.makeText(context, R.string.toast_hidden_from_launcher, Toast.LENGTH_LONG).show()
-			}
+			SettingAction(R.string.action_open_setup) { onOpenSetup() }
+			SettingAction(R.string.action_export_settings) { exportSettings(context) }
+			SettingAction(R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
 		}
+	}
+}
+
+/** Shares the current settings as a JSON file through the system share sheet. */
+private fun exportSettings(context: Context) {
+	val intent = SettingsBackup.shareIntent(context)
+	if (intent == null) {
+		Toast.makeText(context, R.string.toast_export_failed, Toast.LENGTH_LONG).show()
+		return
+	}
+	context.startActivity(Intent.createChooser(intent, null))
+	LogStore.append(context, context.getString(R.string.log_settings_exported))
+}
+
+/** Reads a picked file and applies it as a settings backup. */
+private fun importSettings(
+	context: Context,
+	uri: Uri,
+	okToast: String,
+	failToast: String
+) {
+	try {
+		val raw =
+			context.contentResolver
+				.openInputStream(uri)
+				?.bufferedReader()
+				?.use { it.readText() }
+				?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
+		SettingsBackup.importSettings(context, raw)
+		LogStore.append(context, context.getString(R.string.log_settings_imported))
+		Toast.makeText(context, okToast, Toast.LENGTH_LONG).show()
+	} catch (e: Exception) {
+		LogStore.append(context, context.getString(R.string.log_error, e.message))
+		Toast.makeText(context, failToast, Toast.LENGTH_LONG).show()
 	}
 }
 

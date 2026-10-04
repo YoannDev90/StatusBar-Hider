@@ -52,9 +52,6 @@ fun ClockSection(
 	SettingGroup(R.string.group_clock_date) {
 		SettingSwitch(R.string.switch_show_seconds, prefs.showSeconds) { vm.updatePrefs { copy(showSeconds = it) } }
 		SettingSwitch(R.string.switch_use_24h, prefs.use24h) { vm.updatePrefs { copy(use24h = it) } }
-		SettingSwitch(R.string.switch_show_on_lock_screen, prefs.showOnLockScreen) {
-			vm.updatePrefs { copy(showOnLockScreen = it) }
-		}
 		SettingSwitch(R.string.switch_date, prefs.showDate) { vm.updatePrefs { copy(showDate = it) } }
 		Row(
 			modifier = Modifier.fillMaxWidth(),

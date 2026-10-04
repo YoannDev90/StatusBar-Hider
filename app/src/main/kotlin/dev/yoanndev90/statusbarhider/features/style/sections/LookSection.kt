@@ -1,16 +1,10 @@
 package dev.yoanndev90.statusbarhider.features.style.sections
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
-import android.widget.Toast
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
@@ -32,10 +26,8 @@ fun LookSection(
 	prefs: OverlayPrefs,
 	vm: StyleViewModel
 ) {
-	val context = LocalContext.current
-
 	SettingGroup(R.string.section_custom_bar) {
-		SettingAction(R.string.action_show_custom_bar) { showBar(context, vm) }
+		SettingAction(R.string.action_show_custom_bar) { vm.showOverlayBar() }
 		SettingAction(R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
 
 		SettingSwitch(R.string.switch_dark_text, prefs.darkText) { vm.updatePrefs { copy(darkText = it) } }
@@ -101,17 +93,3 @@ private fun backgroundIndex(background: OverlayBackground): Int =
 		OverlayBackground.BLACK -> 2
 		OverlayBackground.SEMI -> 1
 	}
-
-/** The overlay window cannot be attached without its permission: ask for it first. */
-private fun showBar(
-	context: Context,
-	vm: StyleViewModel
-) {
-	if (!Settings.canDrawOverlays(context)) {
-		Toast.makeText(context, R.string.toast_grant_overlay_permission, Toast.LENGTH_LONG).show()
-		val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}"))
-		context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-		return
-	}
-	vm.setOverlayEnabled(true)
-}

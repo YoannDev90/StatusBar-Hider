@@ -6,6 +6,7 @@ import dev.yoanndev90.statusbarhider.R
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -21,7 +22,13 @@ private const val KEY_ENABLED = "enabled"
 private const val KEY_SHOW_SECONDS = "show_seconds"
 private const val KEY_USE_24H = "use_24h"
 private const val KEY_SHOW_ON_LOCK_SCREEN = "show_on_lock_screen"
+private const val KEY_LOCK_SCREEN_MODE = "lock_screen_mode"
+private const val KEY_HIDE_NOTIFS_ON_LOCK = "hide_notifs_on_lock"
+private const val KEY_HIDE_BAR_IN_APPS = "hide_bar_in_apps"
+private const val KEY_HIDDEN_APPS = "hidden_apps"
 private const val KEY_AUTO_HIDE_BOOT = "auto_hide_boot"
+private const val KEY_AUTO_START_BAR = "auto_start_bar"
+private const val KEY_CAMERA_RING_PREVIEW = "camera_ring_preview"
 private const val KEY_SHOW_BATTERY = "show_battery"
 private const val KEY_SHOW_BATTERY_PCT = "show_battery_pct"
 private const val KEY_SHOW_WIFI = "show_wifi"
@@ -118,6 +125,16 @@ enum class OverlayBackground {
 	BLACK
 }
 
+/** Widget layout used while the device is locked (see [OverlayPrefs.lockScreenMode]). */
+@Serializable
+enum class LockScreenMode {
+	/** Same widgets as when unlocked. */
+	FULL,
+
+	/** Clock widget only: nothing else is drawn above the keyguard. */
+	CLOCK_ONLY
+}
+
 /**
  * Keeps [OverlayPrefs.widgetOrder] stored as the legacy comma-separated string
  * instead of a JSON array, so older builds can still read it.
@@ -133,6 +150,29 @@ private object WidgetOrderSerializer : KSerializer<List<String>> {
 	}
 
 	override fun deserialize(decoder: Decoder): List<String> = WidgetId.parseOrder(decoder.decodeString())
+}
+
+/**
+ * Same storage choice as [WidgetOrderSerializer] for the app blacklist:
+ * package names never contain a comma, and the CSV form stays readable.
+ */
+private object CsvListSerializer : KSerializer<List<String>> {
+	override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("csvList", PrimitiveKind.STRING)
+
+	override fun serialize(
+		encoder: Encoder,
+		value: List<String>
+	) {
+		encoder.encodeString(value.joinToString(","))
+	}
+
+	override fun deserialize(decoder: Decoder): List<String> =
+		decoder
+			.decodeString()
+			.split(",")
+			.map { it.trim() }
+			.filter { it.isNotEmpty() }
+			.distinct()
 }
 
 /**
@@ -204,8 +244,19 @@ data class OverlayPrefs(
 	val interactive: Boolean = false,
 	@SerialName(KEY_SHOW_ON_LOCK_SCREEN)
 	val showOnLockScreen: Boolean = true,
+	@SerialName(KEY_LOCK_SCREEN_MODE)
+	val lockScreenMode: LockScreenMode = LockScreenMode.FULL,
+	@SerialName(KEY_HIDE_NOTIFS_ON_LOCK)
+	val hideNotifsOnLock: Boolean = false,
+	@SerialName(KEY_HIDE_BAR_IN_APPS)
+	val hideBarInApps: Boolean = false,
+	@SerialName(KEY_HIDDEN_APPS)
+	@Serializable(with = CsvListSerializer::class)
+	val hiddenApps: List<String> = emptyList(),
 	@SerialName(KEY_AUTO_HIDE_BOOT)
 	val autoHideBoot: Boolean = true,
+	@SerialName(KEY_AUTO_START_BAR)
+	val autoStartBar: Boolean = false,
 	@SerialName(KEY_SHOW_NFC)
 	val showNfc: Boolean = false,
 	@SerialName(KEY_SHOW_GPS)
@@ -247,7 +298,14 @@ data class OverlayPrefs(
 	@SerialName(KEY_CAMERA_RING_STROKE)
 	val cameraRingStrokeDp: Int = 3,
 	@SerialName(KEY_CAMERA_RING_COLOR)
-	val cameraRingColor: String = ""
+	val cameraRingColor: String = "",
+	/**
+	 * Style-page test toggle: draw a full ring around the cutout regardless of
+	 * notification progress. Deliberately transient - it must not survive a
+	 * restart, or the preview would come back with the bar and look broken.
+	 */
+	@Transient
+	val cameraRingPreview: Boolean = false
 ) {
 	/** Effective clock pattern honoring the seconds and 12 / 24-hour toggles. */
 	fun effectiveTimeFormat(): String =
@@ -315,6 +373,13 @@ data class OverlayPrefs(
 			} catch (_: Exception) {
 				OverlayPrefs()
 			}
+
+		/**
+		 * Strict parse for backups: throws on malformed input instead of
+		 * silently falling back to the defaults, but normalizes like [fromJson].
+		 */
+		fun decodeStrict(element: kotlinx.serialization.json.JsonElement): OverlayPrefs =
+			normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), element))
 
 		/** Clamps free-form fields the way the old per-key opt* parser did. */
 		private fun normalize(prefs: OverlayPrefs): OverlayPrefs =

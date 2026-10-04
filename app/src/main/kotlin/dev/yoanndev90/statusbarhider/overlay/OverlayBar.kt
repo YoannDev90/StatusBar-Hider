@@ -75,7 +75,17 @@ fun OverlayBar(
 	val padTop = prefs.padTopDp.dp
 	val padBottom = prefs.padBottomDp.dp
 	val spacing = prefs.widgetSpacingDp.dp
-	val showRing = prefs.cameraRing && camera != null && progress != null
+	// The Style-page preview draws a full circle regardless of notifications,
+	// so the ring placement can be tuned without waiting for a progress bar.
+	val preview = prefs.cameraRingPreview
+	val showRing = camera != null && (preview || (prefs.cameraRing && progress != null))
+	// Preview wins: a static full circle is what you want to judge alignment.
+	val ringProgress: OverlayProgress? =
+		when {
+			!showRing -> null
+			preview -> OverlayProgress(1f, false, "preview")
+			else -> progress
+		}
 	val ringStrokePx = with(density) { prefs.cameraRingStrokeDp.dp.toPx() }
 	// Widgets keep clear of the ring too, not just of the cutout slot.
 	val ringClearancePx = if (showRing) ringStrokePx else 0f
@@ -113,8 +123,22 @@ fun OverlayBar(
 				.defaultMinSize(minHeight = minHeight)
 				.background(Color(prefs.backgroundColor()))
 	) {
+		val clockOnly = state.locked && prefs.lockScreenMode == LockScreenMode.CLOCK_ONLY
 		val split = camera != null && camera.anchor == CameraAnchor.Center && WidgetId.SPACER in prefs.widgetOrder
-		if (camera != null && split) {
+		if (clockOnly) {
+			// Lock screen, minimal layout: the clock alone, clear of the cutout slot.
+			Row(
+				modifier =
+					Modifier
+						.align(Alignment.Center)
+						.fillMaxWidth()
+						.padding(start = padStart, top = padTop, end = padEnd, bottom = padBottom),
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.spacedBy(spacing)
+			) {
+				cell(WidgetId.CLOCK)
+			}
+		} else if (camera != null && split) {
 			// Two clusters: content on each side of the camera, bounded by its slot.
 			val leftIds = prefs.widgetOrder.takeWhile { it != WidgetId.SPACER }
 			val rightIds = prefs.widgetOrder.dropWhile { it != WidgetId.SPACER }.drop(1)
@@ -180,7 +204,7 @@ fun OverlayBar(
 			}
 		}
 
-		if (showRing && camera != null && progress != null) {
+		if (showRing && !clockOnly && camera != null && ringProgress != null) {
 			val ringColor =
 				remember(prefs.cameraRingColor, fg) {
 					if (prefs.cameraRingColor.isEmpty()) {
@@ -190,7 +214,7 @@ fun OverlayBar(
 					}
 				}
 			val stroke = prefs.cameraRingStrokeDp.dp
-			if (progress.indeterminate) {
+			if (ringProgress.indeterminate) {
 				val infinite = rememberInfiniteTransition(label = "ringSpin")
 				val spin by
 					infinite.animateFloat(
@@ -203,7 +227,7 @@ fun OverlayBar(
 			} else {
 				val fraction by
 					animateFloatAsState(
-						targetValue = progress.fraction,
+						targetValue = ringProgress.fraction,
 						animationSpec = tween(400),
 						label = "ringFraction"
 					)

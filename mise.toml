@@ -43,10 +43,6 @@ run = "adb devices"
 description = "Live log stream for StatusBarHider (logstream TUI)"
 run = "cargo run --quiet --manifest-path tools/logstream/Cargo.toml -- --package dev.yoanndev90.statusbarhider"
 
-[tasks.show-in-drawer]
-description = "Re-enable the launcher icon (reverse 'Hide from launcher')"
-run = "adb shell am broadcast -a dev.yoanndev90.statusbarhider.SHOW_IN_DRAWER -n dev.yoanndev90.statusbarhider/.ShowInDrawerReceiver"
-
 [tasks.uninstall]
 description = "Uninstall the app from device"
 run = "adb uninstall dev.yoanndev90.statusbarhider"

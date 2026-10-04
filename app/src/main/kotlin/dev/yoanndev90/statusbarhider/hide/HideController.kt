@@ -9,6 +9,7 @@ import dev.yoanndev90.statusbarhider.core.command.CommandRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.tiles.CustomBarTile
 import dev.yoanndev90.statusbarhider.tiles.HideRestoreTile
+import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
 
 /**
  * Runs the OEM hide / restore command sets and remembers whether the system
@@ -84,6 +85,7 @@ object HideController {
 			prefs(context).edit().putBoolean(KEY_HIDDEN, hide).apply()
 		}
 		notifyTiles(context)
+		BarWidget.updateAll(context)
 		return Result(ok, lines)
 	}
 

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- RemoteViews only allows framework views: plain TextViews with a shape
+     background stand in for buttons so the widget reads on any wallpaper. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="4dp">
+
+    <TextView
+        android:id="@+id/widget_action_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/widget_button"
+        android:gravity="center"
+        android:padding="10dp"
+        android:textColor="#FFFFFFFF"
+        android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/widget_action_system"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/widget_button"
+        android:gravity="center"
+        android:padding="10dp"
+        android:textColor="#FFFFFFFF"
+        android:textSize="14sp" />
+</LinearLayout>

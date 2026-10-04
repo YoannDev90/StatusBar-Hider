@@ -6,4 +6,5 @@
 
 # App BroadcastReceivers - referenced by name in AndroidManifest.xml
 -keep class dev.yoanndev90.statusbarhider.BootReceiver { *; }
--keep class dev.yoanndev90.statusbarhider.ShowInDrawerReceiver { *; }
+-keep class dev.yoanndev90.statusbarhider.control.ControlReceiver { *; }
+-keep class dev.yoanndev90.statusbarhider.widget.BarWidgetProvider { *; }

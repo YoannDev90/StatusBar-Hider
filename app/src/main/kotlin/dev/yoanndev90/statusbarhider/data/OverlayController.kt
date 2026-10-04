@@ -3,6 +3,7 @@ package dev.yoanndev90.statusbarhider.data
 import android.content.Context
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
+import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
 
 /**
  * Single writer for the custom bar's on/off flag: persists it through
@@ -27,6 +28,7 @@ object OverlayController {
 		} else {
 			StatusBarOverlayService.stop(app)
 		}
+		BarWidget.updateAll(app)
 	}
 
 	/**
