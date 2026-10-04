@@ -39,9 +39,9 @@ run = "./gradlew clean"
 description = "List connected ADB devices"
 run = "adb devices"
 
-[tasks.logcat]
-description = "Stream logcat for StatusBarHider"
-run = "adb logcat -s StatusBarHider:* CustomBar:* ShizukuCmd:* QSTile:* OemConfig:* LogStore:*"
+[tasks.logs]
+description = "Live log stream for StatusBarHider (logstream TUI)"
+run = "cargo run --quiet --manifest-path tools/logstream/Cargo.toml -- --package dev.yoanndev90.statusbarhider"
 
 [tasks.show-in-drawer]
 description = "Re-enable the launcher icon (reverse 'Hide from launcher')"

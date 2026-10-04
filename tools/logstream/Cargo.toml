@@ -1,0 +1,24 @@
+[package]
+name = "logstream"
+version = "0.1.0"
+edition = "2021"
+description = "Live Android log streamer - logcat, but actually nice"
+license = "MIT"
+
+[[bin]]
+name = "logstream"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.29"
+ratatui = { version = "0.30", default-features = false, features = ["crossterm", "all-widgets", "macros", "layout-cache", "underline-color"] }
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+unicode-width = "0.2"
+
+[profile.release]
+lto = true
+strip = true

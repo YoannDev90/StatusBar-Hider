@@ -9,3 +9,6 @@ keystore/
 keystore.properties
 *.keystore
 *.jks
+
+# Rust tooling
+tools/logstream/target/
