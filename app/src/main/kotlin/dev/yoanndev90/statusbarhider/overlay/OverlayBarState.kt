@@ -9,6 +9,16 @@ data class OverlayNotifIcon(
 )
 
 /**
+ * Active notification progress shown as a ring around the camera:
+ * [fraction] is 0..1 when determinate, meaningless when [indeterminate].
+ */
+data class OverlayProgress(
+	val fraction: Float,
+	val indeterminate: Boolean,
+	val pkg: String
+)
+
+/**
  * Runtime state of the overlay bar, written by the service receivers and
  * read by [OverlayBar]. Preferences ([OverlayPrefs]) arrive separately.
  * The clock and date tick locally inside their widgets, never here, so a
@@ -38,5 +48,8 @@ data class OverlayBarState(
 	val dataSaver: Boolean = false,
 	val autoRotate: Boolean = false,
 	val torch: Boolean = false,
-	val sideCutoutPx: Int = 0
+	/** Resolved cutout geometry (null = nothing detected in auto mode). */
+	val camera: CameraGeometry? = null,
+	/** Current notification progress to draw around the camera (null = none). */
+	val progress: OverlayProgress? = null
 )

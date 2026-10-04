@@ -4,9 +4,13 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -26,6 +30,7 @@ object LogStore {
 
 	private val lock = Any()
 	private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
+	private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
 	private val _lines = MutableStateFlow<List<String>>(emptyList())
 	val lines: StateFlow<List<String>> = _lines.asStateFlow()
@@ -38,13 +43,19 @@ object LogStore {
 		context: Context,
 		line: String
 	) {
-		val stamped = "${timeFormat.format(Date())} $line"
+		val app = context.applicationContext
 		synchronized(lock) {
-			ensureLoadedLocked(context)
+			ensureLoadedLocked(app)
+			// timeFormat is a shared SimpleDateFormat and append() is reached
+			// from both the main thread and Dispatchers.IO: format under the lock.
+			val stamped = "${timeFormat.format(Date())} $line"
 			val next = _lines.value + stamped
 			_lines.value = if (next.size > MAX_LINES) next.takeLast(MAX_LINES) else next
-			writeLocked(context)
 		}
+		// Mirroring rewrites the whole file, and UI callers append from the main
+		// thread (selectOem, setOverlayEnabled...). Each writer dumps the current
+		// snapshot under the lock, so the last one always holds the full history.
+		ioScope.launch { synchronized(lock) { writeLocked(app) } }
 	}
 
 	/** Reloads the persisted lines into [lines] (no-op once loaded). */

@@ -12,17 +12,32 @@ object NotifIcons {
 		val icon: Drawable?
 	)
 
+	/** The winning notification progress: ongoing first, otherwise most recent. */
+	data class Progress(
+		val pkg: String,
+		val fraction: Float,
+		val indeterminate: Boolean
+	)
+
 	private var entries: List<Entry> = emptyList()
+	private var currentProgress: Progress? = null
 	private val listeners = mutableSetOf<() -> Unit>()
 
 	@Synchronized
-	fun update(all: List<Entry>) {
+	fun update(
+		all: List<Entry>,
+		progress: Progress?
+	) {
 		entries = all
+		currentProgress = progress
 		listeners.toList().forEach { it() }
 	}
 
 	@Synchronized
 	fun snapshot(): List<Entry> = entries
+
+	@Synchronized
+	fun progress(): Progress? = currentProgress
 
 	@Synchronized
 	fun addListener(l: () -> Unit) {

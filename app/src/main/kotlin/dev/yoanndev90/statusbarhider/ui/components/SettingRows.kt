@@ -1,12 +1,17 @@
 package dev.yoanndev90.statusbarhider.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -16,8 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 
@@ -128,6 +137,47 @@ fun SettingRadioRow(
 					style = MaterialTheme.typography.bodyMedium
 				)
 			}
+		}
+	}
+}
+
+/** One selectable color preset: the stored [value] ("" = follow the bar text color) and its preview. */
+data class ColorSwatch(
+	val value: String,
+	val color: Color,
+	val label: String
+)
+
+/** Horizontal row of circular color presets; the selected one gets an accent ring. */
+@Composable
+fun ColorSwatchRow(
+	swatches: List<ColorSwatch>,
+	selected: String,
+	onSelect: (String) -> Unit
+) {
+	Row(
+		modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		swatches.forEach { swatch ->
+			val isSelected = swatch.value == selected
+			Box(
+				modifier =
+					Modifier
+						.padding(end = 8.dp)
+						.size(28.dp)
+						.clip(CircleShape)
+						.background(swatch.color)
+						.border(
+							width = 2.dp,
+							color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+							shape = CircleShape
+						).selectable(
+							selected = isSelected,
+							onClick = { onSelect(swatch.value) },
+							role = Role.RadioButton
+						).semantics { contentDescription = swatch.label }
+			)
 		}
 	}
 }

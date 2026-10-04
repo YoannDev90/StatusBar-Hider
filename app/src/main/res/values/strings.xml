@@ -14,8 +14,22 @@
     <string name="section_status_bar">STATUS BAR</string>
     <string name="section_custom_bar">CUSTOM BAR</string>
     <string name="section_widget_order">WIDGET ORDER</string>
+    <string name="section_cutout">CUTOUT</string>
     <string name="section_app">APP</string>
     <string name="section_log">LOG</string>
+
+    <!-- Bottom navigation tabs (also used as top bar titles) -->
+    <string name="nav_status">Status</string>
+    <string name="nav_bar">Custom bar</string>
+    <string name="nav_style">Style</string>
+    <string name="nav_log">Logs</string>
+
+    <!-- Custom bar setting groups -->
+    <string name="group_clock_date">Clock &amp; date</string>
+    <string name="group_battery">Battery</string>
+    <string name="group_notifications">Notifications &amp; media</string>
+    <string name="group_connectivity">Connectivity</string>
+    <string name="group_behavior">Behavior</string>
 
     <!-- Buttons -->
     <string name="action_authorize_shizuku">Authorize Shizuku</string>
@@ -59,10 +73,13 @@
     <string name="switch_use_24h">24-hour clock</string>
     <string name="switch_show_on_lock_screen">Show on lock screen</string>
     <string name="switch_auto_hide_boot">Auto-hide after reboot</string>
+    <string name="switch_camera_auto">Auto-detect cutout</string>
+    <string name="switch_camera_ring">Progress ring around camera</string>
 
     <!-- Sliders, labels and hints -->
     <string name="label_date_format">Date format (EEE dd MMM)</string>
     <string name="label_text_weight">Text weight</string>
+    <string name="label_ring_color">Ring color</string>
     <string name="label_widget_order_hint">Drag the handle to reorder</string>
     <string name="label_oem_config">Config: %1$s</string>
     <string name="hint_authorize_shizuku">Authorize Shizuku first: the hide / restore commands cannot run without it.</string>
@@ -76,11 +93,20 @@
     <string name="slider_padding_bottom">Padding bottom</string>
     <string name="slider_text_size">Text size</string>
     <string name="slider_widget_spacing">Widget spacing</string>
+    <string name="slider_camera_gap">Camera gap</string>
+    <string name="slider_camera_nudge_x">Position correction X</string>
+    <string name="slider_camera_nudge_y">Position correction Y</string>
+    <string name="slider_camera_offset_x">Camera X position</string>
+    <string name="slider_camera_offset_y">Camera Y position</string>
+    <string name="slider_camera_size">Camera size (0 = detect)</string>
+    <string name="slider_camera_ring_stroke">Ring thickness</string>
     <string name="slider_value">%1$s %2$s%3$s</string>
 
     <!-- Units and option labels -->
     <string name="suffix_dp">dp</string>
     <string name="suffix_sp">sp</string>
+    <string name="suffix_percent">%</string>
+    <string name="color_auto">Text color</string>
     <string name="suffix_seconds">" s (5 - 60)"</string>
     <string name="suffix_minutes">" min (0 = off)"</string>
     <string name="background_transparent">Transparent</string>

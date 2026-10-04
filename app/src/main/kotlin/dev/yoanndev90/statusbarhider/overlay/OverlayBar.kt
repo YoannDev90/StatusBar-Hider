@@ -1,12 +1,23 @@
 package dev.yoanndev90.statusbarhider.overlay
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -20,14 +31,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,11 +51,13 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * System-wide custom status bar, rendered with Compose inside a
  * TYPE_APPLICATION_OVERLAY window. Layout mirrors the former
- * view_custom_status_bar.xml (sizes, paddings, order).
+ * view_custom_status_bar.xml (sizes, paddings, order), except that a detected
+ * cutout splits the widget row around the camera and can carry a progress ring.
  */
 @Composable
 fun OverlayBar(
@@ -51,40 +68,181 @@ fun OverlayBar(
 ) {
 	val fg = Color(prefs.textColor())
 	val density = LocalDensity.current
-	val sideCutoutDp =
-		with(density) { state.sideCutoutPx.toDp() }
-	val padStart = maxOf(prefs.padStartDp.dp, sideCutoutDp)
-	val padEnd = maxOf(prefs.padEndDp.dp, sideCutoutDp)
+	val camera = state.camera
+	val progress = state.progress
+	val padStart = prefs.padStartDp.dp
+	val padEnd = prefs.padEndDp.dp
+	val padTop = prefs.padTopDp.dp
+	val padBottom = prefs.padBottomDp.dp
+	val spacing = prefs.widgetSpacingDp.dp
+	val showRing = prefs.cameraRing && camera != null && progress != null
+	val ringStrokePx = with(density) { prefs.cameraRingStrokeDp.dp.toPx() }
+	// Widgets keep clear of the ring too, not just of the cutout slot.
+	val ringClearancePx = if (showRing) ringStrokePx else 0f
 
-	Row(
+	// The bar grows so the camera (and its ring) always fit inside it:
+	// one window, no touch dead strip below the bar.
+	val minHeight =
+		if (camera != null) {
+			with(density) { (camera.centerY + camera.radius + ringClearancePx).toDp() }
+		} else {
+			0.dp
+		}
+
+	val cell: @Composable RowScope.(String) -> Unit = { id ->
+		key(id) {
+			when (id) {
+				WidgetId.CLOCK -> ClockWidget(prefs, state.screenOn, fg, onClockClick)
+				WidgetId.DATE -> DateWidget(prefs, state.screenOn, fg, onDateClick)
+				WidgetId.CALENDAR -> state.calendarText?.let { CalendarWidget(prefs, it, fg) }
+				WidgetId.NOTIFS -> NotifWidget(prefs, state, fg)
+				WidgetId.MEDIA -> state.mediaText?.let { MediaWidget(prefs, it, fg) }
+				WidgetId.SPACER -> Spacer(Modifier.weight(1f))
+				WidgetId.CONNECTIVITY -> ConnectivityWidget(prefs, state, fg)
+				WidgetId.BATTERY -> BatteryWidget(prefs, state, fg)
+				WidgetId.ALARM -> state.alarmText?.let { AlarmWidget(prefs, it, fg) }
+				WidgetId.BANDWIDTH -> BandwidthWidget(prefs, state, fg)
+			}
+		}
+	}
+
+	Box(
 		modifier =
 			Modifier
 				.fillMaxWidth()
+				.defaultMinSize(minHeight = minHeight)
 				.background(Color(prefs.backgroundColor()))
-				.padding(
-					start = padStart,
-					top = prefs.padTopDp.dp,
-					end = padEnd,
-					bottom = prefs.padBottomDp.dp
-				),
-		verticalAlignment = Alignment.CenterVertically,
-		horizontalArrangement = Arrangement.spacedBy(prefs.widgetSpacingDp.dp)
 	) {
-		for (id in prefs.widgetOrder) {
-			key(id) {
-				when (id) {
-					WidgetId.CLOCK -> ClockWidget(prefs, state.screenOn, fg, onClockClick)
-					WidgetId.DATE -> DateWidget(prefs, state.screenOn, fg, onDateClick)
-					WidgetId.CALENDAR -> state.calendarText?.let { CalendarWidget(prefs, it, fg) }
-					WidgetId.NOTIFS -> NotifWidget(prefs, state, fg)
-					WidgetId.MEDIA -> state.mediaText?.let { MediaWidget(prefs, it, fg) }
-					WidgetId.SPACER -> Spacer(Modifier.weight(1f))
-					WidgetId.CONNECTIVITY -> ConnectivityWidget(prefs, state, fg)
-					WidgetId.BATTERY -> BatteryWidget(prefs, state, fg)
-					WidgetId.ALARM -> state.alarmText?.let { AlarmWidget(prefs, it, fg) }
-					WidgetId.BANDWIDTH -> BandwidthWidget(prefs, state, fg)
-				}
+		val split = camera != null && camera.anchor == CameraAnchor.Center && WidgetId.SPACER in prefs.widgetOrder
+		if (camera != null && split) {
+			// Two clusters: content on each side of the camera, bounded by its slot.
+			val leftIds = prefs.widgetOrder.takeWhile { it != WidgetId.SPACER }
+			val rightIds = prefs.widgetOrder.dropWhile { it != WidgetId.SPACER }.drop(1)
+			val leftMax =
+				with(density) { (camera.slotLeft - ringClearancePx).toDp() }.coerceAtLeast(0.dp)
+			val rightMax =
+				with(density) { (camera.screenWidth - camera.slotRight - ringClearancePx).toDp() }.coerceAtLeast(0.dp)
+			Row(
+				modifier =
+					Modifier
+						.align(Alignment.CenterStart)
+						.widthIn(max = leftMax)
+						// Children that still overflow must not bleed over the camera.
+						.clipToBounds()
+						.padding(start = padStart, top = padTop, bottom = padBottom),
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.spacedBy(spacing)
+			) {
+				leftIds.forEach { cell(it) }
 			}
+			Row(
+				modifier =
+					Modifier
+						.align(Alignment.CenterEnd)
+						.widthIn(max = rightMax)
+						.clipToBounds()
+						.padding(end = padEnd, top = padTop, bottom = padBottom),
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.spacedBy(spacing)
+			) {
+				rightIds.forEach { cell(it) }
+			}
+		} else {
+			// No cutout, side-hugging notch (edge anchor) or no split marker:
+			// a single row; edge anchors push the content clear of the slot.
+			val clearStart =
+				if (camera != null && camera.anchor == CameraAnchor.Start) {
+					with(density) { (camera.slotRight + ringClearancePx).toDp() }
+				} else {
+					0.dp
+				}
+			val clearEnd =
+				if (camera != null && camera.anchor == CameraAnchor.End) {
+					with(density) { (camera.screenWidth - camera.slotLeft + ringClearancePx).toDp() }
+				} else {
+					0.dp
+				}
+			Row(
+				modifier =
+					Modifier
+						.align(Alignment.Center)
+						.fillMaxWidth()
+						.padding(
+							start = maxOf(padStart, clearStart),
+							top = padTop,
+							end = maxOf(padEnd, clearEnd),
+							bottom = padBottom
+						),
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.spacedBy(spacing)
+			) {
+				prefs.widgetOrder.forEach { cell(it) }
+			}
+		}
+
+		if (showRing && camera != null && progress != null) {
+			val ringColor =
+				remember(prefs.cameraRingColor, fg) {
+					if (prefs.cameraRingColor.isEmpty()) {
+						fg
+					} else {
+						runCatching { Color(android.graphics.Color.parseColor(prefs.cameraRingColor)) }.getOrElse { fg }
+					}
+				}
+			val stroke = prefs.cameraRingStrokeDp.dp
+			if (progress.indeterminate) {
+				val infinite = rememberInfiniteTransition(label = "ringSpin")
+				val spin by
+					infinite.animateFloat(
+						initialValue = 0f,
+						targetValue = 360f,
+						animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
+						label = "ringSpin"
+					)
+				RingCanvas(camera, stroke, ringColor, spin - 90f, 90f, Modifier.align(Alignment.TopStart))
+			} else {
+				val fraction by
+					animateFloatAsState(
+						targetValue = progress.fraction,
+						animationSpec = tween(400),
+						label = "ringFraction"
+					)
+				RingCanvas(camera, stroke, ringColor, -90f, 360f * fraction, Modifier.align(Alignment.TopStart))
+			}
+		}
+	}
+}
+
+/**
+ * Draws the camera-clearance track and the progress arc around the cutout.
+ * Positioned so the circle is centred on the camera, whatever the window origin.
+ */
+@Composable
+private fun RingCanvas(
+	camera: CameraGeometry,
+	stroke: Dp,
+	color: Color,
+	startAngle: Float,
+	sweep: Float,
+	modifier: Modifier
+) {
+	val density = LocalDensity.current
+	val strokePx = with(density) { stroke.toPx() }
+	val sizePx = camera.radius * 2 + strokePx * 2
+	val track = color.copy(alpha = color.alpha * 0.2f)
+	Canvas(
+		modifier =
+			modifier
+				.offset {
+					IntOffset(
+						(camera.centerX - camera.radius - strokePx).roundToInt(),
+						(camera.centerY - camera.radius - strokePx).roundToInt()
+					)
+				}.size(with(density) { sizePx.toDp() })
+	) {
+		drawArc(track, 0f, 360f, useCenter = false, style = Stroke(strokePx))
+		if (sweep > 0f) {
+			drawArc(color, startAngle, sweep.coerceAtMost(360f), useCenter = false, style = Stroke(strokePx))
 		}
 	}
 }
@@ -142,6 +300,8 @@ private fun ClockWidget(
 		fontWeight = prefs.fontWeightValue,
 		color = fg,
 		style = tnum,
+		maxLines = 1,
+		overflow = TextOverflow.Ellipsis,
 		modifier =
 			Modifier.then(
 				if (prefs.interactive) Modifier.clickable(onClick = onClick) else Modifier
@@ -171,6 +331,8 @@ private fun DateWidget(
 		fontSize = prefs.textSp(-1),
 		fontWeight = prefs.fontWeightValue,
 		color = fg,
+		maxLines = 1,
+		overflow = TextOverflow.Ellipsis,
 		modifier =
 			Modifier.then(
 				if (prefs.interactive) Modifier.clickable(onClick = onClick) else Modifier
