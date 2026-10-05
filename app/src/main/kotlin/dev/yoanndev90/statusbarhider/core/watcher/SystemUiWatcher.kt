@@ -6,10 +6,10 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.command.CommandExecutor
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
-import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
+import kotlinx.coroutines.runBlocking
 import java.util.Collections
 import java.util.WeakHashMap
 import java.util.concurrent.Executors
@@ -103,8 +103,8 @@ object SystemUiWatcher {
 		if (ownersEmpty()) return
 		val application = app ?: return
 		// Nothing to protect when the system bar is visible.
-		if (!HideController.isHidden(application)) return
-		if (!ShizukuCmd.granted()) {
+		if (!HideInteractor.isHidden(application)) return
+		if (!ShellRunner.granted()) {
 			if (!missingShizukuLogged) {
 				missingShizukuLogged = true
 				Log.w(TAG, "Shizuku not granted - watcher idle")
@@ -125,15 +125,12 @@ object SystemUiWatcher {
 		val line = application.getString(R.string.log_systemui_restarted, baseline, pid)
 		Log.i(TAG, line)
 		LogStore.append(application, line)
-		CommandExecutor.run(application, R.string.log_reapply_hide) {
-			val result = HideController.applyHide(application)
-			result.lines.forEach { LogStore.append(application, it) }
-		}
+		HideInteractor.hideLogged(application, hide = true, labelRes = R.string.log_reapply_hide)
 	}
 
 	private fun readSystemUiPid(context: Context): String? =
 		try {
-			ShizukuCmd.run(context, PID_CMD, CMD_TIMEOUT_SEC).out
+			runBlocking { ShellRunner.run(context, PID_CMD, CMD_TIMEOUT_SEC) }.out
 		} catch (_: Exception) {
 			null
 		}

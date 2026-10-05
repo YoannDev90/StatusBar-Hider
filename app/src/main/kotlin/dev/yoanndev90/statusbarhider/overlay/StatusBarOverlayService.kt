@@ -33,13 +33,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.command.CommandExecutor
-import dev.yoanndev90.statusbarhider.core.command.DisableFlags
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.core.watcher.SystemUiWatcher
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -217,15 +216,15 @@ class StatusBarOverlayService : Service() {
 	 */
 	private fun reapplyHideAfterUnlock() {
 		val app = application
-		if (!HideController.isHidden(app)) return
-		CommandExecutor.run(app, null) {
+		if (!HideInteractor.isHidden(app)) return
+		ShellRunner.run(app, null) {
 			delay(REAPPLY_AFTER_UNLOCK_MS)
-			var last = HideController.applyHide(app)
+			var last = HideInteractor.applyHide(app)
 			var watched = 0L
 			while (last.ok && watched < REAPPLY_WATCH_MS) {
 				delay(REAPPLY_POLL_MS)
 				watched += REAPPLY_POLL_MS
-				if (!DisableFlags.isApplied(app)) last = HideController.applyHide(app)
+				if (!HideInteractor.isApplied(app)) last = HideInteractor.applyHide(app)
 			}
 			if (!last.ok) {
 				LogStore.append(app, app.getString(R.string.log_reapply_hide_unlock))
@@ -380,7 +379,7 @@ class StatusBarOverlayService : Service() {
 		SystemUiWatcher.stop(this)
 		window.detach()
 		// The overlay is gone: let SystemUI re-read the "Custom bar" tile state.
-		HideController.notifyTiles(this)
+		HideInteractor.notifyTiles(this)
 		super.onDestroy()
 	}
 
