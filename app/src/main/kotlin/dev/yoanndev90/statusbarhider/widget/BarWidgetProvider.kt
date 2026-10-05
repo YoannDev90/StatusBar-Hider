@@ -9,6 +9,8 @@ import android.content.Intent
 import android.widget.RemoteViews
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.control.ControlActions
+import dev.yoanndev90.statusbarhider.control.ControlAuth
+import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideController
 
@@ -63,7 +65,9 @@ class BarWidgetProvider : AppWidgetProvider() {
 			PendingIntent.getBroadcast(
 				app,
 				requestCode,
-				Intent(app, BarWidgetProvider::class.java).setAction(action),
+				Intent(app, BarWidgetProvider::class.java)
+					.setAction(action)
+					.putExtra(ControlAuth.EXTRA_TOKEN, AppSettings.controlToken(app)),
 				PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 			)
 	}
@@ -73,8 +77,15 @@ class BarWidgetProvider : AppWidgetProvider() {
 		intent: Intent
 	) {
 		// Custom tap actions are handled here; everything else (including
-		// APPWIDGET_UPDATE) goes through the default provider path.
-		if (ControlActions.dispatch(context, intent.action)) return
+		// APPWIDGET_UPDATE, which the system sends) goes through the default
+		// provider path. Control actions run through the same ControlAuth gate
+		// as the external API, and broadcast() adds the token the gate wants.
+		if (ControlActions.isControlAction(intent.action)) {
+			if (ControlAuth.accept(context, intent)) {
+				ControlActions.dispatch(context, intent.action)
+			}
+			return
+		}
 		super.onReceive(context, intent)
 	}
 
