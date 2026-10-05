@@ -29,6 +29,18 @@ object ControlActions {
 	const val ACTION_RESTORE_SYSTEM_BAR = "dev.yoanndev90.statusbarhider.RESTORE_SYSTEM_BAR"
 	const val ACTION_TOGGLE_SYSTEM_BAR = "dev.yoanndev90.statusbarhider.TOGGLE_SYSTEM_BAR"
 
+	private val ALL_ACTIONS = setOf(
+		ACTION_SHOW_BAR,
+		ACTION_HIDE_BAR,
+		ACTION_TOGGLE_BAR,
+		ACTION_HIDE_SYSTEM_BAR,
+		ACTION_RESTORE_SYSTEM_BAR,
+		ACTION_TOGGLE_SYSTEM_BAR
+	)
+
+	/** True for one of the six control actions, so a receiver can tell them apart from system intents. */
+	fun isControlAction(action: String?): Boolean = action != null && action in ALL_ACTIONS
+
 	/**
 	 * Executes [action]; returns false when it is not one of the control
 	 * actions, so callers can fall through to their own handling.
