@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +32,10 @@ import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Status tab: who the device is, whether Shizuku is authorized, and the
@@ -45,9 +50,11 @@ fun StatusScreen(
 	val context = LocalContext.current
 	val importFailedToast = stringResource(R.string.toast_import_failed)
 	val importOkToast = stringResource(R.string.toast_import_ok)
+	// Backup I/O (file + provider stream) runs on IO; the scope dies with the screen.
+	val uiScope = rememberCoroutineScope()
 	val importLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-			if (uri != null) importSettings(context, uri, importOkToast, importFailedToast)
+			if (uri != null) uiScope.launch { importSettings(context, uri, importOkToast, importFailedToast) }
 		}
 
 	SettingsScreen {
@@ -92,7 +99,7 @@ fun StatusScreen(
 				modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
 			)
 			SettingAction(R.drawable.ic_settings, R.string.action_open_setup) { onOpenSetup() }
-			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) { exportSettings(context) }
+			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) { uiScope.launch { exportSettings(context) } }
 			SettingAction(R.drawable.ic_upload, R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
 		}
 	}
@@ -106,8 +113,8 @@ private fun copyControlToken(context: Context) {
 }
 
 /** Shares the current settings as a JSON file through the system share sheet. */
-private fun exportSettings(context: Context) {
-	val intent = SettingsBackup.shareIntent(context)
+private suspend fun exportSettings(context: Context) {
+	val intent = withContext(Dispatchers.IO) { SettingsBackup.shareIntent(context) }
 	if (intent == null) {
 		Toast.makeText(context, R.string.toast_export_failed, Toast.LENGTH_LONG).show()
 		return
@@ -117,7 +124,7 @@ private fun exportSettings(context: Context) {
 }
 
 /** Reads a picked file and applies it as a settings backup. */
-private fun importSettings(
+private suspend fun importSettings(
 	context: Context,
 	uri: Uri,
 	okToast: String,
@@ -125,14 +132,20 @@ private fun importSettings(
 ) {
 	try {
 		val raw =
-			context.contentResolver
-				.openInputStream(uri)
-				?.bufferedReader()
-				?.use { it.readText() }
-				?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
-		SettingsBackup.importSettings(context, raw)
+			withContext(Dispatchers.IO) {
+				context.contentResolver
+					.openInputStream(uri)
+					?.bufferedReader()
+					?.use { it.readText() }
+					?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
+			}
+		// Parse + apply as one uninterruptible block: a cancelled scope must
+		// not leave the settings half-swapped.
+		withContext(Dispatchers.IO) { SettingsBackup.importSettings(context, raw) }
 		LogStore.append(context, context.getString(R.string.log_settings_imported))
 		Toast.makeText(context, okToast, Toast.LENGTH_LONG).show()
+	} catch (e: CancellationException) {
+		throw e
 	} catch (e: Exception) {
 		LogStore.append(context, context.getString(R.string.log_error, e.message))
 		Toast.makeText(context, failToast, Toast.LENGTH_LONG).show()
