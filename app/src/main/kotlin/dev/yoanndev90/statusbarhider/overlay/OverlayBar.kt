@@ -315,6 +315,7 @@ private fun ClockWidget(
 	onClick: () -> Unit
 ) {
 	val context = LocalContext.current
+	val errorFormat = stringResource(R.string.log_error)
 	val tick = rememberTick(if (prefs.hasSeconds()) 1000L else 60_000L, screenOn)
 	val text =
 		remember(tick, prefs.effectiveTimeFormat()) {
@@ -325,7 +326,7 @@ private fun ClockWidget(
 				LogStore.appendOnce(
 					context,
 					"$TAG#timeFormat#${prefs.effectiveTimeFormat()}",
-					context.getString(R.string.log_error, "bad time format: ${e.message}")
+					String.format(errorFormat, "bad time format: ${e.message}")
 				)
 				""
 			}
@@ -354,6 +355,7 @@ private fun DateWidget(
 ) {
 	if (!prefs.showDate) return
 	val context = LocalContext.current
+	val errorFormat = stringResource(R.string.log_error)
 	val tick = rememberTick(60_000L, screenOn)
 	val text =
 		remember(tick, prefs.dateFormat) {
@@ -364,7 +366,7 @@ private fun DateWidget(
 				LogStore.appendOnce(
 					context,
 					"$TAG#dateFormat#${prefs.dateFormat}",
-					context.getString(R.string.log_error, "bad date format: ${e.message}")
+					String.format(errorFormat, "bad date format: ${e.message}")
 				)
 				""
 			}

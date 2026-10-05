@@ -156,6 +156,12 @@ internal class SystemIndicators(
 
 	/** Network generation label like Dragon's getMobileDataStatus (LTE/5G/3G/2G). */
 	fun mobileTypeLabel(): String {
+		// READ_BASIC_PHONE_STATE is install-time (API 29+); older devices keep
+		// the dangerous READ_PHONE_STATE unrequested and fall back to "4G".
+		val allowed =
+			context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED ||
+				context.checkSelfPermission(Manifest.permission.READ_BASIC_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+		if (!allowed) return "4G"
 		return try {
 			val tm = context.getSystemService(TelephonyManager::class.java) ?: return "4G"
 			when (tm.dataNetworkType) {

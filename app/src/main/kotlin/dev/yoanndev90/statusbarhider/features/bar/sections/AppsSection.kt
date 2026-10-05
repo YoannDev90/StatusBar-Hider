@@ -56,6 +56,7 @@ fun AppsSection(
 	vm: PrefsViewModel
 ) {
 	val context = LocalContext.current
+	val errorFormat = stringResource(R.string.log_error)
 	val apps = remember { launcherApps(context) }
 	var pickerOpen by remember { mutableStateOf(false) }
 	// Re-read on every resume: the grant happens in another screen.
@@ -84,7 +85,7 @@ fun AppsSection(
 					LogStore.appendOnce(
 						context,
 						"$TAG#usageSettings",
-						context.getString(R.string.log_error, "usage settings: ${e.message}")
+						String.format(errorFormat, "usage settings: ${e.message}")
 					)
 				}
 			}
