@@ -34,26 +34,33 @@ object CommandExecutor {
 
 	/**
 	 * @param app used for resources and as the OEM / log lookup context.
-	 * @param labelRes resource id of the progress line shown before [block] runs.
+	 * @param labelRes resource id of the progress line shown before [block] runs,
+	 * or null to run quietly (automatic re-applies log only on failure).
 	 * @param block the command set to run; it receives the active OEM config.
 	 */
 	fun run(
 		app: Application,
-		@StringRes labelRes: Int,
+		@StringRes labelRes: Int?,
 		block: suspend (oem: OemConfig) -> Unit
 	) {
 		if (!ShizukuCmd.granted()) {
-			log(app, R.string.log_shizuku_not_authorized)
+			if (labelRes != null) {
+				log(app, R.string.log_shizuku_not_authorized)
+			}
 			return
 		}
 		if (_busy.value) {
-			log(app, R.string.log_busy)
+			if (labelRes != null) {
+				log(app, R.string.log_busy)
+			}
 			return
 		}
 		scope.launch {
 			_busy.value = true
 			try {
-				log(app, R.string.log_progress, app.getString(labelRes))
+				if (labelRes != null) {
+					log(app, R.string.log_progress, app.getString(labelRes))
+				}
 				block(OemRepository.getInstance(app).config.value)
 			} catch (e: CancellationException) {
 				throw e

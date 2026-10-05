@@ -255,6 +255,7 @@
     <string name="log_usage_access_missing">Usage access not granted - app blacklist inactive.</string>
     <string name="log_systemui_restarted">SystemUI restarted (%1$s -&gt; %2$s) - re-applying hide commands</string>
     <string name="log_reapply_hide">Re-applying hide after a SystemUI restart...</string>
+    <string name="log_reapply_hide_unlock">Re-applying hide after unlock failed</string>
     <string name="log_overlay_permission_missing">Overlay permission missing - the custom bar was not started.</string>
     <string name="log_settings_exported">Settings exported to a JSON file</string>
     <string name="log_settings_imported">Settings imported</string>

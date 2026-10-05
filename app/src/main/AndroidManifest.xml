@@ -70,13 +70,16 @@
         </provider>
 
         <!-- Re-applies the hide commands after reboot when Shizuku is running.
-             Requires "Start on boot" enabled in Shizuku settings. -->
+             Requires "Start on boot" enabled in Shizuku settings.
+             On a package update only the custom bar is restarted: the disable
+             flags live in SystemUI and survive the update. -->
         <receiver
             android:name="dev.yoanndev90.statusbarhider.BootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
 

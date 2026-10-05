@@ -19,7 +19,9 @@ import java.util.concurrent.Executors
 
 /**
  * Re-applies the hide commands after a reboot (opt-out via the
- * "Auto-hide on boot" switch, which is part of the overlay prefs).
+ * "Auto-hide on boot" switch, which is part of the overlay prefs). After a
+ * package update it only restarts the custom bar - the disable flags live in
+ * SystemUI and are still applied.
  *
  * Every command runs on a dedicated background thread: Shizuku dispatches its
  * binder callbacks on the main looper, and one hide pass is several shell
@@ -47,6 +49,10 @@ class BootReceiver : BroadcastReceiver() {
 		context: Context,
 		intent: Intent
 	) {
+		if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+			onPackageReplaced(context.applicationContext)
+			return
+		}
 		if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
 		val app = context.applicationContext
@@ -92,6 +98,19 @@ class BootReceiver : BroadcastReceiver() {
 				pending.finish()
 			}
 		}
+	}
+
+	/**
+	 * The overlay window dies with the process on every update, but the disable
+	 * flags live in SystemUI and are still applied - only bring the bar back.
+	 */
+	private fun onPackageReplaced(app: Context) {
+		val enabled = OverlayPrefsRepository
+			.getInstance(app)
+			.state.value.enabled
+		if (!enabled) return
+		log(app, "Restarting custom overlay after update")
+		OverlayController.setEnabled(app, true)
 	}
 
 	/** Registers a sticky binder listener; runs the hide as soon as Shizuku is up. */
