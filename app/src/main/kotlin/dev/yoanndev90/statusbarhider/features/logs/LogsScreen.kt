@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -19,16 +20,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
+import kotlinx.coroutines.launch
 
 /** Logs tab: export / share the app log, then the raw command output. */
 @Composable
-fun LogsScreen() {
-	val logs by LogStore.lines.collectAsStateWithLifecycle()
+fun LogsScreen(vm: LogsViewModel) {
+	val logs by vm.lines.collectAsStateWithLifecycle()
 	val context = LocalContext.current
+	val scope = rememberCoroutineScope()
 	val clipboardLabel = stringResource(R.string.clipboard_label)
 	val logsCopiedToast = stringResource(R.string.toast_logs_copied)
 	val cannotShareToast = stringResource(R.string.toast_cannot_share_logs)
@@ -41,11 +43,13 @@ fun LogsScreen() {
 				Toast.makeText(context, logsCopiedToast, Toast.LENGTH_SHORT).show()
 			}
 			SettingAction(R.drawable.ic_share, R.string.action_share_logs) {
-				val intent = LogStore.shareIntent(context)
-				if (intent == null) {
-					Toast.makeText(context, cannotShareToast, Toast.LENGTH_SHORT).show()
-				} else {
-					context.startActivity(Intent.createChooser(intent, null))
+				scope.launch {
+					val intent = vm.shareIntent()
+					if (intent == null) {
+						Toast.makeText(context, cannotShareToast, Toast.LENGTH_SHORT).show()
+					} else {
+						context.startActivity(Intent.createChooser(intent, null))
+					}
 				}
 			}
 			if (logs.isEmpty()) {

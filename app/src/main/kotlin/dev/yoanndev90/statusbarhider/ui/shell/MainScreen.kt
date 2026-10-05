@@ -101,7 +101,7 @@ fun MainScreen() {
 			}
 			composable(AppDestination.BAR.route) { BarScreen(viewModel<PrefsViewModel>()) }
 			composable(AppDestination.STYLE.route) { StyleScreen(viewModel<PrefsViewModel>()) }
-			composable(AppDestination.LOG.route) { LogsScreen() }
+			composable(AppDestination.LOG.route) { LogsScreen(viewModel()) }
 			composable(AppDestination.SETUP_ROUTE) {
 				SetupScreen(
 					viewModel(),
