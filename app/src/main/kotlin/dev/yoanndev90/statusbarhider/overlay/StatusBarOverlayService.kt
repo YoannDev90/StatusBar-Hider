@@ -295,7 +295,7 @@ class StatusBarOverlayService : Service() {
 
 	private fun onClockClick() {
 		if (!prefs.interactive) return
-		runSafely {
+		runSafely(this@StatusBarOverlayService) {
 			startActivity(
 				Intent(AlarmClock.ACTION_SHOW_ALARMS)
 					.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -402,8 +402,8 @@ class StatusBarOverlayService : Service() {
 						trySend(intent)
 					}
 				}
-			runSafely { registerReceiver(receiver, filter) }
-			awaitClose { runSafely { unregisterReceiver(receiver) } }
+			runSafely(this@StatusBarOverlayService) { registerReceiver(receiver, filter) }
+			awaitClose { runSafely(this@StatusBarOverlayService) { unregisterReceiver(receiver) } }
 		}
 
 	/** zen_mode + auto-rotate changes; the collection's cancel unregisters it. */
@@ -415,7 +415,7 @@ class StatusBarOverlayService : Service() {
 						trySend(Unit)
 					}
 				}
-			runSafely {
+			runSafely(this@StatusBarOverlayService) {
 				contentResolver.registerContentObserver(Settings.Global.getUriFor("zen_mode"), false, observer)
 				contentResolver.registerContentObserver(
 					Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
@@ -423,7 +423,7 @@ class StatusBarOverlayService : Service() {
 					observer
 				)
 			}
-			awaitClose { runSafely { contentResolver.unregisterContentObserver(observer) } }
+			awaitClose { runSafely(this@StatusBarOverlayService) { contentResolver.unregisterContentObserver(observer) } }
 		}
 
 	/** Torch on/off per camera id; the collection's cancel unregisters it. */
@@ -444,7 +444,7 @@ class StatusBarOverlayService : Service() {
 			} catch (_: Exception) {
 				return@callbackFlow
 			}
-			awaitClose { runSafely { cm.unregisterTorchCallback(cb) } }
+			awaitClose { runSafely(this@StatusBarOverlayService) { cm.unregisterTorchCallback(cb) } }
 		}
 
 	/** Default network changes; the collection's cancel unregisters it. */
@@ -468,8 +468,8 @@ class StatusBarOverlayService : Service() {
 						trySend(Unit)
 					}
 				}
-			runSafely { cm?.registerDefaultNetworkCallback(cb) }
-			awaitClose { runSafely { cm?.unregisterNetworkCallback(cb) } }
+			runSafely(this@StatusBarOverlayService) { cm?.registerDefaultNetworkCallback(cb) }
+			awaitClose { runSafely(this@StatusBarOverlayService) { cm?.unregisterNetworkCallback(cb) } }
 		}
 
 	private fun onBattery(intent: Intent) {

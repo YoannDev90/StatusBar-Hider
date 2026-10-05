@@ -59,7 +59,7 @@ internal class MediaSessions(
 	/** Registers the session listener; a no-op until notification access is granted. */
 	fun ensure() {
 		if (registered) return
-		runSafely {
+		runSafely(context) {
 			val msm = context.getSystemService(MediaSessionManager::class.java) ?: return
 			val cn = ComponentName(context, NotifListenerService::class.java)
 			msm.addOnActiveSessionsChangedListener(listener, cn)
@@ -71,8 +71,8 @@ internal class MediaSessions(
 
 	/** Unregisters the listener and every controller callback. */
 	fun dispose() {
-		runSafely { manager?.removeOnActiveSessionsChangedListener(listener) }
-		controllers.forEach { c -> runSafely { c.unregisterCallback(callback) } }
+		runSafely(context) { manager?.removeOnActiveSessionsChangedListener(listener) }
+		controllers.forEach { c -> runSafely(context) { c.unregisterCallback(callback) } }
 		controllers = emptyList()
 	}
 
@@ -103,9 +103,9 @@ internal class MediaSessions(
 	}
 
 	private fun sync(sessions: List<MediaController>?) {
-		controllers.forEach { c -> runSafely { c.unregisterCallback(callback) } }
+		controllers.forEach { c -> runSafely(context) { c.unregisterCallback(callback) } }
 		controllers = sessions.orEmpty()
-		controllers.forEach { c -> runSafely { c.registerCallback(callback) } }
+		controllers.forEach { c -> runSafely(context) { c.registerCallback(callback) } }
 		publish()
 	}
 }

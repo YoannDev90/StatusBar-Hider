@@ -133,7 +133,7 @@ internal class OverlayWindow(
 	fun detach() {
 		val wm = context.getSystemService(WindowManager::class.java)
 		val v = view
-		if (wm != null && v != null) runSafely { wm.removeView(v) }
+		if (wm != null && v != null) runSafely(context) { wm.removeView(v) }
 		view = null
 		params = null
 		destroyComposeOwners()
@@ -156,7 +156,7 @@ internal class OverlayWindow(
 		val wm = context.getSystemService(WindowManager::class.java) ?: return
 		val v = view ?: return
 		val p = params ?: return
-		runSafely {
+		runSafely(context) {
 			burnInStep = !burnInStep
 			p.y = if (burnInStep) 1 else 0
 			wm.updateViewLayout(v, p)
