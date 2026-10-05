@@ -5,8 +5,8 @@ import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import kotlinx.coroutines.runBlocking
 import rikka.shizuku.Shizuku
 import java.util.concurrent.Executors
@@ -32,7 +32,7 @@ class HideRestoreTile : TileService() {
 
 	override fun onClick() {
 		if (!busy.compareAndSet(false, true)) return
-		if (!ShizukuCmd.granted()) {
+		if (!ShellRunner.granted()) {
 			busy.set(false)
 			requestShizuku()
 			return
@@ -42,14 +42,14 @@ class HideRestoreTile : TileService() {
 			val result =
 				runBlocking {
 					try {
-						if (HideController.isHidden(app)) {
-							HideController.restore(app)
+						if (HideInteractor.isHidden(app)) {
+							HideInteractor.restore(app)
 						} else {
-							HideController.applyHide(app)
+							HideInteractor.applyHide(app)
 						}
 					} catch (e: Exception) {
 						Log.e(TAG, "tile command failed", e)
-						HideController.Result(false, listOf(app.getString(R.string.log_error, e.message)))
+						HideInteractor.Result(false, listOf(app.getString(R.string.log_error, e.message)))
 					}
 				}
 			result.lines.forEach { Log.i(TAG, it) }
@@ -70,7 +70,7 @@ class HideRestoreTile : TileService() {
 
 	private fun refresh() {
 		val tile = qsTile ?: return
-		val hidden = HideController.isHidden(this)
+		val hidden = HideInteractor.isHidden(this)
 		tile.state = if (hidden) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
 		if (Build.VERSION.SDK_INT >= 29) {
 			tile.subtitle =

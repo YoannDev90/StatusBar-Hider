@@ -6,12 +6,12 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
-import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import kotlinx.coroutines.runBlocking
 import rikka.shizuku.Shizuku
@@ -140,7 +140,7 @@ class BootReceiver : BroadcastReceiver() {
 				log(app, "Shizuku binder not available - skipping auto-hide")
 				return
 			}
-			if (!ShizukuCmd.granted()) {
+			if (!ShellRunner.granted()) {
 				log(app, "Shizuku not authorized - skipping auto-hide")
 				return
 			}
@@ -148,7 +148,7 @@ class BootReceiver : BroadcastReceiver() {
 			if (oem.untested) Log.w(TAG, "'${oem.name}' config is untested on this device")
 			for (note in oem.notes) log(app, "note: $note")
 
-			val result = runBlocking { HideController.applyHide(app) }
+			val result = runBlocking { HideInteractor.applyHide(app) }
 			for (line in result.lines) log(app, line)
 			log(app, if (result.ok) "Auto-hide done" else "Auto-hide finished with failures")
 
