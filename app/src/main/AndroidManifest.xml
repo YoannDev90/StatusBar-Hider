@@ -84,8 +84,9 @@
         </receiver>
 
         <!-- External control API for Tasker / `am broadcast`. No intent filter:
-             only explicit broadcasts targeting this component are accepted,
-             actions documented in README.md. -->
+             only explicit broadcasts targeting this component are accepted, and
+             ControlAuth drops any of them without this install's token. Actions
+             documented in README.md. -->
         <receiver
             android:name="dev.yoanndev90.statusbarhider.control.ControlReceiver"
             android:enabled="true"
