@@ -1,10 +1,7 @@
 package dev.yoanndev90.statusbarhider.features.shared
 
 import android.app.Application
-import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
-import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import dev.yoanndev90.statusbarhider.R
@@ -14,7 +11,10 @@ import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Base for every screen ViewModel that reads or writes [OverlayPrefs].
@@ -35,6 +35,10 @@ open class PrefsViewModel(
 
 	/** Live Shizuku authorization; can change under an open screen (permission dialog). */
 	val shizuku: StateFlow<ShizukuState> = shizukuRepo.state
+
+	/** One-shot UI instructions; a tryEmit never suspends, drops only when the screen ignores them. */
+	private val _events = MutableSharedFlow<PrefsEvent>(extraBufferCapacity = 8)
+	val events: SharedFlow<PrefsEvent> = _events.asSharedFlow()
 
 	/** Asks for the Shizuku grant; logs instead of prompting when that is pointless. */
 	fun requestShizukuPermission() {
@@ -80,14 +84,13 @@ open class PrefsViewModel(
 	/**
 	 * Shows the custom bar: the window cannot be attached without its
 	 * permission, so ask for it first instead of failing silently. Shared by
-	 * the Status, Style and widget entry points.
+	 * the Status, Style and widget entry points. The grant UI is a
+	 * [PrefsEvent]; toasts and settings pages need a Context the VM has not.
 	 */
 	fun showOverlayBar() {
 		val app = getApplication<Application>()
 		if (!Settings.canDrawOverlays(app)) {
-			Toast.makeText(app, R.string.toast_grant_overlay_permission, Toast.LENGTH_LONG).show()
-			val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${app.packageName}"))
-			app.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+			_events.tryEmit(PrefsEvent.GrantOverlayPermission)
 			return
 		}
 		setOverlayEnabled(true)

@@ -29,6 +29,7 @@ import dev.yoanndev90.statusbarhider.core.backup.SettingsBackupException
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
@@ -56,6 +57,7 @@ fun StatusScreen(
 		rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
 			if (uri != null) uiScope.launch { importSettings(context, uri, importOkToast, importFailedToast) }
 		}
+	HandlePrefsEvents(vm)
 
 	SettingsScreen {
 		SettingGroup { DeviceHeader(state) }
