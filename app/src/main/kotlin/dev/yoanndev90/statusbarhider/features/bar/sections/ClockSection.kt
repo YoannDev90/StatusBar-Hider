@@ -25,7 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
@@ -37,7 +37,7 @@ import java.util.Locale
 @Composable
 fun ClockSection(
 	prefs: OverlayPrefs,
-	vm: BarViewModel
+	vm: PrefsViewModel
 ) {
 	val context = LocalContext.current
 	val invalidDateFormatToast = stringResource(R.string.toast_invalid_date_format)

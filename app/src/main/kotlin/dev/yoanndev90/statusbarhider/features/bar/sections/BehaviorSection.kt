@@ -2,7 +2,7 @@ package dev.yoanndev90.statusbarhider.features.bar.sections
 
 import androidx.compose.runtime.Composable
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingSlider
@@ -12,7 +12,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 @Composable
 fun BehaviorSection(
 	prefs: OverlayPrefs,
-	vm: BarViewModel
+	vm: PrefsViewModel
 ) {
 	SettingGroup(R.string.group_behavior) {
 		SettingSwitch(R.drawable.ic_data_usage, R.string.switch_bandwidth, prefs.showBandwidth) { vm.updatePrefs { copy(showBandwidth = it) } }

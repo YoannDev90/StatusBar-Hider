@@ -3,7 +3,7 @@ package dev.yoanndev90.statusbarhider.features.bar.sections
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.LockScreenMode
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
@@ -14,7 +14,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 @Composable
 fun LockScreenSection(
 	prefs: OverlayPrefs,
-	vm: BarViewModel
+	vm: PrefsViewModel
 ) {
 	SettingGroup(R.string.group_lock_screen) {
 		SettingSwitch(R.drawable.ic_lock, R.string.switch_show_on_lock_screen, prefs.showOnLockScreen) {

@@ -2,7 +2,7 @@ package dev.yoanndev90.statusbarhider.features.bar.sections
 
 import androidx.compose.runtime.Composable
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
@@ -11,7 +11,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 @Composable
 fun ConnectivitySection(
 	prefs: OverlayPrefs,
-	vm: BarViewModel
+	vm: PrefsViewModel
 ) {
 	SettingGroup(R.string.group_connectivity) {
 		SettingSwitch(R.drawable.ic_wifi, R.string.switch_wifi, prefs.showWifi) { vm.updatePrefs { copy(showWifi = it) } }

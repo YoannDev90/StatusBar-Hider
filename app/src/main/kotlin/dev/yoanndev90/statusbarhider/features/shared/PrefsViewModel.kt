@@ -56,6 +56,27 @@ open class PrefsViewModel(
 		log(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden)
 	}
 
+	/** Persists the date pattern and logs it so the user can confirm it took. */
+	fun setDateFormat(pattern: String) {
+		updatePrefs { copy(dateFormat = pattern) }
+		log(R.string.log_date_format, pattern)
+	}
+
+	/** Saves the calendar widget state; call only once the permission is granted. */
+	fun setShowCalendar(enabled: Boolean) {
+		updatePrefs { copy(showCalendar = enabled) }
+	}
+
+	/** Moves the widget at [fromIndex] to [toIndex] in the persisted bar order. */
+	fun moveWidget(
+		fromIndex: Int,
+		toIndex: Int
+	) {
+		updatePrefs {
+			copy(widgetOrder = widgetOrder.toMutableList().apply { add(toIndex, removeAt(fromIndex)) })
+		}
+	}
+
 	/**
 	 * Shows the custom bar: the window cannot be attached without its
 	 * permission, so ask for it first instead of failing silently. Shared by

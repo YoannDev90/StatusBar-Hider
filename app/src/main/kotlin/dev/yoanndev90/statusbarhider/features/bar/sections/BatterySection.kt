@@ -2,7 +2,7 @@ package dev.yoanndev90.statusbarhider.features.bar.sections
 
 import androidx.compose.runtime.Composable
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
@@ -11,7 +11,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 @Composable
 fun BatterySection(
 	prefs: OverlayPrefs,
-	vm: BarViewModel
+	vm: PrefsViewModel
 ) {
 	SettingGroup(R.string.group_battery) {
 		SettingSwitch(R.drawable.ic_battery_std, R.string.switch_battery, prefs.showBattery) { vm.updatePrefs { copy(showBattery = it) } }

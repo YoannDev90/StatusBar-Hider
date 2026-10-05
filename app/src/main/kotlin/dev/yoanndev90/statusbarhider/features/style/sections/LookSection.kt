@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.style.StyleViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
@@ -24,7 +24,7 @@ private val FONT_WEIGHT_IDS = listOf("NORMAL", "MEDIUM", "BOLD")
 @Composable
 fun LookSection(
 	prefs: OverlayPrefs,
-	vm: StyleViewModel
+	vm: PrefsViewModel
 ) {
 	SettingGroup(R.string.section_custom_bar) {
 		SettingAction(R.drawable.ic_visibility, R.string.action_show_custom_bar) { vm.showOverlayBar() }

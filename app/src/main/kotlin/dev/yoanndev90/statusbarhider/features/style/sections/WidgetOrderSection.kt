@@ -30,7 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.style.StyleViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
@@ -41,7 +41,7 @@ import sh.calvin.reorderable.ReorderableItem
 @Composable
 fun WidgetOrderSection(
 	prefs: OverlayPrefs,
-	vm: StyleViewModel
+	vm: PrefsViewModel
 ) {
 	val haptic = LocalHapticFeedback.current
 	val order = prefs.widgetOrder

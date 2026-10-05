@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.notif.TestNotifier
-import dev.yoanndev90.statusbarhider.features.style.StyleViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.NotifListenerService
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
@@ -29,7 +29,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 @Composable
 fun TestSection(
 	prefs: OverlayPrefs,
-	vm: StyleViewModel
+	vm: PrefsViewModel
 ) {
 	val context = LocalContext.current
 	val sentOk = stringResource(R.string.toast_test_notif_sent)

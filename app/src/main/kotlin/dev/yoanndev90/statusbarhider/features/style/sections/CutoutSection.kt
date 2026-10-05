@@ -16,7 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.style.StyleViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.ColorSwatch
 import dev.yoanndev90.statusbarhider.ui.components.ColorSwatchRow
@@ -28,7 +28,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 @Composable
 fun CutoutSection(
 	prefs: OverlayPrefs,
-	vm: StyleViewModel
+	vm: PrefsViewModel
 ) {
 	SettingGroup(R.string.section_cutout) {
 		SettingSwitch(R.drawable.ic_crop_free, R.string.switch_camera_auto, prefs.cameraAutoDetect) {

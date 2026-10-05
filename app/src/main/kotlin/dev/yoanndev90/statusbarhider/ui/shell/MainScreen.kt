@@ -30,12 +30,11 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.features.bar.BarScreen
-import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
 import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.features.status.StatusScreen
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
 import dev.yoanndev90.statusbarhider.features.style.StyleScreen
-import dev.yoanndev90.statusbarhider.features.style.StyleViewModel
 import dev.yoanndev90.statusbarhider.ui.setup.SetupScreen
 
 /**
@@ -100,8 +99,8 @@ fun MainScreen() {
 			composable(AppDestination.STATUS.route) {
 				StatusScreen(viewModel<StatusViewModel>(), onOpenSetup = { navController.navigate(AppDestination.SETUP_ROUTE) })
 			}
-			composable(AppDestination.BAR.route) { BarScreen(viewModel<BarViewModel>()) }
-			composable(AppDestination.STYLE.route) { StyleScreen(viewModel<StyleViewModel>()) }
+			composable(AppDestination.BAR.route) { BarScreen(viewModel<PrefsViewModel>()) }
+			composable(AppDestination.STYLE.route) { StyleScreen(viewModel<PrefsViewModel>()) }
 			composable(AppDestination.LOG.route) { LogsScreen() }
 			composable(AppDestination.SETUP_ROUTE) {
 				SetupScreen(
