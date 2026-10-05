@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -121,6 +122,22 @@ class StatusBarOverlayService : Service() {
 	/** Camera ids with the torch currently on (filled by the torch flow). */
 	private val torchIds = ConcurrentHashMap.newKeySet<String>()
 
+	/** Indicator reads collected off the main thread (see [updateConnectivity]). */
+	private data class Connectivity(
+		val airplane: Boolean,
+		val wifi: Boolean,
+		val mobile: Boolean,
+		val mobileType: String,
+		val bluetooth: Boolean,
+		val vpn: Boolean,
+		val hotspot: Boolean,
+		val nfc: Boolean,
+		val gps: Boolean,
+		val dnd: Boolean,
+		val dataSaver: Boolean,
+		val autoRotate: Boolean
+	)
+
 	/** True while the overlay window is detached because a blacklisted app is up front. */
 	private var suppressed = false
 
@@ -172,6 +189,9 @@ class StatusBarOverlayService : Service() {
 		window.attach()
 		observeSystem()
 		serviceScope.launch {
+			refreshAll()
+		}
+		serviceScope.launch {
 			prefsRepo.state.collect { onPrefsChanged(it) }
 		}
 		serviceScope.launch {
@@ -189,7 +209,6 @@ class StatusBarOverlayService : Service() {
 				if (geometry != barState.camera) barState = barState.copy(camera = geometry)
 			}
 		}
-		refreshAll()
 		schedulePoll()
 		scheduleBandwidth()
 		scheduleForegroundPoll()
@@ -467,7 +486,7 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
-	private fun onScreen(intent: Intent) {
+	private suspend fun onScreen(intent: Intent) {
 		when (intent.action) {
 			Intent.ACTION_SCREEN_OFF -> {
 				// The screen going off always puts the keyguard back up.
@@ -493,12 +512,12 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
-	private fun onUsb(intent: Intent) {
+	private suspend fun onUsb(intent: Intent) {
 		usbConnected = intent.extras?.getBoolean("connected") == true
 		if (barState.screenOn) updateConnectivity()
 	}
 
-	private fun refreshAll() {
+	private suspend fun refreshAll() {
 		window.updateCamera()
 		updateBattery()
 		updateNotifs()
@@ -508,7 +527,7 @@ class StatusBarOverlayService : Service() {
 		updateAlarm()
 	}
 
-	private fun refreshPolled() {
+	private suspend fun refreshPolled() {
 		updateAlarm()
 		updateCalendar()
 		updateConnectivity()
@@ -591,8 +610,9 @@ class StatusBarOverlayService : Service() {
 	}
 
 	/** Recomputes the suppression state from the app currently in front. */
-	private fun updateSuppressed() {
-		val pkg = indicators.foregroundPackage() ?: return
+	private suspend fun updateSuppressed() {
+		// UsageStats queries are binder IPC: off the 2s poll's main thread.
+		val pkg = withContext(Dispatchers.IO) { indicators.foregroundPackage() } ?: return
 		setSuppressed(pkg in prefs.hiddenApps)
 	}
 
@@ -618,36 +638,45 @@ class StatusBarOverlayService : Service() {
 			)
 	}
 
-	private fun updateNotifs() {
-		val listenerOn = NotifListenerService.isEnabled(this)
+	private suspend fun updateNotifs() {
+		val p = prefs
+		val locked = barState.locked
 		// Privacy filter: while the keyguard is up the icons (and the progress
 		// ring they feed) would leak what the notifications are about.
-		val privateFilter = barState.locked && prefs.hideNotifsOnLock
-		val enabled = prefs.showNotifs && listenerOn && !privateFilter
-		val icons =
-			if (!enabled) {
-				emptyList()
-			} else {
-				NotifIcons.snapshot().take(prefs.maxNotifs.coerceIn(1, 8)).mapNotNull { e ->
-					try {
-						val bitmap = e.icon?.toBitmap()?.asImageBitmap()
-						OverlayNotifIcon(bitmap, e.pkg)
-					} catch (_: Exception) {
-						null
+		val privateFilter = locked && p.hideNotifsOnLock
+		// Settings read + icon rasterization are IPC/CPU: off the main thread.
+		val (enabled, icons, progress) =
+			withContext(Dispatchers.IO) {
+				val listenerOn = NotifListenerService.isEnabled(this@StatusBarOverlayService)
+				val on = p.showNotifs && listenerOn && !privateFilter
+				val list: List<OverlayNotifIcon> =
+					if (!on) {
+						emptyList()
+					} else {
+						NotifIcons.snapshot().take(p.maxNotifs.coerceIn(1, 8)).mapNotNull { e ->
+							try {
+								val bitmap = e.icon?.toBitmap()?.asImageBitmap()
+								OverlayNotifIcon(bitmap, e.pkg)
+							} catch (_: Exception) {
+								null
+							}
+						}
 					}
-				}
+				val ring =
+					NotifIcons
+						.progress()
+						?.let { OverlayProgress(it.fraction, it.indeterminate, it.pkg) }
+						?.takeIf { listenerOn && !privateFilter }
+				Triple(on, list, ring)
 			}
-		val progress =
-			NotifIcons
-				.progress()
-				?.let { OverlayProgress(it.fraction, it.indeterminate, it.pkg) }
-				?.takeIf { listenerOn && !privateFilter }
 		barState = barState.copy(notifsEnabled = enabled, notifs = icons, progress = progress)
 	}
 
 	/** Next calendar event in the next 24h as "HH:mm Title". */
-	private fun updateCalendar() {
-		barState = barState.copy(calendarText = indicators.queryCalendar(prefs.showCalendar))
+	private suspend fun updateCalendar() {
+		val show = prefs.showCalendar
+		val text = withContext(Dispatchers.IO) { indicators.queryCalendar(show) }
+		barState = barState.copy(calendarText = text)
 	}
 
 	/** Now playing from media sessions; hidden when notification access is off. */
@@ -661,31 +690,53 @@ class StatusBarOverlayService : Service() {
 		return mediaSessions.nowPlaying.value
 	}
 
-	private fun updateConnectivity() {
-		val airplane = indicators.isAirplaneOn()
-		val showRest = !airplane
-		val mobile = showRest && prefs.showMobileData && indicators.isMobile()
+	private suspend fun updateConnectivity() {
+		// Every indicator is a binder/Settings read: collect them off the main
+		// thread, then apply one fresh copy on the caller's (main) context.
+		val p = prefs
+		val c =
+			withContext(Dispatchers.IO) {
+				val airplane = indicators.isAirplaneOn()
+				val showRest = !airplane
+				val mobile = showRest && p.showMobileData && indicators.isMobile()
+				Connectivity(
+					airplane = airplane,
+					wifi = showRest && p.showWifi && indicators.isWifi(),
+					mobile = mobile,
+					mobileType = if (mobile) indicators.mobileTypeLabel().ifEmpty { "4G" } else "",
+					bluetooth = showRest && p.showBluetooth && indicators.isBluetoothOn(),
+					vpn = showRest && p.showVpn && indicators.isVpn(),
+					hotspot = showRest && p.showHotspot && indicators.isHotspotOn(),
+					nfc = showRest && p.showNfc && indicators.isNfcOn(),
+					gps = p.showGps && indicators.isGpsOn(),
+					dnd = p.showDnd && indicators.isDndOn(),
+					dataSaver = p.showDataSaver && indicators.isDataSaverOn(),
+					autoRotate = p.showRotate && indicators.isAutoRotateOn()
+				)
+			}
 		barState =
 			barState.copy(
 				usbConnected = usbConnected,
-				airplane = airplane,
-				wifi = showRest && prefs.showWifi && indicators.isWifi(),
-				mobile = mobile,
-				mobileType = if (mobile) indicators.mobileTypeLabel().ifEmpty { "4G" } else "",
-				bluetooth = showRest && prefs.showBluetooth && indicators.isBluetoothOn(),
-				vpn = showRest && prefs.showVpn && indicators.isVpn(),
-				hotspot = showRest && prefs.showHotspot && indicators.isHotspotOn(),
-				nfc = showRest && prefs.showNfc && indicators.isNfcOn(),
-				gps = prefs.showGps && indicators.isGpsOn(),
-				dnd = prefs.showDnd && indicators.isDndOn(),
-				dataSaver = prefs.showDataSaver && indicators.isDataSaverOn(),
-				autoRotate = prefs.showRotate && indicators.isAutoRotateOn(),
-				torch = prefs.showTorch && torchIds.isNotEmpty()
+				airplane = c.airplane,
+				wifi = c.wifi,
+				mobile = c.mobile,
+				mobileType = c.mobileType,
+				bluetooth = c.bluetooth,
+				vpn = c.vpn,
+				hotspot = c.hotspot,
+				nfc = c.nfc,
+				gps = c.gps,
+				dnd = c.dnd,
+				dataSaver = c.dataSaver,
+				autoRotate = c.autoRotate,
+				torch = p.showTorch && torchIds.isNotEmpty()
 			)
 	}
 
-	private fun updateAlarm() {
-		barState = barState.copy(alarmText = indicators.queryAlarm(prefs.showAlarm))
+	private suspend fun updateAlarm() {
+		val show = prefs.showAlarm
+		val text = withContext(Dispatchers.IO) { indicators.queryAlarm(show) }
+		barState = barState.copy(alarmText = text)
 	}
 
 	private fun updateBandwidth() {
