@@ -2,17 +2,21 @@ package dev.yoanndev90.statusbarhider.core.watcher
 
 import android.app.Application
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.util.Collections
 import java.util.WeakHashMap
-import java.util.concurrent.Executors
 
 /**
  * Re-applies the hide commands when SystemUI restarts.
@@ -39,11 +43,12 @@ object SystemUiWatcher {
 	/** Owners currently interested in the watcher; empty = the loop stops. */
 	private val owners: MutableSet<Any> = Collections.newSetFromMap(WeakHashMap())
 
-	private val handler = Handler(Looper.getMainLooper())
-	private val executor =
-		Executors.newSingleThreadExecutor { r ->
-			Thread(r, "systemui-watch").apply { isDaemon = true }
-		}
+	/** Process-wide loop scope; only the loop [Job] below is ever cancelled. */
+	private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+	/** Current 60 s loop; null while no owner is registered. */
+	@Volatile
+	private var loop: Job? = null
 
 	/** Application context of the last owner; a process ref, so no component is kept alive. */
 	@Volatile
@@ -54,13 +59,6 @@ object SystemUiWatcher {
 
 	@Volatile
 	private var missingShizukuLogged = false
-
-	private val tick =
-		Runnable {
-			// Re-arm first: a failing check must not silently kill the loop.
-			schedule()
-			executor.execute { checkOnce() }
-		}
 
 	/** Registers [owner]; the first owner starts the 60 s loop. */
 	fun start(
@@ -76,8 +74,7 @@ object SystemUiWatcher {
 		app = context.applicationContext as? Application
 		baselinePid = null
 		missingShizukuLogged = false
-		handler.removeCallbacks(tick)
-		handler.post(tick)
+		loop = scope.launch { runLoop() }
 		Log.i(TAG, "Watcher started for ${owner.javaClass.simpleName}")
 	}
 
@@ -88,18 +85,31 @@ object SystemUiWatcher {
 			owners.remove(owner)
 			empty = owners.isEmpty()
 		}
-		if (empty) handler.removeCallbacks(tick)
+		if (empty) {
+			loop?.cancel()
+			loop = null
+		}
 	}
 
-	private fun schedule() {
-		handler.removeCallbacks(tick)
-		if (!ownersEmpty()) handler.postDelayed(tick, TICK_MS)
+	/** One check now, then one every [TICK_MS] until the last owner leaves. */
+	private suspend fun CoroutineScope.runLoop() {
+		while (isActive && !ownersEmpty()) {
+			try {
+				checkOnce()
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				// A failing check must not silently kill the loop.
+				Log.w(TAG, "watch tick failed", e)
+			}
+			delay(TICK_MS)
+		}
 	}
 
 	private fun ownersEmpty(): Boolean = synchronized(owners) { owners.isEmpty() }
 
-	/** One pass: read the SystemUI pid, re-apply when it moved. Runs on the executor. */
-	private fun checkOnce() {
+	/** One pass: read the SystemUI pid, re-apply when it moved. */
+	private suspend fun checkOnce() {
 		if (ownersEmpty()) return
 		val application = app ?: return
 		// Nothing to protect when the system bar is visible.
@@ -128,9 +138,9 @@ object SystemUiWatcher {
 		HideInteractor.hideLogged(application, hide = true, labelRes = R.string.log_reapply_hide)
 	}
 
-	private fun readSystemUiPid(context: Context): String? =
+	private suspend fun readSystemUiPid(context: Context): String? =
 		try {
-			runBlocking { ShellRunner.run(context, PID_CMD, CMD_TIMEOUT_SEC) }.out
+			ShellRunner.run(context, PID_CMD, CMD_TIMEOUT_SEC).out
 		} catch (_: Exception) {
 			null
 		}
