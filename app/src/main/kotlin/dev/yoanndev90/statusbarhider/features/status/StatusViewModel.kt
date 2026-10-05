@@ -1,18 +1,25 @@
 package dev.yoanndev90.statusbarhider.features.status
 
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.backup.SettingsBackup
+import dev.yoanndev90.statusbarhider.core.backup.SettingsBackupException
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.withContext
 
 /** Device identity + Shizuku authorization, everything the Status tab shows above its cards. */
 data class StatusUiState(
@@ -91,4 +98,38 @@ class StatusViewModel(
 		val config = oemRepo.redetect()
 		appendLog(str(R.string.log_oem_redetected, config.name))
 	}
+
+	/** Writes the export file on IO and logs; null means the share intent could not be built. */
+	suspend fun exportSettings(): Intent? =
+		withContext(Dispatchers.IO) {
+			val intent = SettingsBackup.shareIntent(getApplication())
+			if (intent != null) log(R.string.log_settings_exported)
+			intent
+		}
+
+	/**
+	 * Reads a picked backup and applies it as one uninterruptible block, so a
+	 * cancelled scope cannot leave the settings half-swapped. False (and a
+	 * log line) on anything unusable; toasts belong to the screen.
+	 */
+	suspend fun importSettings(uri: Uri): Boolean =
+		withContext(Dispatchers.IO) {
+			try {
+				val raw =
+					getApplication<Application>()
+						.contentResolver
+						.openInputStream(uri)
+						?.bufferedReader()
+						?.use { it.readText() }
+						?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
+				SettingsBackup.importSettings(getApplication(), raw)
+				log(R.string.log_settings_imported)
+				true
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				log(R.string.log_error, e.message)
+				false
+			}
+		}
 }

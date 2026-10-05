@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,19 +23,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.backup.SettingsBackup
-import dev.yoanndev90.statusbarhider.core.backup.SettingsBackupException
-import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Status tab: who the device is, whether Shizuku is authorized, and the
@@ -55,7 +48,15 @@ fun StatusScreen(
 	val uiScope = rememberCoroutineScope()
 	val importLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-			if (uri != null) uiScope.launch { importSettings(context, uri, importOkToast, importFailedToast) }
+			if (uri != null) {
+				uiScope.launch {
+					if (vm.importSettings(uri)) {
+						Toast.makeText(context, importOkToast, Toast.LENGTH_LONG).show()
+					} else {
+						Toast.makeText(context, importFailedToast, Toast.LENGTH_LONG).show()
+					}
+				}
+			}
 		}
 	HandlePrefsEvents(vm)
 
@@ -101,7 +102,16 @@ fun StatusScreen(
 				modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
 			)
 			SettingAction(R.drawable.ic_settings, R.string.action_open_setup) { onOpenSetup() }
-			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) { uiScope.launch { exportSettings(context) } }
+			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) {
+				uiScope.launch {
+					val intent = vm.exportSettings()
+					if (intent == null) {
+						Toast.makeText(context, R.string.toast_export_failed, Toast.LENGTH_LONG).show()
+					} else {
+						context.startActivity(Intent.createChooser(intent, null))
+					}
+				}
+			}
 			SettingAction(R.drawable.ic_upload, R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
 		}
 	}
@@ -112,46 +122,6 @@ private fun copyControlToken(context: Context) {
 	val clipboard = context.getSystemService(ClipboardManager::class.java)
 	clipboard?.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), AppSettings.controlToken(context)))
 	Toast.makeText(context, R.string.toast_token_copied, Toast.LENGTH_SHORT).show()
-}
-
-/** Shares the current settings as a JSON file through the system share sheet. */
-private suspend fun exportSettings(context: Context) {
-	val intent = withContext(Dispatchers.IO) { SettingsBackup.shareIntent(context) }
-	if (intent == null) {
-		Toast.makeText(context, R.string.toast_export_failed, Toast.LENGTH_LONG).show()
-		return
-	}
-	context.startActivity(Intent.createChooser(intent, null))
-	LogStore.append(context, context.getString(R.string.log_settings_exported))
-}
-
-/** Reads a picked file and applies it as a settings backup. */
-private suspend fun importSettings(
-	context: Context,
-	uri: Uri,
-	okToast: String,
-	failToast: String
-) {
-	try {
-		val raw =
-			withContext(Dispatchers.IO) {
-				context.contentResolver
-					.openInputStream(uri)
-					?.bufferedReader()
-					?.use { it.readText() }
-					?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
-			}
-		// Parse + apply as one uninterruptible block: a cancelled scope must
-		// not leave the settings half-swapped.
-		withContext(Dispatchers.IO) { SettingsBackup.importSettings(context, raw) }
-		LogStore.append(context, context.getString(R.string.log_settings_imported))
-		Toast.makeText(context, okToast, Toast.LENGTH_LONG).show()
-	} catch (e: CancellationException) {
-		throw e
-	} catch (e: Exception) {
-		LogStore.append(context, context.getString(R.string.log_error, e.message))
-		Toast.makeText(context, failToast, Toast.LENGTH_LONG).show()
-	}
 }
 
 /** Device name, untested badge and Shizuku status. */
