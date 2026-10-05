@@ -5,6 +5,9 @@ import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.util.Log
+import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,7 +67,13 @@ class NotifListenerService : NotificationListenerService() {
 			val actives =
 				try {
 					activeNotifications?.toList() ?: emptyList()
-				} catch (_: Exception) {
+				} catch (e: Exception) {
+					Log.w(TAG, "activeNotifications", e)
+					LogStore.appendOnce(
+						this,
+						"$TAG#activeNotifications",
+						getString(R.string.log_error, "activeNotifications: ${e.message}")
+					)
 					emptyList()
 				}
 			val best = pickProgress(actives)
@@ -79,7 +88,13 @@ class NotifListenerService : NotificationListenerService() {
 				out += NotifIcons.Entry(pkg, loadIcon(pm, sbn, pkg))
 			}
 			NotifIcons.update(out, best)
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			Log.w(TAG, "rebuild", e)
+			LogStore.appendOnce(
+				this,
+				"$TAG#rebuild",
+				getString(R.string.log_error, "notif rebuild: ${e.message}")
+			)
 		}
 	}
 
@@ -164,6 +179,8 @@ class NotifListenerService : NotificationListenerService() {
 	companion object {
 		/** Icon list cap: one entry per package, most relevant packages first. */
 		private const val MAX_ICON_ENTRIES = 8
+
+		private const val TAG = "NotifListener"
 
 		/** True when the user enabled notification access for this app. */
 		fun isEnabled(context: android.content.Context): Boolean {
