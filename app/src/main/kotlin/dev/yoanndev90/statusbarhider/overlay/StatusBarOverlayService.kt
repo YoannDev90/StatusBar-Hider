@@ -41,9 +41,11 @@ import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
@@ -186,10 +188,10 @@ class StatusBarOverlayService : Service() {
 					Intent.ACTION_SCREEN_OFF -> {
 						// The screen going off always puts the keyguard back up.
 						barState = barState.copy(screenOn = false, locked = true)
-						handler.removeCallbacks(pollRunnable)
-						handler.removeCallbacks(burnInRunnable)
-						handler.removeCallbacks(bandwidthRunnable)
-						handler.removeCallbacks(foregroundRunnable)
+						pollJob?.cancel()
+						burnInJob?.cancel()
+						bandwidthJob?.cancel()
+						foregroundJob?.cancel()
 					}
 					Intent.ACTION_SCREEN_ON -> {
 						barState = barState.copy(screenOn = true, locked = indicators.isDeviceLocked())
@@ -275,36 +277,12 @@ class StatusBarOverlayService : Service() {
 			}
 		}
 
-	private val pollRunnable: Runnable =
-		Runnable {
-			if (!barState.screenOn) return@Runnable
-			refreshPolled()
-			handler.postDelayed(pollRunnable, (prefs.updateIntervalSec.coerceIn(5, 60) * 1000).toLong())
-		}
-
-	private val burnInRunnable =
-		Runnable {
-			if (barState.screenOn && prefs.burnInMin > 0) {
-				window.shiftForBurnIn()
-				scheduleBurnIn()
-			}
-		}
-
-	private val bandwidthRunnable: Runnable =
-		Runnable {
-			if (!barState.screenOn || !prefs.showBandwidth) return@Runnable
-			updateBandwidth()
-			handler.postDelayed(bandwidthRunnable, 1000L)
-		}
-
-	private val foregroundRunnable: Runnable =
-		Runnable {
-			if (!barState.screenOn || !prefs.hideBarInApps || prefs.hiddenApps.isEmpty()) return@Runnable
-			updateSuppressed()
-			handler.postDelayed(foregroundRunnable, FOREGROUND_POLL_MS)
-		}
-
-	private val refreshAllRunnable = Runnable { refreshAll() }
+	/** Restartable poll loops; [serviceScope] (structured) cancels them on destroy. */
+	private var pollJob: Job? = null
+	private var burnInJob: Job? = null
+	private var bandwidthJob: Job? = null
+	private var foregroundJob: Job? = null
+	private var refreshJob: Job? = null
 
 	override fun onBind(intent: Intent?): IBinder? = null
 
@@ -358,8 +336,12 @@ class StatusBarOverlayService : Service() {
 		scheduleForegroundPoll()
 		// Trailing-edge debounce: a slider drag calls this per frame, and
 		// refreshAll() itself runs six widget updates.
-		handler.removeCallbacks(refreshAllRunnable)
-		handler.postDelayed(refreshAllRunnable, REFRESH_DEBOUNCE_MS)
+		refreshJob?.cancel()
+		refreshJob =
+			serviceScope.launch {
+				delay(REFRESH_DEBOUNCE_MS)
+				refreshAll()
+			}
 	}
 
 	override fun onDestroy() {
@@ -441,9 +423,10 @@ class StatusBarOverlayService : Service() {
 	}
 
 	private fun scheduleBurnIn() {
-		handler.removeCallbacks(burnInRunnable)
+		burnInJob?.cancel()
+		burnInJob = null
 		if (prefs.burnInMin > 0 && barState.screenOn) {
-			handler.postDelayed(burnInRunnable, (prefs.burnInMin.coerceIn(1, 30) * 60 * 1000).toLong())
+			burnInJob = serviceScope.launch { burnInLoop() }
 		}
 	}
 
@@ -523,8 +506,8 @@ class StatusBarOverlayService : Service() {
 	}
 
 	private fun schedulePoll() {
-		handler.removeCallbacks(pollRunnable)
-		handler.post(pollRunnable)
+		pollJob?.cancel()
+		pollJob = serviceScope.launch { pollLoop() }
 	}
 
 	/**
@@ -533,8 +516,11 @@ class StatusBarOverlayService : Service() {
 	 * screen-off / screen-on cycle.
 	 */
 	private fun scheduleBandwidth() {
-		handler.removeCallbacks(bandwidthRunnable)
-		if (prefs.showBandwidth && barState.screenOn) handler.post(bandwidthRunnable)
+		bandwidthJob?.cancel()
+		bandwidthJob = null
+		if (prefs.showBandwidth && barState.screenOn) {
+			bandwidthJob = serviceScope.launch { bandwidthLoop() }
+		}
 	}
 
 	/**
@@ -543,7 +529,8 @@ class StatusBarOverlayService : Service() {
 	 * loop either dies or keeps a suppressed bar suppressed forever.
 	 */
 	private fun scheduleForegroundPoll() {
-		handler.removeCallbacks(foregroundRunnable)
+		foregroundJob?.cancel()
+		foregroundJob = null
 		val active = prefs.hideBarInApps && prefs.hiddenApps.isNotEmpty() && barState.screenOn
 		if (active && !UsageAccess.granted(this)) {
 			if (!usageHintLogged) {
@@ -555,9 +542,42 @@ class StatusBarOverlayService : Service() {
 			return
 		}
 		if (active) {
-			handler.post(foregroundRunnable)
+			foregroundJob = serviceScope.launch { foregroundLoop() }
 		} else if (suppressed) {
 			setSuppressed(false)
+		}
+	}
+
+	/** Alarm / calendar / connectivity poll; the screen-off cancel ends it. */
+	private suspend fun CoroutineScope.pollLoop() {
+		while (isActive && barState.screenOn) {
+			refreshPolled()
+			delay((prefs.updateIntervalSec.coerceIn(5, 60) * 1000).toLong())
+		}
+	}
+
+	/** 1 s bandwidth sampler; the loop dies with the screen or the toggle. */
+	private suspend fun CoroutineScope.bandwidthLoop() {
+		while (isActive && barState.screenOn && prefs.showBandwidth) {
+			updateBandwidth()
+			delay(1000L)
+		}
+	}
+
+	/** 2 s foreground-app poll; the loop dies with the feature or the screen. */
+	private suspend fun CoroutineScope.foregroundLoop() {
+		while (isActive && barState.screenOn && prefs.hideBarInApps && prefs.hiddenApps.isNotEmpty()) {
+			updateSuppressed()
+			delay(FOREGROUND_POLL_MS)
+		}
+	}
+
+	/** Periodic burn-in shift; re-reads [OverlayPrefs.burnInMin] every cycle. */
+	private suspend fun CoroutineScope.burnInLoop() {
+		while (isActive && barState.screenOn && prefs.burnInMin > 0) {
+			delay((prefs.burnInMin.coerceIn(1, 30) * 60 * 1000).toLong())
+			if (!isActive) return
+			window.shiftForBurnIn()
 		}
 	}
 
