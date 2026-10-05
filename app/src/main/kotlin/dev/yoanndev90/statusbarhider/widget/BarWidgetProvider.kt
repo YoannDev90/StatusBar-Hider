@@ -12,13 +12,13 @@ import dev.yoanndev90.statusbarhider.control.ControlActions
 import dev.yoanndev90.statusbarhider.control.ControlAuth
 import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 
 /**
  * Home screen widget: two buttons, one per state the labels mirror.
  *
  * Taps dispatch the same [ControlActions] as the external API, and every
- * state change goes through [OverlayController] / [HideController], which
+ * state change goes through [OverlayController] / [HideInteractor], which
  * call [updateAll] - so the labels never go stale.
  */
 class BarWidgetProvider : AppWidgetProvider() {
@@ -39,7 +39,7 @@ class BarWidgetProvider : AppWidgetProvider() {
 			val barOn = OverlayPrefsRepository
 				.getInstance(app)
 				.state.value.enabled
-			val systemHidden = HideController.isHidden(app)
+			val systemHidden = HideInteractor.isHidden(app)
 			return RemoteViews(app.packageName, R.layout.widget_bar).apply {
 				setTextViewText(
 					R.id.widget_action_bar,

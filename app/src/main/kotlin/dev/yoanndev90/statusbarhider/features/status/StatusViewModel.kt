@@ -3,13 +3,12 @@ package dev.yoanndev90.statusbarhider.features.status
 import android.app.Application
 import androidx.lifecycle.viewModelScope
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.command.CommandExecutor
-import dev.yoanndev90.statusbarhider.core.command.CommandRunner
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -26,7 +25,7 @@ data class StatusUiState(
 
 /**
  * Status tab: OEM detection, Shizuku authorization and the hide / restore
- * command set. Commands run through [CommandExecutor], whose [CommandExecutor.busy]
+ * command set. Commands run through [ShellRunner], whose [ShellRunner.busy]
  * the shell turns into a progress bar.
  */
 class StatusViewModel(
@@ -64,15 +63,14 @@ class StatusViewModel(
 	}
 
 	fun applyHide() {
-		CommandExecutor.run(getApplication(), R.string.log_applying_hide) { oem ->
+		ShellRunner.run(getApplication(), R.string.log_applying_hide) { oem ->
 			if (oem.untested) {
 				appendLog(str(R.string.log_untested_config, oem.name))
 			}
 			for (note in oem.notes) {
 				appendLog(str(R.string.log_note, note))
 			}
-			val result = HideController.applyHide(getApplication())
-			result.lines.forEach { appendLog(it) }
+			val result = HideInteractor.applyAndLog(getApplication(), hide = true)
 			if (result.ok) {
 				appendLog(str(R.string.log_done))
 			}
@@ -80,18 +78,17 @@ class StatusViewModel(
 	}
 
 	fun checkState() {
-		CommandExecutor.run(getApplication(), R.string.log_reading_state) { oem ->
+		ShellRunner.run(getApplication(), R.string.log_reading_state) { oem ->
 			for (cmd in oem.status) {
-				val (_, out) = CommandRunner.run(getApplication(), cmd.cmd)
+				val (_, out) = ShellRunner.run(getApplication(), cmd.cmd)
 				appendLog(str(R.string.log_status_value, cmd.name, out.ifEmpty { str(R.string.log_status_empty) }))
 			}
 		}
 	}
 
 	fun restore() {
-		CommandExecutor.run(getApplication(), R.string.log_restoring) {
-			val result = HideController.restore(getApplication())
-			result.lines.forEach { appendLog(it) }
+		ShellRunner.run(getApplication(), R.string.log_restoring) {
+			HideInteractor.applyAndLog(getApplication(), hide = false)
 			// Restoring the system bar and the custom bar are alternatives: only
 			// touch the overlay state when it is actually on.
 			if (prefsRepo.state.value.enabled) {

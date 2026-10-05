@@ -5,11 +5,10 @@ import android.content.Context
 import android.provider.Settings
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.command.CommandExecutor
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 
 /**
  * Single entry point behind the external control API (Tasker, `am broadcast`,
@@ -61,7 +60,7 @@ object ControlActions {
 			)
 			ACTION_HIDE_SYSTEM_BAR -> systemBar(app, hide = true)
 			ACTION_RESTORE_SYSTEM_BAR -> systemBar(app, hide = false)
-			ACTION_TOGGLE_SYSTEM_BAR -> systemBar(app, hide = !HideController.isHidden(app))
+			ACTION_TOGGLE_SYSTEM_BAR -> systemBar(app, hide = !HideInteractor.isHidden(app))
 			else -> return false
 		}
 		return true
@@ -84,15 +83,12 @@ object ControlActions {
 		LogStore.append(app, app.getString(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden))
 	}
 
-	/** Runs the OEM hide / restore set; the shell work happens in [CommandExecutor]. */
+	/** Runs the OEM hide / restore set through the shared busy-gated sequence. */
 	private fun systemBar(
 		context: Context,
 		hide: Boolean
 	) {
 		val app = context.applicationContext as? Application ?: return
-		CommandExecutor.run(app, if (hide) R.string.log_applying_hide else R.string.log_restoring) {
-			val result = if (hide) HideController.applyHide(app) else HideController.restore(app)
-			result.lines.forEach { LogStore.append(app, it) }
-		}
+		HideInteractor.hideLogged(app, hide, if (hide) R.string.log_applying_hide else R.string.log_restoring)
 	}
 }
