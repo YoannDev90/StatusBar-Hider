@@ -2,7 +2,9 @@ package dev.yoanndev90.statusbarhider.overlay
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -18,6 +20,17 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 
 internal const val PREFS = "overlay_prefs"
+
+/** Current blob slot. */
+private const val KEY_PREFS_V1 = "prefs_v1"
+
+/** Pre-v1 slot: the JSON blob lived under the boolean-looking "enabled". */
+private const val KEY_LEGACY_ENABLED = "enabled"
+
+/** Preserved copy of an unparsable blob, so the defaults fallback stays recoverable. */
+private const val KEY_CORRUPT = "prefs_corrupt"
+
+/** JSON field name of [OverlayPrefs.enabled] (the blob's own on/off flag). */
 private const val KEY_ENABLED = "enabled"
 private const val KEY_SHOW_SECONDS = "show_seconds"
 private const val KEY_USE_24H = "use_24h"
@@ -337,6 +350,8 @@ data class OverlayPrefs(
 	}
 
 	companion object {
+		private const val TAG = "OverlayPrefs"
+
 		/** SharedPreferences file name, shared with [dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository]. */
 		const val PREFS_NAME = PREFS
 		const val DEFAULT_FORMAT_WITH_SECONDS = "HH:mm:ss"
@@ -357,7 +372,11 @@ data class OverlayPrefs(
 			encodeDefaults = true
 		}
 
-		fun fromJson(raw: String): OverlayPrefs =
+		/**
+		 * Parses the stored blob. Returns null on malformed input so the caller
+		 * can report it and keep the raw copy instead of silently losing settings.
+		 */
+		fun fromJson(raw: String): OverlayPrefs? =
 			try {
 				val root = json.parseToJsonElement(raw)
 				// Builds older than the 12 / 24-hour toggle stored a raw pattern
@@ -371,7 +390,7 @@ data class OverlayPrefs(
 					}
 				normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), input))
 			} catch (_: Exception) {
-				OverlayPrefs()
+				null
 			}
 
 		/**
@@ -405,29 +424,46 @@ data class OverlayPrefs(
 				cameraRingColor = prefs.cameraRingColor.takeIf { RING_COLOR.matches(it) } ?: ""
 			)
 
-		fun load(context: Context): OverlayPrefs =
-			load(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE))
+		/**
+		 * Reads the blob, migrating the legacy "enabled" slot on first read.
+		 * An unparsable blob is preserved under [KEY_CORRUPT] and reported to
+		 * logcat + the app log: the defaults are returned, nothing is lost.
+		 */
+		fun load(context: Context): OverlayPrefs {
+			val app = context.applicationContext
+			val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+			val raw = prefs.getString(KEY_PREFS_V1, null)
+			if (raw != null) return fromJson(raw) ?: corrupt(app, prefs, raw)
+			val legacy = prefs.getString(KEY_LEGACY_ENABLED, null) ?: return OverlayPrefs()
+			// One-time migration: read the legacy slot, write it under the new key.
+			prefs
+				.edit()
+				.putString(KEY_PREFS_V1, legacy)
+				.remove(KEY_LEGACY_ENABLED)
+				.apply()
+			return fromJson(legacy) ?: corrupt(app, prefs, legacy)
+		}
 
-		fun load(prefs: SharedPreferences): OverlayPrefs {
-			val raw = prefs.getString(KEY_ENABLED, null) ?: return OverlayPrefs()
-			// Stored as full JSON under KEY_ENABLED slot for backward-compat simplicity.
-			return fromJson(raw)
+		private fun corrupt(
+			app: Context,
+			prefs: SharedPreferences,
+			raw: String
+		): OverlayPrefs {
+			prefs.edit().putString(KEY_CORRUPT, raw).apply()
+			val line = "Overlay prefs failed to parse - defaults loaded, corrupt copy kept"
+			Log.e(TAG, line)
+			LogStore.append(app, line)
+			return OverlayPrefs()
 		}
 
 		fun save(
 			context: Context,
-			prefs: OverlayPrefs
-		) {
-			save(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), prefs)
-		}
-
-		fun save(
-			prefs: SharedPreferences,
 			value: OverlayPrefs
 		) {
-			prefs
+			context.applicationContext
+				.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 				.edit()
-				.putString(KEY_ENABLED, value.toJson())
+				.putString(KEY_PREFS_V1, value.toJson())
 				.apply()
 		}
 
