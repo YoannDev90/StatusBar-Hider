@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.stateIn
 /** Device identity + Shizuku authorization, everything the Status tab shows above its cards. */
 data class StatusUiState(
 	val shizuku: ShizukuState = ShizukuState.NOT_RUNNING,
-	val shizukuText: String = "",
 	val oemId: String = "",
 	val oemName: String = "",
 	val oemUntested: Boolean = false
@@ -38,17 +37,13 @@ class StatusViewModel(
 		combine(shizukuRepo.state, oemRepo.config) { shizuku, oem ->
 			StatusUiState(
 				shizuku = shizuku,
-				shizukuText =
-					when (shizuku) {
-						ShizukuState.NOT_RUNNING -> str(R.string.shizuku_not_running)
-						ShizukuState.NOT_GRANTED -> str(R.string.shizuku_not_granted)
-						ShizukuState.READY -> str(R.string.shizuku_ready)
-					},
 				oemId = oem.id,
 				oemName = oem.name,
 				oemUntested = oem.untested
 			)
-		}.stateIn(viewModelScope, SharingStarted.Eagerly, StatusUiState())
+		}
+			// WhileSubscribed: no eternal combine while the tab is off screen.
+			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatusUiState())
 
 	fun requestShizukuPermission() {
 		if (shizukuRepo.state.value == ShizukuState.NOT_RUNNING) {

@@ -176,10 +176,15 @@ private fun DeviceHeader(state: StatusUiState) {
 			)
 		}
 		Text(
-			text = state.shizukuText,
+			text =
+				when (state.shizuku) {
+					ShizukuState.NOT_RUNNING -> stringResource(R.string.shizuku_not_running)
+					ShizukuState.NOT_GRANTED -> stringResource(R.string.shizuku_not_granted)
+					ShizukuState.READY -> stringResource(R.string.shizuku_ready)
+				},
 			style = MaterialTheme.typography.bodyMedium,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
-			modifier = Modifier.fillMaxWidth()
+			modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
 		)
 	}
 }
