@@ -15,24 +15,25 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * The overlay window itself: owns the [ComposeView], its [WindowManager]
  * params and the synthetic lifecycle owners a window-hosted view needs
  * (without them `setContent` crashes — a window is not an Activity).
  *
- * The service drives it (attach / detach / burn-in timer) and is notified
- * through [onCameraGeometry] whenever the cutout geometry changes.
+ * The service drives it (attach / detach / burn-in timer) and reads the
+ * resolved cutout geometry back through [cameraGeometry] whenever it changes.
  *
- * @param prefsProvider reads the current prefs (flags depend on them)
+ * @param prefsFlow current prefs (flags depend on them)
  * @param content bar composition, written against the service state
- * @param onCameraGeometry delivers resolved cutout geometry (null in auto mode) to the bar state
  */
 internal class OverlayWindow(
 	private val context: Context,
-	private val prefsProvider: () -> OverlayPrefs,
-	private val content: @Composable () -> Unit,
-	private val onCameraGeometry: (CameraGeometry?) -> Unit
+	private val prefsFlow: StateFlow<OverlayPrefs>,
+	private val content: @Composable () -> Unit
 ) {
 	companion object {
 		private const val TAG = "CustomBar"
@@ -42,6 +43,11 @@ internal class OverlayWindow(
 		private set
 	var params: WindowManager.LayoutParams? = null
 		private set
+
+	private val _cameraGeometry = MutableStateFlow<CameraGeometry?>(null)
+
+	/** Resolved cutout geometry (null in auto mode); emits from [updateCamera]. */
+	val cameraGeometry: StateFlow<CameraGeometry?> = _cameraGeometry.asStateFlow()
 
 	private var lifecycleOwner: ServiceLifecycleOwner? = null
 	private var viewModelStore: ViewModelStore? = null
@@ -56,7 +62,7 @@ internal class OverlayWindow(
 	 */
 	@Suppress("DEPRECATION")
 	private fun desiredFlags(): Int {
-		val prefs = prefsProvider()
+		val prefs = prefsFlow.value
 		val lockFlag =
 			if (prefs.showOnLockScreen) {
 				WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
@@ -135,13 +141,14 @@ internal class OverlayWindow(
 
 	/**
 	 * Resolves the cutout geometry (auto-detect + user correction, or manual
-	 * offsets) and hands it to the bar state; slot and progress ring both read it.
+	 * offsets) and publishes it on [cameraGeometry]; slot and progress ring
+	 * both read it through the service.
 	 */
 	fun updateCamera() {
 		val v = view ?: return
 		val wm = context.getSystemService(WindowManager::class.java) ?: return
 		val (width, height) = InsetsUtils.screenSize(wm, context.resources)
-		onCameraGeometry(InsetsUtils.resolveCamera(v, width, height, prefsProvider()))
+		_cameraGeometry.value = InsetsUtils.resolveCamera(v, width, height, prefsFlow.value)
 	}
 
 	/** OLED burn-in protection: nudges the whole bar by 1px. */

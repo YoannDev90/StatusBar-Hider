@@ -100,7 +100,7 @@ class StatusBarOverlayService : Service() {
 	private val window =
 		OverlayWindow(
 			context = this,
-			prefsProvider = { prefs },
+			prefsFlow = prefsRepo.state,
 			content = {
 				OverlayBar(
 					prefs = prefs,
@@ -108,9 +108,6 @@ class StatusBarOverlayService : Service() {
 					onClockClick = ::onClockClick,
 					onDateClick = ::onDateClick
 				)
-			},
-			onCameraGeometry = { geometry ->
-				if (geometry != barState.camera) barState = barState.copy(camera = geometry)
 			}
 		)
 
@@ -185,6 +182,11 @@ class StatusBarOverlayService : Service() {
 		serviceScope.launch {
 			mediaSessions.nowPlaying.collect {
 				if (barState.screenOn) updateMedia()
+			}
+		}
+		serviceScope.launch {
+			window.cameraGeometry.collect { geometry ->
+				if (geometry != barState.camera) barState = barState.copy(camera = geometry)
 			}
 		}
 		refreshAll()
