@@ -7,7 +7,7 @@ import androidx.core.content.FileProvider
 import dev.yoanndev90.statusbarhider.core.oem.OemConfig
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.hide.HideController
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import kotlinx.serialization.json.Json
@@ -126,7 +126,7 @@ object SettingsBackup {
 		} else {
 			StatusBarOverlayService.stop(app)
 		}
-		HideController.notifyTiles(app)
+		HideInteractor.notifyTiles(app)
 		BarWidget.updateAll(app)
 	}
 }

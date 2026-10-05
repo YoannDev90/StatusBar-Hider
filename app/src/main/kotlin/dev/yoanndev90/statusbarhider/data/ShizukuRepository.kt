@@ -1,6 +1,6 @@
 package dev.yoanndev90.statusbarhider.data
 
-import dev.yoanndev90.statusbarhider.core.shizuku.ShizukuCmd
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -65,7 +65,7 @@ class ShizukuRepository private constructor() {
 		private fun currentState(): ShizukuState =
 			when {
 				!Shizuku.pingBinder() -> ShizukuState.NOT_RUNNING
-				!ShizukuCmd.granted() -> ShizukuState.NOT_GRANTED
+				!ShellRunner.granted() -> ShizukuState.NOT_GRANTED
 				else -> ShizukuState.READY
 			}
 

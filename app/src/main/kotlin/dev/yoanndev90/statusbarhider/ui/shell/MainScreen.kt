@@ -27,7 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.command.CommandExecutor
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.features.bar.BarScreen
 import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
@@ -51,7 +51,7 @@ fun MainScreen() {
 	val backStackEntry by navController.currentBackStackEntryAsState()
 	val currentRoute = backStackEntry?.destination?.route
 	val current = AppDestination.fromRoute(currentRoute)
-	val busy by CommandExecutor.busy.collectAsStateWithLifecycle()
+	val busy by ShellRunner.busy.collectAsStateWithLifecycle()
 	// First launch (or "Not now" on a previous run) opens the checklist instead
 	// of the shell; the flag is read once, later flips come from navigation.
 	val startDestination =
