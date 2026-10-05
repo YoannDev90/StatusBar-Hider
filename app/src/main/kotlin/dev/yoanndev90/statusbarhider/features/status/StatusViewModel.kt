@@ -45,18 +45,6 @@ class StatusViewModel(
 			// WhileSubscribed: no eternal combine while the tab is off screen.
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatusUiState())
 
-	fun requestShizukuPermission() {
-		if (shizukuRepo.state.value == ShizukuState.NOT_RUNNING) {
-			appendLog(str(R.string.log_shizuku_not_running))
-			return
-		}
-		if (shizukuRepo.state.value == ShizukuState.READY) {
-			appendLog(str(R.string.log_already_authorized))
-		} else {
-			shizukuRepo.requestPermission()
-		}
-	}
-
 	fun applyHide() {
 		ShellRunner.run(getApplication(), R.string.log_applying_hide) { oem ->
 			if (oem.untested) {

@@ -42,6 +42,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.NotifListenerService
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
@@ -51,7 +52,7 @@ private const val TAG = "SetupScreen"
 /** First-run checklist; also reachable from the Status tab. */
 @Composable
 fun SetupScreen(
-	vm: SetupViewModel,
+	vm: PrefsViewModel,
 	onClose: (completed: Boolean) -> Unit
 ) {
 	val context = LocalContext.current

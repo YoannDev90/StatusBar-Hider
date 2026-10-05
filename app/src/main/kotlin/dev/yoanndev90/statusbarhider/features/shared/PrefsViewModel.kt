@@ -11,6 +11,8 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
+import dev.yoanndev90.statusbarhider.data.ShizukuRepository
+import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.coroutines.flow.StateFlow
 
@@ -18,16 +20,30 @@ import kotlinx.coroutines.flow.StateFlow
  * Base for every screen ViewModel that reads or writes [OverlayPrefs].
  *
  * Exposes the live prefs plus the two operations that must stay in lockstep
- * with the overlay service ([updatePrefs] and [setOverlayEnabled]) and the
- * logging helpers every screen needs; screens add their own commands on top.
+ * with the overlay service ([updatePrefs] and [setOverlayEnabled]), the
+ * Shizuku grant shared by the Status and Setup tabs, and the logging helpers
+ * every screen needs; screens add their own commands on top.
  */
-abstract class PrefsViewModel(
+open class PrefsViewModel(
 	application: Application
 ) : AndroidViewModel(application) {
 	protected val prefsRepo = OverlayPrefsRepository.getInstance(application)
+	private val shizukuRepo = ShizukuRepository.getInstance()
 
 	/** Live overlay prefs; every screen observes this instead of copying state. */
 	val prefs: StateFlow<OverlayPrefs> = prefsRepo.state
+
+	/** Live Shizuku authorization; can change under an open screen (permission dialog). */
+	val shizuku: StateFlow<ShizukuState> = shizukuRepo.state
+
+	/** Asks for the Shizuku grant; logs instead of prompting when that is pointless. */
+	fun requestShizukuPermission() {
+		when (shizukuRepo.state.value) {
+			ShizukuState.NOT_RUNNING -> log(R.string.log_shizuku_not_running)
+			ShizukuState.READY -> log(R.string.log_already_authorized)
+			ShizukuState.NOT_GRANTED -> shizukuRepo.requestPermission()
+		}
+	}
 
 	/** Applies [transform]; only the off -> on edge restarts the overlay service. */
 	fun updatePrefs(transform: OverlayPrefs.() -> OverlayPrefs) {
