@@ -141,7 +141,14 @@ object SystemUiWatcher {
 	private suspend fun readSystemUiPid(context: Context): String? =
 		try {
 			ShellRunner.run(context, PID_CMD, CMD_TIMEOUT_SEC).out
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			// A broken shell must not look like "SystemUI is gone" forever.
+			Log.w(TAG, "readSystemUiPid", e)
+			LogStore.appendOnce(
+				context,
+				"$TAG#readSystemUiPid",
+				context.getString(R.string.log_error, "pidof: ${e.message}")
+			)
 			null
 		}
 }
