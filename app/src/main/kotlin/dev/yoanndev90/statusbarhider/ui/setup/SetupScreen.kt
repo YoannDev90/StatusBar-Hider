@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -38,11 +39,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.overlay.NotifListenerService
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+
+private const val TAG = "SetupScreen"
 
 /** First-run checklist; also reachable from the Status tab. */
 @Composable
@@ -166,8 +170,15 @@ private fun openSpecialAccess(
 	context: Context,
 	action: String
 ) {
-	runCatching {
+	try {
 		context.startActivity(Intent(action, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+	} catch (e: Exception) {
+		Log.w(TAG, "openSpecialAccess", e)
+		LogStore.appendOnce(
+			context,
+			"$TAG#special#$action",
+			context.getString(R.string.log_error, "$action: ${e.message}")
+		)
 	}
 }
 
@@ -175,5 +186,14 @@ private fun openSettings(
 	context: Context,
 	action: String
 ) {
-	runCatching { context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+	try {
+		context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+	} catch (e: Exception) {
+		Log.w(TAG, "openSettings", e)
+		LogStore.appendOnce(
+			context,
+			"$TAG#settings#$action",
+			context.getString(R.string.log_error, "$action: ${e.message}")
+		)
+	}
 }

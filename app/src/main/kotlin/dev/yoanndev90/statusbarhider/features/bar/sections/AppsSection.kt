@@ -3,6 +3,7 @@ package dev.yoanndev90.statusbarhider.features.bar.sections
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -32,12 +33,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.features.bar.BarViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
+
+private const val TAG = "AppsSection"
 
 /** One launchable app shown in the picker (own package excluded). */
 private data class AppEntry(
@@ -75,7 +79,13 @@ fun AppsSection(
 			SettingAction(R.drawable.ic_query_stats, R.string.action_grant_usage_access) {
 				try {
 					context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-				} catch (_: Exception) {
+				} catch (e: Exception) {
+					Log.w(TAG, "usage settings", e)
+					LogStore.appendOnce(
+						context,
+						"$TAG#usageSettings",
+						context.getString(R.string.log_error, "usage settings: ${e.message}")
+					)
 				}
 			}
 		}
@@ -181,7 +191,13 @@ private fun launcherApps(context: Context): List<AppEntry> {
 			.distinctBy { it.pkg }
 			.filter { it.pkg != context.packageName }
 			.sortedBy { it.label.lowercase() }
-	} catch (_: Exception) {
+	} catch (e: Exception) {
+		Log.w(TAG, "launcherApps", e)
+		LogStore.appendOnce(
+			context,
+			"$TAG#launcherApps",
+			context.getString(R.string.log_error, "launcher apps: ${e.message}")
+		)
 		emptyList()
 	}
 }
