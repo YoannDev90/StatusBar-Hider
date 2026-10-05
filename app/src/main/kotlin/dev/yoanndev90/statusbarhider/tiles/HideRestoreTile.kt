@@ -7,22 +7,26 @@ import android.util.Log
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
-import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Quick Settings tile: hides or restores the system status bar in one tap.
  *
- * Shizuku commands block, so they run on a single worker thread; the tile only
- * touches [Tile] on the main thread. State is refreshed whenever SystemUI asks
- * for listening (panel opened) and after each tap.
+ * Shizuku commands run on a coroutine scope; the tile only touches [Tile] on
+ * the main thread. State is refreshed whenever SystemUI asks for listening
+ * (panel opened) and after each tap.
  */
 class HideRestoreTile : TileService() {
 	companion object {
 		private const val TAG = "QSTile"
-		private val executor = Executors.newSingleThreadExecutor()
+		private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 		private val busy = AtomicBoolean(false)
 	}
 
@@ -38,24 +42,26 @@ class HideRestoreTile : TileService() {
 			return
 		}
 		val app = applicationContext
-		executor.execute {
-			val result =
-				runBlocking {
-					try {
-						if (HideInteractor.isHidden(app)) {
-							HideInteractor.restore(app)
-						} else {
-							HideInteractor.applyHide(app)
-						}
-					} catch (e: Exception) {
-						Log.e(TAG, "tile command failed", e)
-						HideInteractor.Result(false, listOf(app.getString(R.string.log_error, e.message)))
+		scope.launch {
+			try {
+				val result =
+					if (HideInteractor.isHidden(app)) {
+						HideInteractor.restore(app)
+					} else {
+						HideInteractor.applyHide(app)
 					}
+				result.lines.forEach { Log.i(TAG, it) }
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				Log.e(TAG, "tile command failed", e)
+			}
+			withContext(Dispatchers.Main) {
+				try {
+					refresh()
+				} finally {
+					busy.set(false)
 				}
-			result.lines.forEach { Log.i(TAG, it) }
-			android.os.Handler(android.os.Looper.getMainLooper()).post {
-				refresh()
-				busy.set(false)
 			}
 		}
 	}
