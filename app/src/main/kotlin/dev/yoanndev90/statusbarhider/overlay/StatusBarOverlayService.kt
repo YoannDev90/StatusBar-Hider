@@ -44,7 +44,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
@@ -118,93 +121,14 @@ class StatusBarOverlayService : Service() {
 	private var lastRx = -1L
 	private var lastTx = -1L
 
-	/** Camera ids with the torch currently on (filled by [torchCallback]). */
+	/** Camera ids with the torch currently on (filled by the torch flow). */
 	private val torchIds = ConcurrentHashMap.newKeySet<String>()
-	private var cameraManager: CameraManager? = null
-	private var torchRegistered = false
 
 	/** True while the overlay window is detached because a blacklisted app is up front. */
 	private var suppressed = false
 
 	/** The missing-usage-access hint is logged once per service run, not per poll. */
 	private var usageHintLogged = false
-
-	/** DND / auto-rotate changes land here so the icons react immediately. */
-	private val systemObserver =
-		object : ContentObserver(handler) {
-			override fun onChange(
-				selfChange: Boolean
-			) {
-				runOnOverlay { updateConnectivity() }
-			}
-		}
-
-	private val torchCallback =
-		object : CameraManager.TorchCallback() {
-			override fun onTorchModeChanged(
-				cameraId: String,
-				enabled: Boolean
-			) {
-				if (enabled) {
-					torchIds.add(cameraId)
-				} else {
-					torchIds.remove(cameraId)
-				}
-				runOnOverlay { updateConnectivity() }
-			}
-		}
-
-	private val batteryReceiver =
-		object : BroadcastReceiver() {
-			override fun onReceive(
-				context: Context,
-				intent: Intent
-			) {
-				val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-				val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-				val pct = OverlayPrefs.batteryPct(level, scale)
-				val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
-				batteryCharging =
-					status == BatteryManager.BATTERY_STATUS_CHARGING ||
-					status == BatteryManager.BATTERY_STATUS_FULL
-				if (pct >= 0) {
-					batteryPct = pct
-					updateBattery()
-				}
-			}
-		}
-
-	private val screenReceiver =
-		object : BroadcastReceiver() {
-			override fun onReceive(
-				context: Context,
-				intent: Intent
-			) {
-				when (intent.action) {
-					Intent.ACTION_SCREEN_OFF -> {
-						// The screen going off always puts the keyguard back up.
-						barState = barState.copy(screenOn = false, locked = true)
-						pollJob?.cancel()
-						burnInJob?.cancel()
-						bandwidthJob?.cancel()
-						foregroundJob?.cancel()
-					}
-					Intent.ACTION_SCREEN_ON -> {
-						barState = barState.copy(screenOn = true, locked = indicators.isDeviceLocked())
-						refreshAll()
-						schedulePoll()
-						scheduleBandwidth()
-						scheduleBurnIn()
-						scheduleForegroundPoll()
-					}
-					Intent.ACTION_USER_PRESENT -> {
-						barState = barState.copy(locked = false)
-						updateNotifs()
-						reapplyHideAfterUnlock()
-					}
-				}
-			}
-		}
 
 	/**
 	 * The platform zeroes the shared disable record when the keyguard goes
@@ -231,48 +155,6 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
-	private val usbReceiver =
-		object : BroadcastReceiver() {
-			override fun onReceive(
-				context: Context,
-				intent: Intent
-			) {
-				if (intent.action == "android.hardware.usb.action.USB_STATE") {
-					usbConnected = intent.extras?.getBoolean("connected") == true
-					runOnOverlay { updateConnectivity() }
-				}
-			}
-		}
-
-	/** NFC adapter toggles and location provider changes refresh the indicators. */
-	private val radioReceiver =
-		object : BroadcastReceiver() {
-			override fun onReceive(
-				context: Context,
-				intent: Intent
-			) {
-				runOnOverlay { updateConnectivity() }
-			}
-		}
-
-	private val networkCallback =
-		object : ConnectivityManager.NetworkCallback() {
-			override fun onAvailable(network: Network) {
-				runOnOverlay { updateConnectivity() }
-			}
-
-			override fun onLost(network: Network) {
-				runOnOverlay { updateConnectivity() }
-			}
-
-			override fun onCapabilitiesChanged(
-				network: Network,
-				caps: NetworkCapabilities
-			) {
-				runOnOverlay { updateConnectivity() }
-			}
-		}
-
 	/** Restartable poll loops; [serviceScope] (structured) cancels them on destroy. */
 	private var pollJob: Job? = null
 	private var burnInJob: Job? = null
@@ -291,7 +173,7 @@ class StatusBarOverlayService : Service() {
 		barState = barState.copy(locked = indicators.isDeviceLocked())
 		startFg()
 		window.attach()
-		registerReceivers()
+		observeSystem()
 		serviceScope.launch {
 			prefsRepo.state.collect { onPrefsChanged(it) }
 		}
@@ -350,18 +232,10 @@ class StatusBarOverlayService : Service() {
 	}
 
 	override fun onDestroy() {
+		// Cancelling the scope unregisters every collected framework listener.
 		serviceScope.cancel()
 		handler.removeCallbacksAndMessages(null)
-		listOf(batteryReceiver, screenReceiver, usbReceiver, radioReceiver).forEach { receiver ->
-			runSafely { unregisterReceiver(receiver) }
-		}
 		mediaSessions.dispose()
-		runSafely {
-			val cm = getSystemService(ConnectivityManager::class.java)
-			cm?.unregisterNetworkCallback(networkCallback)
-		}
-		runSafely { contentResolver.unregisterContentObserver(systemObserver) }
-		if (torchRegistered) runSafely { cameraManager?.unregisterTorchCallback(torchCallback) }
 		SystemUiWatcher.stop(this)
 		window.detach()
 		// The overlay is gone: let SystemUI re-read the "Custom bar" tile state.
@@ -434,63 +308,192 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
-	private fun registerReceivers() {
-		runSafely {
-			registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-			val sticky = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-			if (sticky != null) {
-				batteryPct =
-					OverlayPrefs.batteryPct(
-						sticky.getIntExtra(BatteryManager.EXTRA_LEVEL, -1),
-						sticky.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-					)
+	/**
+	 * Registers every framework listener as a collected flow. The collections
+	 * live in [serviceScope], so destroy cancels them and [awaitClose] unregisters.
+	 */
+	private fun observeSystem() {
+		// Sticky read first: the battery flow's first emission races refreshAll().
+		val sticky = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+		if (sticky != null) {
+			batteryPct =
+				OverlayPrefs.batteryPct(
+					sticky.getIntExtra(BatteryManager.EXTRA_LEVEL, -1),
+					sticky.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+				)
+		}
+		serviceScope.launch {
+			receiverFlow(IntentFilter(Intent.ACTION_BATTERY_CHANGED)).collect { onBattery(it) }
+		}
+		serviceScope.launch {
+			val filter = IntentFilter()
+			filter.addAction(Intent.ACTION_SCREEN_ON)
+			filter.addAction(Intent.ACTION_SCREEN_OFF)
+			filter.addAction(Intent.ACTION_USER_PRESENT)
+			receiverFlow(filter).collect { onScreen(it) }
+		}
+		serviceScope.launch {
+			receiverFlow(IntentFilter("android.hardware.usb.action.USB_STATE")).collect { onUsb(it) }
+		}
+		serviceScope.launch {
+			// NFC adapter toggles and location provider changes refresh the indicators.
+			val filter = IntentFilter()
+			filter.addAction(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
+			filter.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
+			filter.addAction("android.location.GPS_ENABLED_CHANGE")
+			filter.addAction(ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED)
+			receiverFlow(filter).collect {
+				if (barState.screenOn) updateConnectivity()
 			}
 		}
-		runSafely {
-			val f = IntentFilter()
-			f.addAction(Intent.ACTION_SCREEN_ON)
-			f.addAction(Intent.ACTION_SCREEN_OFF)
-			f.addAction(Intent.ACTION_USER_PRESENT)
-			registerReceiver(screenReceiver, f)
+		serviceScope.launch {
+			networkFlow().collect {
+				if (barState.screenOn) updateConnectivity()
+			}
 		}
-		runSafely {
-			registerReceiver(usbReceiver, IntentFilter("android.hardware.usb.action.USB_STATE"))
+		serviceScope.launch {
+			// DND / auto-rotate changes land here so the icons react immediately.
+			systemSettingsFlow().collect {
+				if (barState.screenOn) updateConnectivity()
+			}
 		}
-		runSafely {
-			val f = IntentFilter()
-			f.addAction(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
-			f.addAction(LocationManager.PROVIDERS_CHANGED_ACTION)
-			f.addAction("android.location.GPS_ENABLED_CHANGE")
-			f.addAction(ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED)
-			registerReceiver(radioReceiver, f)
-		}
-		runSafely {
-			val cm = getSystemService(ConnectivityManager::class.java)
-			cm?.registerDefaultNetworkCallback(networkCallback)
-		}
-		runSafely {
-			contentResolver.registerContentObserver(
-				Settings.Global.getUriFor("zen_mode"),
-				false,
-				systemObserver
-			)
-			contentResolver.registerContentObserver(
-				Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
-				false,
-				systemObserver
-			)
-		}
-		try {
-			cameraManager = getSystemService(CameraManager::class.java)
-			cameraManager?.registerTorchCallback(torchCallback, handler)
-			torchRegistered = true
-		} catch (_: Exception) {
-			torchRegistered = false
+		serviceScope.launch {
+			torchFlow().collect { (cameraId, enabled) ->
+				if (enabled) {
+					torchIds.add(cameraId)
+				} else {
+					torchIds.remove(cameraId)
+				}
+				if (barState.screenOn) updateConnectivity()
+			}
 		}
 	}
 
-	private fun runOnOverlay(block: () -> Unit) {
-		handler.post { if (barState.screenOn) block() }
+	/** Registers a receiver for [filter]; the collection's cancel unregisters it. */
+	private fun receiverFlow(filter: IntentFilter): Flow<Intent> =
+		callbackFlow {
+			val receiver =
+				object : BroadcastReceiver() {
+					override fun onReceive(
+						context: Context,
+						intent: Intent
+					) {
+						trySend(intent)
+					}
+				}
+			runSafely { registerReceiver(receiver, filter) }
+			awaitClose { runSafely { unregisterReceiver(receiver) } }
+		}
+
+	/** zen_mode + auto-rotate changes; the collection's cancel unregisters it. */
+	private fun systemSettingsFlow(): Flow<Unit> =
+		callbackFlow {
+			val observer =
+				object : ContentObserver(handler) {
+					override fun onChange(selfChange: Boolean) {
+						trySend(Unit)
+					}
+				}
+			runSafely {
+				contentResolver.registerContentObserver(Settings.Global.getUriFor("zen_mode"), false, observer)
+				contentResolver.registerContentObserver(
+					Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+					false,
+					observer
+				)
+			}
+			awaitClose { runSafely { contentResolver.unregisterContentObserver(observer) } }
+		}
+
+	/** Torch on/off per camera id; the collection's cancel unregisters it. */
+	private fun torchFlow(): Flow<Pair<String, Boolean>> =
+		callbackFlow {
+			val cm = getSystemService(CameraManager::class.java) ?: return@callbackFlow
+			val cb =
+				object : CameraManager.TorchCallback() {
+					override fun onTorchModeChanged(
+						cameraId: String,
+						enabled: Boolean
+					) {
+						trySend(cameraId to enabled)
+					}
+				}
+			try {
+				cm.registerTorchCallback(cb, handler)
+			} catch (_: Exception) {
+				return@callbackFlow
+			}
+			awaitClose { runSafely { cm.unregisterTorchCallback(cb) } }
+		}
+
+	/** Default network changes; the collection's cancel unregisters it. */
+	private fun networkFlow(): Flow<Unit> =
+		callbackFlow {
+			val cm = getSystemService(ConnectivityManager::class.java)
+			val cb =
+				object : ConnectivityManager.NetworkCallback() {
+					override fun onAvailable(network: Network) {
+						trySend(Unit)
+					}
+
+					override fun onLost(network: Network) {
+						trySend(Unit)
+					}
+
+					override fun onCapabilitiesChanged(
+						network: Network,
+						caps: NetworkCapabilities
+					) {
+						trySend(Unit)
+					}
+				}
+			runSafely { cm?.registerDefaultNetworkCallback(cb) }
+			awaitClose { runSafely { cm?.unregisterNetworkCallback(cb) } }
+		}
+
+	private fun onBattery(intent: Intent) {
+		val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+		val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+		val pct = OverlayPrefs.batteryPct(level, scale)
+		val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
+		batteryCharging =
+			status == BatteryManager.BATTERY_STATUS_CHARGING ||
+			status == BatteryManager.BATTERY_STATUS_FULL
+		if (pct >= 0) {
+			batteryPct = pct
+			updateBattery()
+		}
+	}
+
+	private fun onScreen(intent: Intent) {
+		when (intent.action) {
+			Intent.ACTION_SCREEN_OFF -> {
+				// The screen going off always puts the keyguard back up.
+				barState = barState.copy(screenOn = false, locked = true)
+				pollJob?.cancel()
+				burnInJob?.cancel()
+				bandwidthJob?.cancel()
+				foregroundJob?.cancel()
+			}
+			Intent.ACTION_SCREEN_ON -> {
+				barState = barState.copy(screenOn = true, locked = indicators.isDeviceLocked())
+				refreshAll()
+				schedulePoll()
+				scheduleBandwidth()
+				scheduleBurnIn()
+				scheduleForegroundPoll()
+			}
+			Intent.ACTION_USER_PRESENT -> {
+				barState = barState.copy(locked = false)
+				updateNotifs()
+				reapplyHideAfterUnlock()
+			}
+		}
+	}
+
+	private fun onUsb(intent: Intent) {
+		usbConnected = intent.extras?.getBoolean("connected") == true
+		if (barState.screenOn) updateConnectivity()
 	}
 
 	private fun refreshAll() {
