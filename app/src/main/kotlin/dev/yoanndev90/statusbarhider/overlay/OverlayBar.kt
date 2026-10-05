@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider.overlay
 
+import android.util.Log
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -47,11 +49,14 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+
+private const val TAG = "OverlayBar"
 
 /**
  * System-wide custom status bar, rendered with Compose inside a
@@ -309,12 +314,19 @@ private fun ClockWidget(
 	fg: Color,
 	onClick: () -> Unit
 ) {
+	val context = LocalContext.current
 	val tick = rememberTick(if (prefs.hasSeconds()) 1000L else 60_000L, screenOn)
 	val text =
 		remember(tick, prefs.effectiveTimeFormat()) {
 			try {
 				SimpleDateFormat(prefs.effectiveTimeFormat(), Locale.getDefault()).format(Date(tick))
-			} catch (_: Exception) {
+			} catch (e: Exception) {
+				Log.w(TAG, "time format", e)
+				LogStore.appendOnce(
+					context,
+					"$TAG#timeFormat#${prefs.effectiveTimeFormat()}",
+					context.getString(R.string.log_error, "bad time format: ${e.message}")
+				)
 				""
 			}
 		}
@@ -341,12 +353,19 @@ private fun DateWidget(
 	onClick: () -> Unit
 ) {
 	if (!prefs.showDate) return
+	val context = LocalContext.current
 	val tick = rememberTick(60_000L, screenOn)
 	val text =
 		remember(tick, prefs.dateFormat) {
 			try {
 				SimpleDateFormat(prefs.dateFormat, Locale.getDefault()).format(Date(tick))
-			} catch (_: Exception) {
+			} catch (e: Exception) {
+				Log.w(TAG, "date format", e)
+				LogStore.appendOnce(
+					context,
+					"$TAG#dateFormat#${prefs.dateFormat}",
+					context.getString(R.string.log_error, "bad date format: ${e.message}")
+				)
 				""
 			}
 		}
