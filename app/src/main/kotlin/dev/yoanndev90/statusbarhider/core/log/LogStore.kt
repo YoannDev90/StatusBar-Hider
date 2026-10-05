@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Collections
 import java.util.Date
 import java.util.Locale
 
@@ -31,6 +32,7 @@ object LogStore {
 	private val lock = Any()
 	private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
 	private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+	private val onceKeys = Collections.synchronizedSet(mutableSetOf<String>())
 
 	private val _lines = MutableStateFlow<List<String>>(emptyList())
 	val lines: StateFlow<List<String>> = _lines.asStateFlow()
@@ -56,6 +58,19 @@ object LogStore {
 		// thread (selectOem, setOverlayEnabled...). Each writer dumps the current
 		// snapshot under the lock, so the last one always holds the full history.
 		ioScope.launch { synchronized(lock) { writeLocked(app) } }
+	}
+
+	/**
+	 * Like [append], but drops repeats of [key]. Polling call sites rethrow
+	 * the same failure every cycle, and mirroring rewrites the whole file per
+	 * line, so repeating would grow the log quadratically.
+	 */
+	fun appendOnce(
+		context: Context,
+		key: String,
+		line: String
+	) {
+		if (onceKeys.add(key)) append(context, line)
 	}
 
 	/** Reloads the persisted lines into [lines] (no-op once loaded). */

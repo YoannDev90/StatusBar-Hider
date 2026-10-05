@@ -17,6 +17,9 @@ import android.nfc.NfcAdapter
 import android.provider.CalendarContract
 import android.provider.Settings
 import android.telephony.TelephonyManager
+import android.util.Log
+import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -27,7 +30,8 @@ import java.util.Locale
  * Every call hits the system service fresh (no caching): the service re-runs
  * them on each refresh cycle, and a stale cache would show a state the bar
  * never sees. Failures fall back to "off" / null — a missing permission or a
- * hidden API only costs one icon.
+ * hidden API only costs one icon, and each failure reaches logcat plus the
+ * in-app log (once per query, see [warn]) instead of vanishing.
  */
 internal class SystemIndicators(
 	private val context: Context
@@ -36,7 +40,8 @@ internal class SystemIndicators(
 	fun isDeviceLocked(): Boolean =
 		try {
 			context.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isDeviceLocked", e)
 			false
 		}
 
@@ -79,7 +84,8 @@ internal class SystemIndicators(
 					}
 				}
 			text
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("queryCalendar", e)
 			null
 		}
 	}
@@ -92,7 +98,8 @@ internal class SystemIndicators(
 			val trigger = am?.nextAlarmClock?.triggerTime ?: return null
 			val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
 			fmt.format(Date(trigger))
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("queryAlarm", e)
 			null
 		}
 	}
@@ -112,14 +119,16 @@ internal class SystemIndicators(
 				}
 			}
 			pkg
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("foregroundPackage", e)
 			null
 		}
 
 	fun isAirplaneOn(): Boolean =
 		try {
 			Settings.Global.getInt(context.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0) != 0
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isAirplaneOn", e)
 			false
 		}
 
@@ -127,7 +136,8 @@ internal class SystemIndicators(
 		try {
 			val cm = context.getSystemService(ConnectivityManager::class.java) ?: return null
 			cm.getNetworkCapabilities(cm.activeNetwork)
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("activeCaps", e)
 			null
 		}
 
@@ -139,7 +149,8 @@ internal class SystemIndicators(
 		try {
 			val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
 			cm.allNetworks.any { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true }
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isVpn", e)
 			activeCaps()?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
 		}
 
@@ -157,7 +168,8 @@ internal class SystemIndicators(
 				TelephonyManager.NETWORK_TYPE_UNKNOWN -> "4G"
 				else -> "4G"
 			}
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("mobileTypeLabel", e)
 			"4G"
 		}
 	}
@@ -166,7 +178,8 @@ internal class SystemIndicators(
 		try {
 			val bm = context.getSystemService(BluetoothManager::class.java)
 			bm?.adapter?.isEnabled == true
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isBluetoothOn", e)
 			false
 		}
 
@@ -175,7 +188,8 @@ internal class SystemIndicators(
 			NfcAdapter
 				.getDefaultAdapter(context)
 				?.isEnabled == true
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isNfcOn", e)
 			false
 		}
 
@@ -183,7 +197,8 @@ internal class SystemIndicators(
 		try {
 			val lm = context.getSystemService(LocationManager::class.java)
 			lm?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isGpsOn", e)
 			false
 		}
 
@@ -191,7 +206,8 @@ internal class SystemIndicators(
 	fun isDndOn(): Boolean =
 		try {
 			Settings.Global.getInt(context.contentResolver, "zen_mode", 0) != 0
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isDndOn", e)
 			false
 		}
 
@@ -202,14 +218,16 @@ internal class SystemIndicators(
 			val status = cm.restrictBackgroundStatus
 			status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED ||
 				status == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_WHITELISTED
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isDataSaverOn", e)
 			false
 		}
 
 	fun isAutoRotateOn(): Boolean =
 		try {
 			Settings.System.getInt(context.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) != 0
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isAutoRotateOn", e)
 			false
 		}
 
@@ -220,13 +238,34 @@ internal class SystemIndicators(
 				val m = wm.javaClass.getDeclaredMethod("isWifiApEnabled")
 				m.isAccessible = true
 				if (m.invoke(wm) == true) return true
-			} catch (_: Exception) {
+			} catch (e: Exception) {
+				// Hidden API: expected to fail on some OEMs, the global fallback below covers it.
+				warn("isHotspotOn.hiddenApi", e)
 			}
 		}
 		return try {
 			Settings.Global.getInt(context.contentResolver, "wifi_ap_state", 0) == 13
-		} catch (_: Exception) {
+		} catch (e: Exception) {
+			warn("isHotspotOn", e)
 			false
 		}
+	}
+
+	/**
+	 * Reports [e] from query [where]: logcat gets every occurrence, the
+	 * in-app log only the first (the poll would otherwise rewrite its whole
+	 * file once per refresh cycle).
+	 */
+	private fun warn(where: String, e: Exception) {
+		Log.w(TAG, where, e)
+		LogStore.appendOnce(
+			context,
+			"$TAG#$where",
+			context.getString(R.string.log_error, "$where: ${e.message}")
+		)
+	}
+
+	companion object {
+		private const val TAG = "SystemIndicators"
 	}
 }
