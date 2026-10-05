@@ -89,7 +89,7 @@ class StatusBarOverlayService : Service() {
 	private val prefsRepo = OverlayPrefsRepository.getInstance(this)
 	private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 	private val indicators = SystemIndicators(this)
-	private val mediaSessions = MediaSessions(this, ::runOnOverlay, ::updateMedia)
+	private val mediaSessions = MediaSessions(this, serviceScope)
 
 	private var prefs by mutableStateOf(OverlayPrefs())
 	private var barState by mutableStateOf(OverlayBarState())
@@ -153,10 +153,6 @@ class StatusBarOverlayService : Service() {
 				runOnOverlay { updateConnectivity() }
 			}
 		}
-
-	private val notifListener: () -> Unit = {
-		handler.post { if (barState.screenOn) updateNotifs() }
-	}
 
 	private val batteryReceiver =
 		object : BroadcastReceiver() {
@@ -296,9 +292,18 @@ class StatusBarOverlayService : Service() {
 		startFg()
 		window.attach()
 		registerReceivers()
-		NotifIcons.addListener(notifListener)
 		serviceScope.launch {
 			prefsRepo.state.collect { onPrefsChanged(it) }
+		}
+		serviceScope.launch {
+			NotifIcons.snapshots.collect {
+				if (barState.screenOn) updateNotifs()
+			}
+		}
+		serviceScope.launch {
+			mediaSessions.nowPlaying.collect {
+				if (barState.screenOn) updateMedia()
+			}
 		}
 		refreshAll()
 		schedulePoll()
@@ -347,7 +352,6 @@ class StatusBarOverlayService : Service() {
 	override fun onDestroy() {
 		serviceScope.cancel()
 		handler.removeCallbacksAndMessages(null)
-		NotifIcons.removeListener(notifListener)
 		listOf(batteryReceiver, screenReceiver, usbReceiver, radioReceiver).forEach { receiver ->
 			runSafely { unregisterReceiver(receiver) }
 		}
@@ -649,7 +653,7 @@ class StatusBarOverlayService : Service() {
 	private fun queryMedia(): String? {
 		if (!prefs.showMedia || !NotifListenerService.isEnabled(this)) return null
 		mediaSessions.ensure()
-		return mediaSessions.nowPlaying()
+		return mediaSessions.nowPlaying.value
 	}
 
 	private fun updateConnectivity() {

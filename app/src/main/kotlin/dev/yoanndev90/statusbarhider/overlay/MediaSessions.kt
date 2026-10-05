@@ -7,6 +7,11 @@ import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.MediaSessionManager.OnActiveSessionsChangedListener
 import android.media.session.PlaybackState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Active media sessions behind the "now playing" widget.
@@ -15,30 +20,40 @@ import android.media.session.PlaybackState
  * query until the listener component is allowed: flipping the toggle on then
  * starts the stream without a service restart.
  *
- * @param dispatch posts a block on the overlay thread (screen-on gated)
- * @param onChanged called whenever a session event may have changed the text
+ * Every framework callback hops onto [scope] (the overlay's main scope)
+ * instead of a pushed lambda, and the latest text is exposed as [nowPlaying].
  */
 internal class MediaSessions(
 	private val context: Context,
-	private val dispatch: (block: () -> Unit) -> Unit,
-	private val onChanged: () -> Unit
+	private val scope: CoroutineScope
 ) {
 	private var registered = false
 	private var manager: MediaSessionManager? = null
 	private var controllers: List<MediaController> = emptyList()
 
+	private val _nowPlaying = MutableStateFlow<String?>(null)
+
+	/** Latest "Title — Artist", null when nothing plays; emits on any session change. */
+	val nowPlaying: StateFlow<String?> = _nowPlaying.asStateFlow()
+
 	private val callback =
 		object : MediaController.Callback() {
-			override fun onMetadataChanged(metadata: MediaMetadata?) = dispatch { onChanged() }
+			override fun onMetadataChanged(metadata: MediaMetadata?) {
+				scope.launch { publish() }
+			}
 
-			override fun onPlaybackStateChanged(state: PlaybackState?) = dispatch { onChanged() }
+			override fun onPlaybackStateChanged(state: PlaybackState?) {
+				scope.launch { publish() }
+			}
 
-			override fun onSessionDestroyed() = dispatch { onChanged() }
+			override fun onSessionDestroyed() {
+				scope.launch { publish() }
+			}
 		}
 
 	private val listener =
 		OnActiveSessionsChangedListener { sessions ->
-			dispatch { sync(sessions) }
+			scope.launch { sync(sessions) }
 		}
 
 	/** Registers the session listener; a no-op until notification access is granted. */
@@ -61,8 +76,11 @@ internal class MediaSessions(
 		controllers = emptyList()
 	}
 
-	/** Title / artist of the first playing (or paused) session, null when none. */
-	fun nowPlaying(): String? {
+	private fun publish() {
+		_nowPlaying.value = compute()
+	}
+
+	private fun compute(): String? {
 		val ctrl =
 			controllers.firstOrNull {
 				it.playbackState?.state == PlaybackState.STATE_PLAYING
@@ -88,6 +106,6 @@ internal class MediaSessions(
 		controllers.forEach { c -> runSafely { c.unregisterCallback(callback) } }
 		controllers = sessions.orEmpty()
 		controllers.forEach { c -> runSafely { c.registerCallback(callback) } }
-		onChanged()
+		publish()
 	}
 }

@@ -1,10 +1,13 @@
 package dev.yoanndev90.statusbarhider.overlay
 
 import android.graphics.drawable.Drawable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Process-local snapshot of notification icons for the overlay bar.
- * Written by [NotifListenerService], read by [StatusBarOverlayService].
+ * Written by [NotifListenerService], collected by [StatusBarOverlayService].
  */
 object NotifIcons {
 	data class Entry(
@@ -19,33 +22,27 @@ object NotifIcons {
 		val indeterminate: Boolean
 	)
 
-	private var entries: List<Entry> = emptyList()
-	private var currentProgress: Progress? = null
-	private val listeners = mutableSetOf<() -> Unit>()
+	/** One immutable snapshot: the icon list plus the winning progress. */
+	data class Snapshot(
+		val entries: List<Entry>,
+		val progress: Progress?
+	)
 
-	@Synchronized
+	private val _snapshots = MutableStateFlow(Snapshot(emptyList(), null))
+
+	/** Emits on every [update]; collect instead of registering listeners. */
+	val snapshots: StateFlow<Snapshot> = _snapshots.asStateFlow()
+
 	fun update(
 		all: List<Entry>,
 		progress: Progress?
 	) {
-		entries = all
-		currentProgress = progress
-		listeners.toList().forEach { it() }
+		_snapshots.value = Snapshot(all, progress)
 	}
 
-	@Synchronized
-	fun snapshot(): List<Entry> = entries
+	/** Latest icons (pull side of [snapshots]). */
+	fun snapshot(): List<Entry> = _snapshots.value.entries
 
-	@Synchronized
-	fun progress(): Progress? = currentProgress
-
-	@Synchronized
-	fun addListener(l: () -> Unit) {
-		listeners += l
-	}
-
-	@Synchronized
-	fun removeListener(l: () -> Unit) {
-		listeners -= l
-	}
+	/** Latest winning progress (pull side of [snapshots]). */
+	fun progress(): Progress? = _snapshots.value.progress
 }

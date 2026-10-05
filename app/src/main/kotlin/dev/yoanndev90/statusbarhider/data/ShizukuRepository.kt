@@ -19,6 +19,10 @@ enum class ShizukuState {
  * Permission results are delivered through [Shizuku.addRequestPermissionResultListener],
  * which is the only dispatch channel in Shizuku API 13.x: the result never reaches
  * `Activity.onRequestPermissionsResult`, so the previous override was dead code.
+ *
+ * The three Shizuku listeners are registered once at construction: the repo is a
+ * process singleton, so there is no owner to unregister from, and the sticky
+ * binder listener covers an already-connected Shizuku.
  */
 class ShizukuRepository private constructor() {
 	private val _state = MutableStateFlow(currentState())
@@ -29,18 +33,11 @@ class ShizukuRepository private constructor() {
 	private val permissionListener =
 		Shizuku.OnRequestPermissionResultListener { _, _ -> refresh() }
 
-	/** Registers binder + permission listeners. Safe to call repeatedly. */
-	fun start() {
+	init {
 		Shizuku.addBinderReceivedListenerSticky(binderListener)
 		Shizuku.addBinderDeadListener(deadListener)
 		Shizuku.addRequestPermissionResultListener(permissionListener)
 		refresh()
-	}
-
-	fun stop() {
-		Shizuku.removeBinderReceivedListener(binderListener)
-		Shizuku.removeBinderDeadListener(deadListener)
-		Shizuku.removeRequestPermissionResultListener(permissionListener)
 	}
 
 	/** Recomputes the state from the live binder. Returns the new state. */

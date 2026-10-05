@@ -8,7 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.watcher.SystemUiWatcher
-import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.ui.shell.MainScreen
 import dev.yoanndev90.statusbarhider.ui.theme.StatusBarHiderTheme
 
@@ -22,7 +21,6 @@ class MainActivity : ComponentActivity() {
 		enableEdgeToEdge()
 		// Persisted lines (from a previous run, or a boot auto-hide) are shown too.
 		LogStore.ensureLoaded(this)
-		ShizukuRepository.getInstance().start()
 		SystemUiWatcher.start(this, this)
 		setContent {
 			StatusBarHiderTheme {
@@ -33,10 +31,9 @@ class MainActivity : ComponentActivity() {
 	}
 
 	override fun onDestroy() {
-		// The listeners belong to the process, not the Activity: only detach when
+		// The watcher belongs to the process, not the Activity: only detach when
 		// the app is really going away, not on a configuration change.
 		if (isFinishing) {
-			ShizukuRepository.getInstance().stop()
 			SystemUiWatcher.stop(this)
 		}
 		super.onDestroy()
