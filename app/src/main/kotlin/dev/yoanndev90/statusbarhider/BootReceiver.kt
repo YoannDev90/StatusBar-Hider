@@ -3,8 +3,6 @@ package dev.yoanndev90.statusbarhider
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
@@ -13,9 +11,16 @@ import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
-import java.util.concurrent.Executors
 
 /**
  * Re-applies the hide commands after a reboot (opt-out via the
@@ -23,7 +28,7 @@ import java.util.concurrent.Executors
  * package update it only restarts the custom bar - the disable flags live in
  * SystemUI and are still applied.
  *
- * Every command runs on a dedicated background thread: Shizuku dispatches its
+ * Every command runs in a coroutine on [scope]: Shizuku dispatches its
  * binder callbacks on the main looper, and one hide pass is several shell
  * commands with a 15 s timeout each, which would ANR the receiver. [goAsync]
  * only covers the short window where Shizuku is already up; a late binder is
@@ -39,10 +44,11 @@ class BootReceiver : BroadcastReceiver() {
 		/** Stop waiting for a late binder after this long. */
 		private const val LISTENER_TIMEOUT_MS = 60_000L
 
-		private val executor =
-			Executors.newSingleThreadExecutor { r ->
-				Thread(r, "boot-hide").apply { isDaemon = true }
-			}
+		/** Poll interval while the initial binder wait runs. */
+		private const val BINDER_POLL_MS = 250L
+
+		/** Background scope; a late binder finishes after the broadcast is released. */
+		private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 	}
 
 	override fun onReceive(
@@ -74,24 +80,19 @@ class BootReceiver : BroadcastReceiver() {
 		log(app, "Boot completed - scheduling status bar hide")
 
 		val pending = goAsync()
-		val handler = Handler(Looper.getMainLooper())
-		executor.execute {
+		scope.launch {
 			try {
-				val deadline = System.currentTimeMillis() + BINDER_WAIT_MS
-				while (!Shizuku.pingBinder() && System.currentTimeMillis() < deadline) {
-					try {
-						Thread.sleep(250)
-					} catch (e: InterruptedException) {
-						break
-					}
-				}
-				if (Shizuku.pingBinder()) {
+				if (awaitInitialBinder()) {
 					runAutoHide(app)
 				} else {
 					// Shizuku is still starting up: release the broadcast (holding
 					// goAsync too long triggers an ANR) and finish when it arrives.
-					waitForLateBinder(app, handler)
+					scope.launch {
+						if (awaitLateBinder()) runAutoHide(app)
+					}
 				}
+			} catch (e: CancellationException) {
+				throw e
 			} catch (e: Exception) {
 				Log.e(TAG, "Boot auto-hide failed", e)
 			} finally {
@@ -113,28 +114,43 @@ class BootReceiver : BroadcastReceiver() {
 		OverlayController.setEnabled(app, true)
 	}
 
-	/** Registers a sticky binder listener; runs the hide as soon as Shizuku is up. */
-	private fun waitForLateBinder(
-		app: Context,
-		handler: Handler
-	) {
-		var listener: Shizuku.OnBinderReceivedListener? = null
-		val timeout = Runnable { listener?.let { Shizuku.removeBinderReceivedListener(it) } }
-		handler.postDelayed(timeout, LISTENER_TIMEOUT_MS)
-		listener =
-			object : Shizuku.OnBinderReceivedListener {
-				override fun onBinderReceived() {
-					handler.removeCallbacks(timeout)
-					Shizuku.removeBinderReceivedListener(this)
-					executor.execute { runAutoHide(app) }
-				}
-			}
-		// Sticky: fires immediately when the binder arrived between the poll above
-		// and this line, so there is no race window.
-		Shizuku.addBinderReceivedListenerSticky(listener)
+	/** Polls the binder for up to [BINDER_WAIT_MS]; true when it answered. */
+	private suspend fun awaitInitialBinder(): Boolean {
+		val deadline = System.currentTimeMillis() + BINDER_WAIT_MS
+		while (!Shizuku.pingBinder() && System.currentTimeMillis() < deadline) {
+			delay(BINDER_POLL_MS)
+		}
+		return Shizuku.pingBinder()
 	}
 
-	private fun runAutoHide(app: Context) {
+	/** Suspends until a late binder arrives, or [LISTENER_TIMEOUT_MS] elapses. */
+	private suspend fun awaitLateBinder(): Boolean {
+		val received =
+			callbackFlow {
+				val listener =
+					object : Shizuku.OnBinderReceivedListener {
+						override fun onBinderReceived() {
+							trySend(Unit)
+							close()
+						}
+					}
+				// Sticky: fires immediately when the binder arrived between the poll
+				// above and this line, so there is no race window.
+				Shizuku.addBinderReceivedListenerSticky(listener)
+				val timeout =
+					launch {
+						delay(LISTENER_TIMEOUT_MS)
+						close()
+					}
+				awaitClose {
+					timeout.cancel()
+					Shizuku.removeBinderReceivedListener(listener)
+				}
+			}.firstOrNull()
+		return received != null
+	}
+
+	private suspend fun runAutoHide(app: Context) {
 		try {
 			if (!Shizuku.pingBinder()) {
 				log(app, "Shizuku binder not available - skipping auto-hide")
@@ -148,7 +164,7 @@ class BootReceiver : BroadcastReceiver() {
 			if (oem.untested) Log.w(TAG, "'${oem.name}' config is untested on this device")
 			for (note in oem.notes) log(app, "note: $note")
 
-			val result = runBlocking { HideInteractor.applyHide(app) }
+			val result = HideInteractor.applyHide(app)
 			for (line in result.lines) log(app, line)
 			log(app, if (result.ok) "Auto-hide done" else "Auto-hide finished with failures")
 
@@ -159,6 +175,8 @@ class BootReceiver : BroadcastReceiver() {
 				log(app, "Restarting custom overlay")
 				StatusBarOverlayService.start(app)
 			}
+		} catch (e: CancellationException) {
+			throw e
 		} catch (e: Exception) {
 			Log.e(TAG, "Auto-hide failed", e)
 			log(app, "Boot auto-hide failed: ${e.message}")
