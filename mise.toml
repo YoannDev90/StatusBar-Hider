@@ -17,6 +17,14 @@ run = "./gradlew assembleRelease"
 description = "Build debug APK"
 run = "./gradlew assembleDebug"
 
+[tasks.test]
+description = "Run unit tests"
+run = "./gradlew testDebugUnitTest"
+
+[tasks.lint]
+description = "Run Android lint"
+run = "./gradlew lintDebug"
+
 [tasks.format]
 run = "ktlint --format"
 description = "Run ktlint format"
