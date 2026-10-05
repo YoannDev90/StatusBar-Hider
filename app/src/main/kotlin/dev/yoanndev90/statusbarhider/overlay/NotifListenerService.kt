@@ -5,27 +5,58 @@ import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 
 /**
  * Collects one icon per notifying package for the custom overlay bar.
  * Requires the user to enable notification access in system settings.
+ *
+ * The rebuild does binder + package-manager IPC (`activeNotifications`,
+ * icon loading), so it never runs on the callback thread: every event is
+ * conflated into a single IO consumer ([rebuilds]) - a notification storm
+ * collapses to one rebuild instead of a queue.
  */
 class NotifListenerService : NotificationListenerService() {
+	private val rebuildScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+	private val rebuilds = Channel<Unit>(Channel.CONFLATED)
+
+	override fun onCreate() {
+		super.onCreate()
+		rebuildScope.launch {
+			for (request in rebuilds) rebuild()
+		}
+	}
+
+	override fun onDestroy() {
+		rebuildScope.cancel()
+		rebuilds.close()
+		super.onDestroy()
+	}
+
 	override fun onListenerConnected() {
 		super.onListenerConnected()
-		rebuild()
+		requestRebuild()
 	}
 
 	override fun onNotificationPosted(sbn: StatusBarNotification?) {
-		rebuild()
+		requestRebuild()
 	}
 
 	override fun onNotificationRemoved(sbn: StatusBarNotification?) {
-		rebuild()
+		requestRebuild()
 	}
 
 	override fun onNotificationRankingUpdate(rankingMap: RankingMap?) {
-		rebuild()
+		requestRebuild()
+	}
+
+	private fun requestRebuild() {
+		rebuilds.trySend(Unit)
 	}
 
 	private fun rebuild() {
