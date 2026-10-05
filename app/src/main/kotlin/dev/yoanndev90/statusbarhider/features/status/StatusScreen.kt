@@ -1,5 +1,7 @@
 package dev.yoanndev90.statusbarhider.features.status
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -24,6 +26,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.backup.SettingsBackup
 import dev.yoanndev90.statusbarhider.core.backup.SettingsBackupException
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
@@ -81,11 +84,25 @@ fun StatusScreen(
 		}
 
 		SettingGroup(R.string.section_app) {
+			SettingAction(R.drawable.ic_key, R.string.action_copy_control_token) { copyControlToken(context) }
+			Text(
+				text = stringResource(R.string.hint_control_token),
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+			)
 			SettingAction(R.drawable.ic_settings, R.string.action_open_setup) { onOpenSetup() }
 			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) { exportSettings(context) }
 			SettingAction(R.drawable.ic_upload, R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
 		}
 	}
+}
+
+/** Copies the control API token so it can be pasted into an adb or Tasker intent. */
+private fun copyControlToken(context: Context) {
+	val clipboard = context.getSystemService(ClipboardManager::class.java)
+	clipboard?.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), AppSettings.controlToken(context)))
+	Toast.makeText(context, R.string.toast_token_copied, Toast.LENGTH_SHORT).show()
 }
 
 /** Shares the current settings as a JSON file through the system share sheet. */
