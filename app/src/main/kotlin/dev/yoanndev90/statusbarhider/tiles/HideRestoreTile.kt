@@ -42,15 +42,18 @@ class HideRestoreTile : TileService() {
 			return
 		}
 		val app = applicationContext
+		val hide = !HideInteractor.isHidden(app)
 		scope.launch {
 			try {
+				// Gated: a tile tap cannot interleave with a Status screen action
+				// or the unlock re-apply, and the lines reach the app log too.
 				val result =
-					if (HideInteractor.isHidden(app)) {
-						HideInteractor.restore(app)
-					} else {
-						HideInteractor.applyHide(app)
-					}
-				result.lines.forEach { Log.i(TAG, it) }
+					HideInteractor.applyAndLogGated(
+						app,
+						hide = hide,
+						labelRes = if (hide) R.string.log_applying_hide else R.string.log_restoring
+					)
+				result?.lines?.forEach { Log.i(TAG, it) }
 			} catch (e: CancellationException) {
 				throw e
 			} catch (e: Exception) {

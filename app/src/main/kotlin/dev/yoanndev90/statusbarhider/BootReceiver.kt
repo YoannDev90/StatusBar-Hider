@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -65,7 +66,7 @@ class BootReceiver : BroadcastReceiver() {
 		// enabling the bar reaches startForegroundService: a broadcast has 10 s
 		// before the app is ANR'd, so all of it runs off the main thread with
 		// goAsync held for the duration.
-		val app = context.applicationContext
+		val app = context.applicationContext as? Application ?: return
 		val pending = goAsync()
 		var released = false
 		val release = {
@@ -98,7 +99,7 @@ class BootReceiver : BroadcastReceiver() {
 	 * afterwards without the broadcast open.
 	 */
 	private suspend fun onBootCompleted(
-		app: Context,
+		app: Application,
 		release: () -> Unit
 	) {
 		val prefs = OverlayPrefsRepository
@@ -175,7 +176,7 @@ class BootReceiver : BroadcastReceiver() {
 		return received != null
 	}
 
-	private suspend fun runAutoHide(app: Context) {
+	private suspend fun runAutoHide(app: Application) {
 		try {
 			if (!Shizuku.pingBinder()) {
 				log(app, "Shizuku binder not available - skipping auto-hide")
@@ -185,20 +186,24 @@ class BootReceiver : BroadcastReceiver() {
 				log(app, "Shizuku not authorized - skipping auto-hide")
 				return
 			}
-			val oem = OemRepository.getInstance(app).refresh()
-			if (oem.untested) Log.w(TAG, "'${oem.name}' config is untested on this device")
-			for (note in oem.notes) log(app, "note: $note")
+			// Gated: the boot pass must not interleave with a tile tap or the
+			// unlock re-apply. A refusal (busy) is logged by ShellRunner itself.
+			ShellRunner.runSequence(app, null) {
+				val oem = OemRepository.getInstance(app).refresh()
+				if (oem.untested) Log.w(TAG, "'${oem.name}' config is untested on this device")
+				for (note in oem.notes) log(app, "note: $note")
 
-			val result = HideInteractor.applyHide(app)
-			for (line in result.lines) log(app, line)
-			log(app, if (result.ok) "Auto-hide done" else "Auto-hide finished with failures")
+				val result = HideInteractor.applyHide(app)
+				for (line in result.lines) log(app, line)
+				log(app, if (result.ok) "Auto-hide done" else "Auto-hide finished with failures")
 
-			if (OverlayPrefsRepository
-					.getInstance(app)
-					.state.value.enabled
-			) {
-				log(app, "Restarting custom overlay")
-				StatusBarOverlayService.start(app)
+				if (OverlayPrefsRepository
+						.getInstance(app)
+						.state.value.enabled
+				) {
+					log(app, "Restarting custom overlay")
+					StatusBarOverlayService.start(app)
+				}
 			}
 		} catch (e: CancellationException) {
 			throw e

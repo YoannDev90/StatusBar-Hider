@@ -65,27 +65,24 @@ object SystemUiWatcher {
 		owner: Any,
 		context: Context
 	) {
-		val first: Boolean
 		synchronized(owners) {
-			first = owners.isEmpty()
+			if (owners.isNotEmpty()) return
 			owners.add(owner)
+			app = context.applicationContext as? Application
+			baselinePid = null
+			missingShizukuLogged = false
+			// Started under the lock: launching outside it let a start land while
+			// a stopped owner's loop was still in delay(), leaving two loops.
+			loop = scope.launch { runLoop() }
 		}
-		if (!first) return
-		app = context.applicationContext as? Application
-		baselinePid = null
-		missingShizukuLogged = false
-		loop = scope.launch { runLoop() }
 		Log.i(TAG, "Watcher started for ${owner.javaClass.simpleName}")
 	}
 
 	/** Unregisters [owner]; the last one stops the loop. */
 	fun stop(owner: Any) {
-		val empty: Boolean
 		synchronized(owners) {
 			owners.remove(owner)
-			empty = owners.isEmpty()
-		}
-		if (empty) {
+			if (owners.isNotEmpty()) return
 			loop?.cancel()
 			loop = null
 		}
@@ -112,8 +109,13 @@ object SystemUiWatcher {
 	private suspend fun checkOnce() {
 		if (ownersEmpty()) return
 		val application = app ?: return
-		// Nothing to protect when the system bar is visible.
-		if (!HideInteractor.isHidden(application)) return
+		// Nothing to protect when the system bar is visible. The baseline goes
+		// with it: keeping the old pid would make the first check after the next
+		// hide look like a SystemUI restart and fire a duplicate sequence.
+		if (!HideInteractor.isHidden(application)) {
+			baselinePid = null
+			return
+		}
 		if (!ShellRunner.granted()) {
 			if (!missingShizukuLogged) {
 				missingShizukuLogged = true
@@ -121,6 +123,7 @@ object SystemUiWatcher {
 			}
 			return
 		}
+		missingShizukuLogged = false
 		val pid = readSystemUiPid(application)?.trim().orEmpty()
 		if (pid.isEmpty()) return
 		val baseline = baselinePid
@@ -129,18 +132,27 @@ object SystemUiWatcher {
 			return
 		}
 		if (pid == baseline) return
-		// Update first: applyHide takes seconds, the next tick must not re-fire.
-		baselinePid = pid
-		missingShizukuLogged = false
 		val line = application.getString(R.string.log_systemui_restarted, baseline, pid)
-		Log.i(TAG, line)
-		LogStore.append(application, line)
-		HideInteractor.hideLogged(application, hide = true, labelRes = R.string.log_reapply_hide)
+		// The baseline moves only once the sequence actually started. Advancing
+		// it before a fire-and-forget launch recorded the restart and then lost
+		// the re-apply when the shell refused the command as busy - the bar
+		// stayed visible with nothing left to retry it.
+		val started =
+			ShellRunner.runSequence(application, R.string.log_reapply_hide) {
+				baselinePid = pid
+				Log.i(TAG, line)
+				LogStore.append(application, line)
+				HideInteractor.applyAndLog(application, hide = true)
+			}
+		if (!started) Log.w(TAG, "Re-apply refused - retrying on the next tick")
 	}
 
 	private suspend fun readSystemUiPid(context: Context): String? =
 		try {
-			ShellRunner.run(context, PID_CMD, CMD_TIMEOUT_SEC).out
+			val (exit, out) = ShellRunner.run(context, PID_CMD, CMD_TIMEOUT_SEC)
+			// stderr is merged into `out`: a failure such as "sh: pidof: not
+			// found" must never be taken for the pid.
+			if (exit != 0) null else out
 		} catch (e: Exception) {
 			// A broken shell must not look like "SystemUI is gone" forever.
 			Log.w(TAG, "readSystemUiPid", e)

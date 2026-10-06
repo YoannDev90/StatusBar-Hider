@@ -1,6 +1,7 @@
 package dev.yoanndev90.statusbarhider.data
 
 import android.content.Context
+import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
@@ -22,13 +23,21 @@ object OverlayController {
 		enabled: Boolean
 	) {
 		val app = context.applicationContext
-		OverlayPrefsRepository.getInstance(app).update { copy(enabled = enabled) }
+		val repo = OverlayPrefsRepository.getInstance(app)
+		repo.update { copy(enabled = enabled) }
 		if (enabled) {
-			StatusBarOverlayService.start(app)
+			if (!StatusBarOverlayService.start(app)) {
+				// The flag must not claim a bar the system refused to run.
+				repo.update { copy(enabled = false) }
+			}
 		} else {
 			StatusBarOverlayService.stop(app)
 		}
 		BarWidget.updateAll(app)
+		// The custom bar tile reads its state from this flag, not from the
+		// service lifecycle: without this it stays stale until the QS panel
+		// happens to be reopened.
+		HideInteractor.notifyTiles(app)
 	}
 
 	/**
@@ -47,6 +56,10 @@ object OverlayController {
 		val repo = OverlayPrefsRepository.getInstance(app)
 		val wasEnabled = repo.state.value.enabled
 		val updated = repo.update(transform)
-		if (updated.enabled && !wasEnabled) StatusBarOverlayService.start(app)
+		if (updated.enabled && !wasEnabled && !StatusBarOverlayService.start(app)) {
+			// Same contract as setEnabled: a refused start rolls the flag back
+			// so the switch and the service cannot disagree.
+			repo.update { copy(enabled = false) }
+		}
 	}
 }

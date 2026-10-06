@@ -43,10 +43,20 @@ import java.util.concurrent.TimeoutException
  * - the [Application] overload runs a whole sequence behind [busy] with the
  *   progress line (the former `CommandExecutor`); the busy flag is taken with
  *   `compareAndSet`, so two callers can no longer both pass a check-then-set;
+ * - [runSequence] is the same gate, but suspend: a caller that needs the
+ *   outcome (the tile, the boot pass) waits for it instead of starting a
+ *   second sequence beside it;
  * - [granted] is the one Shizuku readiness check.
  */
 object ShellRunner {
 	private const val TAG = "ShellRunner"
+
+	/**
+	 * Budget for reading stdout/stderr once the command has exited, kept apart
+	 * from the command timeout: a command that answers at the last second would
+	 * otherwise get ~0 ms and its output would be dropped.
+	 */
+	private const val DRAIN_TIMEOUT_SEC = 5L
 
 	/** Exit code plus combined output (stdout, then stderr when not empty). */
 	data class Result(
@@ -84,11 +94,9 @@ object ShellRunner {
 		}
 
 	/**
-	 * Runs a whole command sequence: one [block] at a time, refuses a second
-	 * caller while one is in flight instead of interleaving them (and then
-	 * only the sequence that took [busy] can clear it). The scope outlives the
-	 * UI: a command started from a screen keeps running across rotation
-	 * instead of being cancelled halfway through a `settings put` sequence.
+	 * Fire-and-forget [runSequence] on the app scope: a command started from a
+	 * screen keeps running across rotation instead of being cancelled halfway
+	 * through a `settings put` sequence.
 	 *
 	 * @param app used for resources and as the OEM / log lookup context.
 	 * @param labelRes resource id of the progress line shown before [block]
@@ -102,27 +110,47 @@ object ShellRunner {
 		@StringRes labelRes: Int?,
 		block: suspend (oem: OemConfig) -> Unit
 	) {
+		scope.launch { runSequence(app, labelRes, block) }
+	}
+
+	/**
+	 * Same gate as [run], but suspends until the sequence has finished and
+	 * reports whether it ran: `false` means the shell was refused (no Shizuku
+	 * grant, or another sequence already holds [busy]) and [block] never
+	 * started. Callers that own a result - the tile, the boot pass, the
+	 * SystemUI watcher - must use this so two sequences cannot interleave
+	 * command by command and leave the persisted hide state to a coin toss.
+	 *
+	 * One [block] at a time, taken with `compareAndSet` so two callers can no
+	 * longer both pass a check-then-set; the flag is cleared in `finally`, so a
+	 * cancelled coroutine cannot leave the shell busy forever.
+	 */
+	suspend fun runSequence(
+		app: Context,
+		@StringRes labelRes: Int?,
+		block: suspend (oem: OemConfig) -> Unit
+	): Boolean {
 		if (!granted()) {
 			log(app, R.string.log_shizuku_not_authorized)
-			return
+			return false
 		}
 		if (!_busy.compareAndSet(false, true)) {
 			log(app, R.string.log_busy)
-			return
+			return false
 		}
-		scope.launch {
-			try {
-				if (labelRes != null) {
-					log(app, R.string.log_progress, app.getString(labelRes))
-				}
-				block(OemRepository.getInstance(app).config.value)
-			} catch (e: CancellationException) {
-				throw e
-			} catch (e: Exception) {
-				log(app, R.string.log_error, e.message ?: e.toString())
-			} finally {
-				_busy.value = false
+		return try {
+			if (labelRes != null) {
+				log(app, R.string.log_progress, app.getString(labelRes))
 			}
+			block(OemRepository.getInstance(app).config.value)
+			true
+		} catch (e: CancellationException) {
+			throw e
+		} catch (e: Exception) {
+			log(app, R.string.log_error, e.message ?: e.toString())
+			false
+		} finally {
+			_busy.value = false
 		}
 	}
 
@@ -177,7 +205,14 @@ object ShellRunner {
 					return Result(-1, context.getString(R.string.err_start_process, unwrap(e).message))
 				}
 
-			return Result(exit, joinOutput(await(stdoutTask, deadlineNs), await(stderrTask, deadlineNs)))
+			// waitFor() may have consumed the whole budget: the pipes get a window
+			// of their own, otherwise a command answering at the last second would
+			// have its output dropped and reported as an empty success.
+			val drainDeadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(DRAIN_TIMEOUT_SEC)
+			return Result(
+				exit,
+				joinOutput(await(stdoutTask, drainDeadlineNs, cmd), await(stderrTask, drainDeadlineNs, cmd))
+			)
 		} finally {
 			try {
 				remote.destroy()
@@ -190,13 +225,15 @@ object ShellRunner {
 	/** Reads a pipe to EOF, bounded by [deadlineNs]; a stuck reader is dropped, not waited on. */
 	private fun await(
 		task: Future<String>,
-		deadlineNs: Long
+		deadlineNs: Long,
+		cmd: String
 	): String {
 		val remainingMs = TimeUnit.NANOSECONDS.toMillis(deadlineNs - System.nanoTime()).coerceAtLeast(1)
 		return try {
 			task.get(remainingMs, TimeUnit.MILLISECONDS)
 		} catch (e: Exception) {
 			task.cancel(true)
+			Log.w(TAG, "Dropped output of: $cmd", unwrap(e))
 			""
 		}
 	}
@@ -204,11 +241,13 @@ object ShellRunner {
 	private fun readFully(fd: ParcelFileDescriptor?): String {
 		if (fd == null) return ""
 		return try {
+			// `use` closes the descriptor: AutoCloseInputStream only does that in
+			// close(), not at EOF, so without it every command leaks two fds to
+			// the GC finalizer.
 			ParcelFileDescriptor
 				.AutoCloseInputStream(fd)
 				.bufferedReader()
-				.readText()
-				.trim()
+				.use { it.readText().trim() }
 		} catch (e: Exception) {
 			Log.w(TAG, "Failed to read process output", e)
 			""
@@ -229,7 +268,7 @@ object ShellRunner {
 	private fun unwrap(e: Exception): Throwable = (e as? ExecutionException)?.cause ?: e
 
 	private fun log(
-		app: Application,
+		app: Context,
 		@StringRes id: Int,
 		vararg args: Any?
 	) {

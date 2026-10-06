@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.log.LogStore
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -99,7 +100,10 @@ data class OemConfig(
 			available: List<String>
 		): String {
 			if (available.isEmpty()) {
-				error("No OEM config files found in assets/oem/")
+				// Throwing here killed OemRepository's constructor; the load below
+				// then reports the missing file in the app log.
+				Log.e(TAG, "No OEM config files found in assets/oem/")
+				return DEFAULT_ID
 			}
 			val props =
 				listOf(
@@ -115,7 +119,12 @@ data class OemConfig(
 			for (id in available) {
 				if (load(context, id).match.any { props.contains(it) }) return id
 			}
-			return if (DEFAULT_ID in available) DEFAULT_ID else available.first()
+			if (DEFAULT_ID !in available) {
+				// Picking the alphabetically first config would run another
+				// vendor's commands on this device; better to run none and say so.
+				Log.e(TAG, "Default OEM config '$DEFAULT_ID' missing - no commands will run")
+			}
+			return DEFAULT_ID
 		}
 
 		fun load(
@@ -130,14 +139,14 @@ data class OemConfig(
 						.use { it.readText() }
 				} catch (e: Exception) {
 					Log.e(TAG, "Failed to read OEM config: $id", e)
-					return fallbackConfig(context)
+					return reportFallback(context, id, e)
 				}
 
 			return try {
 				parseJson(id, raw)
 			} catch (e: Exception) {
 				Log.e(TAG, "Failed to parse OEM config: $id", e)
-				fallbackConfig(context)
+				reportFallback(context, id, e)
 			}
 		}
 
@@ -170,6 +179,24 @@ data class OemConfig(
 				restore = file.restore,
 				status = file.status
 			)
+		}
+
+		/**
+		 * Empty-command config used when no file could be loaded. The failure
+		 * also reaches the app log: otherwise hide/restore would quietly run
+		 * zero commands with nothing to explain it in the Logs tab.
+		 */
+		private fun reportFallback(
+			context: Context,
+			id: String,
+			e: Exception
+		): OemConfig {
+			LogStore.appendOnce(
+				context,
+				"$TAG#load#$id",
+				context.getString(R.string.log_oem_load_failed, id, e.message ?: e.toString())
+			)
+			return fallbackConfig(context)
 		}
 
 		/** Config used when no file could be loaded (stock AOSP defaults). */

@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** Device identity + Shizuku authorization, everything the Status tab shows above its cards. */
@@ -132,4 +133,21 @@ class StatusViewModel(
 				false
 			}
 		}
+
+	/**
+	 * Runs [exportSettings] in [viewModelScope]. The export writes a file before
+	 * the chooser appears, and a composition-scoped launch would cancel it when
+	 * the user leaves the tab - an empty file and no dialog to pick it.
+	 */
+	fun exportSettings(onDone: (Intent?) -> Unit) {
+		viewModelScope.launch { onDone(exportSettings()) }
+	}
+
+	/** Same contract as [exportSettings]: the read completes even if the tab goes away. */
+	fun importSettings(
+		uri: Uri,
+		onDone: (Boolean) -> Unit
+	) {
+		viewModelScope.launch { onDone(importSettings(uri)) }
+	}
 }

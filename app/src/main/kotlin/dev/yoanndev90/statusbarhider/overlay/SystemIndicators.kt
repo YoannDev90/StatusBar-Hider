@@ -36,17 +36,24 @@ import java.util.Locale
 internal class SystemIndicators(
 	private val context: Context
 ) {
-	/** True while the keyguard is up (no screen lock at all = never locked). */
-	fun isDeviceLocked(): Boolean =
+	/** True while the keyguard is up - the screen the notifications would show over. */
+	fun isKeyguardUp(): Boolean =
 		try {
-			context.getSystemService(KeyguardManager::class.java)?.isDeviceLocked == true
+			// isDeviceLocked() answers "is it *securely* locked", so it is false on
+			// Swipe/None lock screens where the keyguard still paints and the
+			// notification contents are readable; isKeyguardLocked() reports the
+			// visibility, which is what the privacy filter needs.
+			context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
 		} catch (e: Exception) {
-			warn("isDeviceLocked", e)
+			warn("isKeyguardUp", e)
 			false
 		}
 
-	/** Next calendar event in the next 24h as "HH:mm Title". */
-	fun queryCalendar(enabled: Boolean): String? {
+	/** Next calendar event in the next 24h as "HH:mm Title" (or "h:mm a" in 12 h). */
+	fun queryCalendar(
+		enabled: Boolean,
+		use24h: Boolean
+	): String? {
 		if (!enabled || context.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
 			return null
 		}
@@ -77,7 +84,9 @@ internal class SystemIndicators(
 							if (allDay) {
 								title
 							} else {
-								val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+								// The clock follows the pref: a hardcoded 24 h
+								// pattern next to a 12 h clock reads as a bug.
+								val fmt = SimpleDateFormat(if (use24h) "HH:mm" else "h:mm a", Locale.getDefault())
 								"${fmt.format(Date(begin))} $title"
 							}
 						break
@@ -90,13 +99,16 @@ internal class SystemIndicators(
 		}
 	}
 
-	/** Next alarm clock as "HH:mm", or null when none / feature off. */
-	fun queryAlarm(enabled: Boolean): String? {
+	/** Next alarm clock, or null when none / feature off. */
+	fun queryAlarm(
+		enabled: Boolean,
+		use24h: Boolean
+	): String? {
 		if (!enabled) return null
 		return try {
 			val am = context.getSystemService(AlarmManager::class.java)
 			val trigger = am?.nextAlarmClock?.triggerTime ?: return null
-			val fmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+			val fmt = SimpleDateFormat(if (use24h) "HH:mm" else "h:mm a", Locale.getDefault())
 			fmt.format(Date(trigger))
 		} catch (e: Exception) {
 			warn("queryAlarm", e)
@@ -109,7 +121,7 @@ internal class SystemIndicators(
 		try {
 			val usm = context.getSystemService(UsageStatsManager::class.java) ?: return null
 			val now = System.currentTimeMillis()
-			val events = usm.queryEvents(now - 10_000L, now)
+			val events = usm.queryEvents(now - FOREGROUND_WINDOW_MS, now)
 			val event = UsageEvents.Event()
 			var pkg: String? = null
 			while (events.hasNextEvent()) {
@@ -273,5 +285,12 @@ internal class SystemIndicators(
 
 	companion object {
 		private const val TAG = "SystemIndicators"
+
+		/**
+		 * Trailing window of the foreground-app query. It must outlive a service
+		 * restart (the bar would otherwise show over a blacklisted app until the
+		 * next switch), but stay small: it is scanned every 2 s.
+		 */
+		private const val FOREGROUND_WINDOW_MS = 10 * 60 * 1000L
 	}
 }

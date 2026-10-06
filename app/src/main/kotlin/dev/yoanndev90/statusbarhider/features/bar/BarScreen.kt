@@ -10,6 +10,7 @@ import dev.yoanndev90.statusbarhider.features.bar.sections.ClockSection
 import dev.yoanndev90.statusbarhider.features.bar.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.features.bar.sections.LockScreenSection
 import dev.yoanndev90.statusbarhider.features.bar.sections.NotificationsSection
+import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 
@@ -21,6 +22,9 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 @Composable
 fun BarScreen(vm: PrefsViewModel) {
 	val prefs by vm.prefs.collectAsStateWithLifecycle()
+	// This screen owns a PrefsViewModel too: without the collector any event it
+	// emits (a missing overlay permission, for instance) would be dropped.
+	HandlePrefsEvents(vm)
 
 	SettingsScreen {
 		ClockSection(prefs, vm)

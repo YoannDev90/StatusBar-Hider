@@ -265,6 +265,7 @@
     <string name="log_start_service_failed">Custom bar could not be started: %1$s</string>
     <string name="log_stop_service_failed">Custom bar could not be stopped: %1$s</string>
     <string name="log_start_foreground_failed">Custom bar failed to run in the foreground: %1$s</string>
+    <string name="log_oem_load_failed">OEM config %1$s could not be loaded (%2$s) - hide and restore run no command</string>
 
     <!-- Shell command failures -->
     <string name="err_shizuku_binder_unavailable">Shizuku binder not available</string>

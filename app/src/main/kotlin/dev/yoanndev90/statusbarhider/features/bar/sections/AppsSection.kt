@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,7 +59,8 @@ fun AppsSection(
 	val context = LocalContext.current
 	val errorFormat = stringResource(R.string.log_error)
 	val apps = remember { launcherApps(context) }
-	var pickerOpen by remember { mutableStateOf(false) }
+	// saveable: reopening the app list is less jarring than closing it on rotation.
+	var pickerOpen by rememberSaveable { mutableStateOf(false) }
 	// Re-read on every resume: the grant happens in another screen.
 	var usageGranted by remember { mutableStateOf(UsageAccess.granted(context)) }
 	LifecycleResumeEffect(Unit) {

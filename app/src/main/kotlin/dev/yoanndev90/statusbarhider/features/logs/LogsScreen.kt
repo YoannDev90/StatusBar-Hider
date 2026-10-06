@@ -12,7 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -23,14 +22,12 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
-import kotlinx.coroutines.launch
 
 /** Logs tab: export / share the app log, then the raw command output. */
 @Composable
 fun LogsScreen(vm: LogsViewModel) {
 	val logs by vm.lines.collectAsStateWithLifecycle()
 	val context = LocalContext.current
-	val scope = rememberCoroutineScope()
 	val clipboardLabel = stringResource(R.string.clipboard_label)
 	val logsCopiedToast = stringResource(R.string.toast_logs_copied)
 	val cannotShareToast = stringResource(R.string.toast_cannot_share_logs)
@@ -43,8 +40,7 @@ fun LogsScreen(vm: LogsViewModel) {
 				Toast.makeText(context, logsCopiedToast, Toast.LENGTH_SHORT).show()
 			}
 			SettingAction(R.drawable.ic_share, R.string.action_share_logs) {
-				scope.launch {
-					val intent = vm.shareIntent()
+				vm.shareLogs { intent ->
 					if (intent == null) {
 						Toast.makeText(context, cannotShareToast, Toast.LENGTH_SHORT).show()
 					} else {

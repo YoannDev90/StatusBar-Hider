@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.SharedPreferences
 import android.service.quicksettings.TileService
+import android.util.Log
 import androidx.annotation.StringRes
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
@@ -26,9 +27,12 @@ import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
  *
  * Every command goes through [ShellRunner], so a tile tap, the unlock
  * re-apply and a Status screen action can never drive the shell at the same
- * time.
+ * time: [applyHide] / [restore] are the raw sequence, and every entry point
+ * that runs them outside [hideLogged] does it through
+ * [ShellRunner.runSequence].
  */
 object HideInteractor {
+	private const val TAG = "HideInteractor"
 	private const val PREFS_NAME = "statusbarhider"
 	private const val KEY_HIDDEN = "status_bar_hidden"
 
@@ -93,6 +97,22 @@ object HideInteractor {
 	}
 
 	/**
+	 * Same sequence, but gated and awaited: `null` means the shell refused it
+	 * (busy or Shizuku missing - [ShellRunner] has already logged why), so the
+	 * caller must not report the old state as if the run had happened. Used by
+	 * callers that show an outcome: the tile and the boot pass.
+	 */
+	suspend fun applyAndLogGated(
+		context: Context,
+		hide: Boolean,
+		@StringRes labelRes: Int?
+	): Result? {
+		var outcome: Result? = null
+		ShellRunner.runSequence(context, labelRes) { outcome = applyAndLog(context, hide) }
+		return outcome
+	}
+
+	/**
 	 * Asks SystemUI to refresh both tiles. A no-op for tiles the user never
 	 * added, so it is safe to call from anywhere.
 	 */
@@ -106,7 +126,9 @@ object HideInteractor {
 		for (component in components) {
 			try {
 				TileService.requestListeningState(app, component)
-			} catch (_: Exception) {
+			} catch (e: Exception) {
+				// Swallowing this left both tiles stale with no trace anywhere.
+				Log.w(TAG, "requestListeningState failed", e)
 			}
 		}
 	}

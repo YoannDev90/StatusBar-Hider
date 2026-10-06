@@ -42,6 +42,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.NotifListenerService
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
@@ -57,6 +58,8 @@ fun SetupScreen(
 ) {
 	val context = LocalContext.current
 	val shizuku by vm.shizuku.collectAsStateWithLifecycle()
+	// Same contract as every other screen owning a PrefsViewModel.
+	HandlePrefsEvents(vm)
 	// Bumped on every resume: the grants happen in other screens, so the rows
 	// are re-read when the user comes back. `key` is what subscribes this
 	// composition to the tick.

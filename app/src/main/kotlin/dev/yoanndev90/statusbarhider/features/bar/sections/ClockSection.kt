@@ -16,7 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +41,8 @@ fun ClockSection(
 ) {
 	val context = LocalContext.current
 	val invalidDateFormatToast = stringResource(R.string.toast_invalid_date_format)
-	var dateFormat by remember(prefs.dateFormat) { mutableStateOf(prefs.dateFormat) }
+	// saveable: the draft survives a rotation instead of reverting mid-edit.
+	var dateFormat by rememberSaveable(prefs.dateFormat) { mutableStateOf(prefs.dateFormat) }
 	val calendarPermission =
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
 			if (granted) {

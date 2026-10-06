@@ -77,11 +77,14 @@
         <!-- Re-applies the hide commands after reboot when Shizuku is running.
              Requires "Start on boot" enabled in Shizuku settings.
              On a package update only the custom bar is restarted: the disable
-             flags live in SystemUI and survive the update. -->
+             flags live in SystemUI and survive the update.
+             exported="false": the system still delivers BOOT_COMPLETED and
+             MY_PACKAGE_REPLACED to a non-exported receiver, and no other app
+             needs to force-start this process. -->
         <receiver
             android:name="dev.yoanndev90.statusbarhider.BootReceiver"
             android:enabled="true"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
@@ -91,7 +94,7 @@
         <!-- External control API for Tasker / `am broadcast`. No intent filter:
              only explicit broadcasts targeting this component are accepted, and
              ControlAuth drops any of them without this install's token. Actions
-             documented in README.md. -->
+             documented in docs/control-api.md. -->
         <receiver
             android:name="dev.yoanndev90.statusbarhider.control.ControlReceiver"
             android:enabled="true"

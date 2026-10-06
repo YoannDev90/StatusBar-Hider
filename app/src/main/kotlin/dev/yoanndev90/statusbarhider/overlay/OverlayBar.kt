@@ -296,6 +296,9 @@ private fun rememberTick(
 	var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
 	LaunchedEffect(intervalMs, enabled) {
 		if (!enabled) return@LaunchedEffect
+		// Refresh before the first wait: `now` still holds the pre-sleep value,
+		// and the first boundary can be up to a full interval away.
+		now = System.currentTimeMillis()
 		while (true) {
 			val t = System.currentTimeMillis()
 			delay(((t / intervalMs + 1) * intervalMs - t).coerceAtLeast(0))

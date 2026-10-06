@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -45,7 +46,7 @@ fun OemPicker(
 	val context = LocalContext.current
 	// Assets read once per composition subtree; the list only changes with an APK update.
 	val options = remember(context) { oemOptions(context) }
-	var expanded by remember { mutableStateOf(false) }
+	var expanded by rememberSaveable { mutableStateOf(false) }
 
 	Box(modifier = Modifier.fillMaxWidth()) {
 		Button(

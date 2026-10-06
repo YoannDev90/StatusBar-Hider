@@ -68,21 +68,37 @@ class StatusBarOverlayService : Service() {
 		private const val CHANNEL_ID = "overlay"
 		private const val REFRESH_DEBOUNCE_MS = 100L
 		private const val FOREGROUND_POLL_MS = 2_000L
+
+		/**
+		 * Largest gap still taken as "the previous sample": the sampler stops
+		 * with the screen, so a restart after a long sleep must re-baseline
+		 * instead of reporting the whole gap as traffic.
+		 */
+		private const val BANDWIDTH_MAX_GAP_MS = 5_000L
+
+		private const val USB_STATE_ACTION = "android.hardware.usb.action.USB_STATE"
 		private const val REAPPLY_AFTER_UNLOCK_MS = 0L
 		private const val REAPPLY_WATCH_MS = 350L
 		private const val REAPPLY_POLL_MS = 30L
 
 		const val ACTION_STOP = "dev.yoanndev90.statusbarhider.overlay.STOP"
 
-		fun start(context: Context) {
+		/**
+		 * Starts the foreground service. Returns false when the system refused
+		 * it (background-start restrictions, OEM kill), so the persisted flag
+		 * can be rolled back instead of claiming a bar that never appears.
+		 */
+		fun start(context: Context): Boolean {
 			val app = context.applicationContext
-			try {
+			return try {
 				app.startForegroundService(Intent(context, StatusBarOverlayService::class.java))
+				true
 			} catch (e: Exception) {
-				// Background-start restrictions and OEM kills reject this: without
-				// a log line the switch stays "on" while no window ever appears.
+				// Without this line the switch stays "on" while no window ever
+				// appears and the failure is invisible from the app.
 				Log.w(TAG, "start failed", e)
 				LogStore.append(app, app.getString(R.string.log_start_service_failed, e.message ?: e.toString()))
+				false
 			}
 		}
 
@@ -125,6 +141,7 @@ class StatusBarOverlayService : Service() {
 	private var usbConnected = false
 	private var lastRx = -1L
 	private var lastTx = -1L
+	private var lastSampleAt = 0L
 
 	/** Camera ids with the torch currently on (filled by the torch flow). */
 	private val torchIds = ConcurrentHashMap.newKeySet<String>()
@@ -191,7 +208,7 @@ class StatusBarOverlayService : Service() {
 		// the flow below keeps them up to date afterwards.
 		prefs = prefsRepo.state.value
 		// The lock state decides the layout from the very first frame.
-		barState = barState.copy(locked = indicators.isDeviceLocked())
+		barState = barState.copy(locked = indicators.isKeyguardUp())
 		startFg()
 		window.attach()
 		observeSystem()
@@ -370,7 +387,11 @@ class StatusBarOverlayService : Service() {
 			receiverFlow(filter).collect { onScreen(it) }
 		}
 		serviceScope.launch {
-			receiverFlow(IntentFilter("android.hardware.usb.action.USB_STATE")).collect { onUsb(it) }
+			// Sticky first: the flow only carries broadcasts, so without it the
+			// connection made before the service started stays unknown until the
+			// next plug/unplug.
+			registerReceiver(null, IntentFilter(USB_STATE_ACTION))?.let { onUsb(it) }
+			receiverFlow(IntentFilter(USB_STATE_ACTION)).collect { onUsb(it) }
 		}
 		serviceScope.launch {
 			// NFC adapter toggles and location provider changes refresh the indicators.
@@ -511,9 +532,12 @@ class StatusBarOverlayService : Service() {
 				burnInJob?.cancel()
 				bandwidthJob?.cancel()
 				foregroundJob?.cancel()
+				// Including the debounced refresh: it would otherwise run six
+				// widget updates, IPC included, while the screen is off.
+				refreshJob?.cancel()
 			}
 			Intent.ACTION_SCREEN_ON -> {
-				barState = barState.copy(screenOn = true, locked = indicators.isDeviceLocked())
+				barState = barState.copy(screenOn = true, locked = indicators.isKeyguardUp())
 				refreshAll()
 				schedulePoll()
 				scheduleBandwidth()
@@ -688,22 +712,25 @@ class StatusBarOverlayService : Service() {
 		barState = barState.copy(notifsEnabled = enabled, notifs = icons, progress = progress)
 	}
 
-	/** Next calendar event in the next 24h as "HH:mm Title". */
 	private suspend fun updateCalendar() {
 		val show = prefs.showCalendar
-		val text = withContext(Dispatchers.IO) { indicators.queryCalendar(show) }
+		val use24h = prefs.use24h
+		val text = withContext(Dispatchers.IO) { indicators.queryCalendar(show, use24h) }
 		barState = barState.copy(calendarText = text)
 	}
 
 	/** Now playing from media sessions; hidden when notification access is off. */
-	private fun updateMedia() {
-		barState = barState.copy(mediaText = queryMedia())
-	}
-
-	private fun queryMedia(): String? {
-		if (!prefs.showMedia || !NotifListenerService.isEnabled(this)) return null
+	private suspend fun updateMedia() {
+		// The notification-access check is a Settings read: off the main thread.
+		// ensure() stays here - it registers a framework listener, which is a
+		// one-off and must land on the thread the manager expects.
+		val listenerOn = withContext(Dispatchers.IO) { NotifListenerService.isEnabled(this@StatusBarOverlayService) }
+		if (!prefs.showMedia || !listenerOn) {
+			barState = barState.copy(mediaText = null)
+			return
+		}
 		mediaSessions.ensure()
-		return mediaSessions.nowPlaying.value
+		barState = barState.copy(mediaText = mediaSessions.nowPlaying.value)
 	}
 
 	private suspend fun updateConnectivity() {
@@ -751,14 +778,19 @@ class StatusBarOverlayService : Service() {
 
 	private suspend fun updateAlarm() {
 		val show = prefs.showAlarm
-		val text = withContext(Dispatchers.IO) { indicators.queryAlarm(show) }
+		val use24h = prefs.use24h
+		val text = withContext(Dispatchers.IO) { indicators.queryAlarm(show, use24h) }
 		barState = barState.copy(alarmText = text)
 	}
 
 	private fun updateBandwidth() {
 		val rx = TrafficStats.getTotalRxBytes()
 		val tx = TrafficStats.getTotalTxBytes()
-		if (lastRx >= 0 && rx >= 0) {
+		val now = System.currentTimeMillis()
+		// The loop dies with the screen: a delta against the last pre-sleep
+		// sample would report the whole sleep as ".../s".
+		val comparable = lastRx >= 0 && rx >= 0 && now - lastSampleAt <= BANDWIDTH_MAX_GAP_MS
+		if (comparable) {
 			val dRx = rx - lastRx
 			val dTx = if (lastTx >= 0 && tx >= 0) tx - lastTx else 0L
 			val text =
@@ -771,5 +803,6 @@ class StatusBarOverlayService : Service() {
 		}
 		lastRx = rx
 		lastTx = tx
+		lastSampleAt = now
 	}
 }

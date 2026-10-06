@@ -14,7 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,7 +28,6 @@ import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
-import kotlinx.coroutines.launch
 
 /**
  * Status tab: who the device is, whether Shizuku is authorized, and the
@@ -44,17 +42,13 @@ fun StatusScreen(
 	val context = LocalContext.current
 	val importFailedToast = stringResource(R.string.toast_import_failed)
 	val importOkToast = stringResource(R.string.toast_import_ok)
-	// Backup I/O (file + provider stream) runs on IO; the scope dies with the screen.
-	val uiScope = rememberCoroutineScope()
+	// Backup I/O (file + provider stream) runs in the ViewModel's scope: leaving
+	// the tab must not cancel a write half-way through.
 	val importLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
 			if (uri != null) {
-				uiScope.launch {
-					if (vm.importSettings(uri)) {
-						Toast.makeText(context, importOkToast, Toast.LENGTH_LONG).show()
-					} else {
-						Toast.makeText(context, importFailedToast, Toast.LENGTH_LONG).show()
-					}
+				vm.importSettings(uri) { ok ->
+					Toast.makeText(context, if (ok) importOkToast else importFailedToast, Toast.LENGTH_LONG).show()
 				}
 			}
 		}
@@ -103,8 +97,7 @@ fun StatusScreen(
 			)
 			SettingAction(R.drawable.ic_settings, R.string.action_open_setup) { onOpenSetup() }
 			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) {
-				uiScope.launch {
-					val intent = vm.exportSettings()
+				vm.exportSettings { intent ->
 					if (intent == null) {
 						Toast.makeText(context, R.string.toast_export_failed, Toast.LENGTH_LONG).show()
 					} else {
