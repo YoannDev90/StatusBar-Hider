@@ -142,7 +142,7 @@ fun MainScreen() {
 									})
 								AppDestination.BAR -> BarScreen(barViewModel)
 								AppDestination.STYLE -> StyleScreen(styleViewModel)
-								AppDestination.LOG -> LogsScreen(logsViewModel)
+								AppDestination.LOG -> LogsScreen(logsViewModel, selected)
 							}
 						}
 					}
