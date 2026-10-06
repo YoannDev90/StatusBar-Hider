@@ -1,5 +1,7 @@
 package dev.yoanndev90.statusbarhider.ui.shell
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,23 +16,25 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.features.bar.BarScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
+import dev.yoanndev90.statusbarhider.features.logs.LogsViewModel
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.features.status.StatusScreen
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
@@ -39,24 +43,48 @@ import dev.yoanndev90.statusbarhider.ui.setup.SetupScreen
 
 /**
  * Shell of the app: a top bar titled after the current tab, a bottom
- * navigation bar over four destinations, and the NavHost wiring them to one
- * ViewModel per screen (each scoped to its own back stack entry).
+ * navigation bar over four destinations, and a tab host that keeps every
+ * visited tab composed.
+ *
+ * Navigation Compose disposed the destination it left, so each switch threw
+ * the target page away and built it again: a full recomposition, a full
+ * relayout - every Text of the page was measured from scratch - and a full
+ * redraw, which the trace showed as an ~80 ms UI thread frame on the test
+ * device. Here a tab is composed the first time it is opened and then stays
+ * alive; only the selected one is drawn and hit tested, the others sit behind
+ * [hiddenLayer] with their measured state intact.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
-	val navController = rememberNavController()
 	val context = LocalContext.current
-	val backStackEntry by navController.currentBackStackEntryAsState()
-	val currentRoute = backStackEntry?.destination?.route
-	val current = AppDestination.fromRoute(currentRoute)
-	val busy by ShellRunner.busy.collectAsStateWithLifecycle()
 	// First launch (or "Not now" on a previous run) opens the checklist instead
-	// of the shell; the flag is read once, later flips come from navigation.
-	val startDestination =
-		remember {
-			if (AppSettings.isSetupDone(context)) AppDestination.START.route else AppDestination.SETUP_ROUTE
+	// of the shell; later opens come from the Status tab.
+	var setupOpen by rememberSaveable { mutableStateOf(!AppSettings.isSetupDone(context)) }
+	var setupReopened by rememberSaveable { mutableStateOf(false) }
+	var current by rememberSaveable { mutableStateOf(AppDestination.START) }
+	// Bitmask of the tabs composed so far, so a restored process rebuilds the
+	// tab it was on plus nothing else.
+	var visitedMask by rememberSaveable { mutableStateOf(1 shl AppDestination.START.ordinal) }
+	val busy by ShellRunner.busy.collectAsStateWithLifecycle()
+	// One ViewModel per tab - the instance each screen has always owned: every
+	// screen collects the one-shot events of its own ViewModel, so tabs sharing
+	// an instance would each answer the same event.
+	val statusViewModel: StatusViewModel = viewModel()
+	val barViewModel: PrefsViewModel = viewModel(key = "bar")
+	val styleViewModel: PrefsViewModel = viewModel(key = "style")
+	val logsViewModel: LogsViewModel = viewModel()
+
+	// The checklist is the start destination on first launch, where back exits
+	// the app as usual; re-opened from the Status tab it goes back there.
+	BackHandler(enabled = setupReopened || (!setupOpen && current != AppDestination.START)) {
+		if (setupOpen) {
+			setupOpen = false
+			setupReopened = false
+		} else {
+			current = AppDestination.START
 		}
+	}
 
 	Scaffold(
 		modifier = Modifier.fillMaxSize(),
@@ -65,9 +93,7 @@ fun MainScreen() {
 				TopAppBar(
 					title = {
 						Text(
-							stringResource(
-								if (currentRoute == AppDestination.SETUP_ROUTE) R.string.setup_title else current.titleRes
-							)
+							stringResource(if (setupOpen) R.string.setup_title else current.titleRes)
 						)
 					}
 				)
@@ -77,12 +103,15 @@ fun MainScreen() {
 			}
 		},
 		bottomBar = {
-			if (currentRoute != AppDestination.SETUP_ROUTE) {
+			if (!setupOpen) {
 				NavigationBar {
 					AppDestination.entries.forEach { destination ->
 						NavigationBarItem(
 							selected = destination == current,
-							onClick = { navController.navigateTo(destination) },
+							onClick = {
+								visitedMask = visitedMask or (1 shl destination.ordinal)
+								current = destination
+							},
 							icon = { Icon(painter = painterResource(destination.iconRes), contentDescription = null) },
 							label = { Text(stringResource(destination.labelRes)) }
 						)
@@ -91,26 +120,42 @@ fun MainScreen() {
 			}
 		}
 	) { inner ->
-		NavHost(
-			navController = navController,
-			startDestination = startDestination,
-			modifier = Modifier.padding(inner)
-		) {
-			composable(AppDestination.STATUS.route) {
-				StatusScreen(viewModel<StatusViewModel>(), onOpenSetup = { navController.navigate(AppDestination.SETUP_ROUTE) })
+		Box(Modifier.fillMaxSize().padding(inner)) {
+			AppDestination.entries.forEach { destination ->
+				val visited =
+					destination == current || (visitedMask and (1 shl destination.ordinal)) != 0
+				if (visited) {
+					key(destination) {
+						val selected = !setupOpen && destination == current
+						Box(
+							modifier =
+								Modifier
+									.fillMaxSize()
+									.zIndex(if (selected) 1f else 0f)
+									.then(if (selected) Modifier else Modifier.hiddenLayer)
+						) {
+							when (destination) {
+								AppDestination.STATUS ->
+									StatusScreen(statusViewModel, onOpenSetup = {
+										setupReopened = true
+										setupOpen = true
+									})
+								AppDestination.BAR -> BarScreen(barViewModel)
+								AppDestination.STYLE -> StyleScreen(styleViewModel)
+								AppDestination.LOG -> LogsScreen(logsViewModel)
+							}
+						}
+					}
+				}
 			}
-			composable(AppDestination.BAR.route) { BarScreen(viewModel<PrefsViewModel>()) }
-			composable(AppDestination.STYLE.route) { StyleScreen(viewModel<PrefsViewModel>()) }
-			composable(AppDestination.LOG.route) { LogsScreen(viewModel()) }
-			composable(AppDestination.SETUP_ROUTE) {
+			if (setupOpen) {
 				SetupScreen(
 					viewModel(),
 					onClose = { completed ->
 						if (completed) AppSettings.setSetupDone(context, true)
-						navController.navigate(AppDestination.START.route) {
-							popUpTo(AppDestination.SETUP_ROUTE) { inclusive = true }
-							launchSingleTop = true
-						}
+						setupOpen = false
+						setupReopened = false
+						current = AppDestination.START
 					}
 				)
 			}
@@ -119,14 +164,17 @@ fun MainScreen() {
 }
 
 /**
- * Tab switch keeping one entry per tab: back returns to [AppDestination.START]
- * instead of replaying the visit order, while each tab's scroll position and
- * local state are saved and restored.
+ * Keeps a tab composed and measured but out of the frame: its subtree is never
+ * drawn, and taps meant for the selected tab cannot fall through to it.
  */
-private fun NavHostController.navigateTo(destination: AppDestination) {
-	navigate(destination.route) {
-		popUpTo(AppDestination.START.route) { saveState = true }
-		launchSingleTop = true
-		restoreState = true
-	}
-}
+private val Modifier.hiddenLayer: Modifier
+	get() =
+		this
+			.drawWithContent { }
+			.pointerInput(Unit) {
+				awaitPointerEventScope {
+					while (true) {
+						awaitPointerEvent().changes.forEach { it.consume() }
+					}
+				}
+			}
