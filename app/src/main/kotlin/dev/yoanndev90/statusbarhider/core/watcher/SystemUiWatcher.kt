@@ -65,17 +65,26 @@ object SystemUiWatcher {
 		owner: Any,
 		context: Context
 	) {
-		synchronized(owners) {
-			if (owners.isNotEmpty()) return
-			owners.add(owner)
-			app = context.applicationContext as? Application
-			baselinePid = null
-			missingShizukuLogged = false
-			// Started under the lock: launching outside it let a start land while
-			// a stopped owner's loop was still in delay(), leaving two loops.
-			loop = scope.launch { runLoop() }
-		}
-		Log.i(TAG, "Watcher started for ${owner.javaClass.simpleName}")
+		val started =
+			synchronized(owners) {
+				val first = owners.isEmpty()
+				// The owner goes in whatever the outcome. stop() cancels the loop
+				// as soon as the set empties, so an owner skipped here would let
+				// the Activity tear the loop down while the overlay service is
+				// still alive - and the re-apply it exists for.
+				owners.add(owner)
+				app = context.applicationContext as? Application
+				if (first) {
+					baselinePid = null
+					missingShizukuLogged = false
+					// Started under the lock: launching outside it let a start land
+					// while a stopped owner's loop was still in delay(), leaving two
+					// loops.
+					loop = scope.launch { runLoop() }
+				}
+				first
+			}
+		if (started) Log.i(TAG, "Watcher started for ${owner.javaClass.simpleName}")
 	}
 
 	/** Unregisters [owner]; the last one stops the loop. */
