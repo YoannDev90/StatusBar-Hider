@@ -71,9 +71,17 @@ object ShellRunner {
 
 	/** True when the Shizuku binder is up and our permission is granted. */
 	fun granted(): Boolean =
-		Shizuku.pingBinder() &&
-			Shizuku.checkSelfPermission() ==
-			android.content.pm.PackageManager.PERMISSION_GRANTED
+		try {
+			Shizuku.pingBinder() &&
+				Shizuku.checkSelfPermission() ==
+				android.content.pm.PackageManager.PERMISSION_GRANTED
+		} catch (e: Exception) {
+			// Shizuku's requireService() throws instead of answering when the
+			// binder dies between pingBinder() and the permission check, and
+			// every readiness gate sits on this function.
+			Log.w(TAG, "Shizuku permission check failed", e)
+			false
+		}
 
 	/**
 	 * Runs a whole command sequence: one [block] at a time, refuses a second

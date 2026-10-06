@@ -45,7 +45,8 @@ open class PrefsViewModel(
 		when (shizukuRepo.state.value) {
 			ShizukuState.NOT_RUNNING -> log(R.string.log_shizuku_not_running)
 			ShizukuState.READY -> log(R.string.log_already_authorized)
-			ShizukuState.NOT_GRANTED -> shizukuRepo.requestPermission()
+			ShizukuState.NOT_GRANTED ->
+				if (!shizukuRepo.requestPermission()) log(R.string.log_shizuku_not_running)
 		}
 	}
 

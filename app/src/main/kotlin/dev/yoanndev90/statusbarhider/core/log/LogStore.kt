@@ -78,6 +78,17 @@ object LogStore {
 		synchronized(lock) { ensureLoadedLocked(context) }
 	}
 
+	/**
+	 * Same load, off the caller's thread. Startup and ViewModel construction
+	 * are main-thread entry points: reading the whole file there is a StrictMode
+	 * disk violation and startup jank for no benefit - [lines] just fills in a
+	 * moment later.
+	 */
+	fun ensureLoadedAsync(context: Context) {
+		val app = context.applicationContext
+		ioScope.launch { synchronized(lock) { ensureLoadedLocked(app) } }
+	}
+
 	/** [Intent] sharing the log file, or null when it could not be built. */
 	fun shareIntent(context: Context): Intent? =
 		try {

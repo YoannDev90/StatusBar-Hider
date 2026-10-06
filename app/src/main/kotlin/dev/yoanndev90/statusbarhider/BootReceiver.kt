@@ -55,13 +55,52 @@ class BootReceiver : BroadcastReceiver() {
 		context: Context,
 		intent: Intent
 	) {
-		if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
-			onPackageReplaced(context.applicationContext)
+		if (intent.action != Intent.ACTION_BOOT_COMPLETED &&
+			intent.action != Intent.ACTION_MY_PACKAGE_REPLACED
+		) {
 			return
 		}
-		if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
+		// The first lines below read SharedPreferences and the log file, and
+		// enabling the bar reaches startForegroundService: a broadcast has 10 s
+		// before the app is ANR'd, so all of it runs off the main thread with
+		// goAsync held for the duration.
 		val app = context.applicationContext
+		val pending = goAsync()
+		var released = false
+		val release = {
+			if (!released) {
+				released = true
+				pending.finish()
+			}
+		}
+		scope.launch {
+			try {
+				if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+					onPackageReplaced(app)
+				} else {
+					onBootCompleted(app, release)
+				}
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				Log.e(TAG, "Boot broadcast failed", e)
+			} finally {
+				release()
+			}
+		}
+	}
+
+	/**
+	 * Restarts the bar, then re-applies the hide commands. [release] hands the
+	 * broadcast back to the system when the Shizuku binder is still starting -
+	 * holding goAsync too long triggers an ANR - and a late binder is picked up
+	 * afterwards without the broadcast open.
+	 */
+	private suspend fun onBootCompleted(
+		app: Context,
+		release: () -> Unit
+	) {
 		val prefs = OverlayPrefsRepository
 			.getInstance(app)
 			.state.value
@@ -79,25 +118,11 @@ class BootReceiver : BroadcastReceiver() {
 		}
 		log(app, "Boot completed - scheduling status bar hide")
 
-		val pending = goAsync()
-		scope.launch {
-			try {
-				if (awaitInitialBinder()) {
-					runAutoHide(app)
-				} else {
-					// Shizuku is still starting up: release the broadcast (holding
-					// goAsync too long triggers an ANR) and finish when it arrives.
-					scope.launch {
-						if (awaitLateBinder()) runAutoHide(app)
-					}
-				}
-			} catch (e: CancellationException) {
-				throw e
-			} catch (e: Exception) {
-				Log.e(TAG, "Boot auto-hide failed", e)
-			} finally {
-				pending.finish()
-			}
+		if (awaitInitialBinder()) {
+			runAutoHide(app)
+		} else {
+			release()
+			if (awaitLateBinder()) runAutoHide(app)
 		}
 	}
 

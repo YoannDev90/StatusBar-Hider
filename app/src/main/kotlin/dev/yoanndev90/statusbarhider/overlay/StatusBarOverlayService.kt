@@ -75,17 +75,24 @@ class StatusBarOverlayService : Service() {
 		const val ACTION_STOP = "dev.yoanndev90.statusbarhider.overlay.STOP"
 
 		fun start(context: Context) {
+			val app = context.applicationContext
 			try {
-				context.startForegroundService(Intent(context, StatusBarOverlayService::class.java))
+				app.startForegroundService(Intent(context, StatusBarOverlayService::class.java))
 			} catch (e: Exception) {
+				// Background-start restrictions and OEM kills reject this: without
+				// a log line the switch stays "on" while no window ever appears.
 				Log.w(TAG, "start failed", e)
+				LogStore.append(app, app.getString(R.string.log_start_service_failed, e.message ?: e.toString()))
 			}
 		}
 
 		fun stop(context: Context) {
+			val app = context.applicationContext
 			try {
-				context.stopService(Intent(context, StatusBarOverlayService::class.java))
-			} catch (_: Exception) {
+				app.stopService(Intent(context, StatusBarOverlayService::class.java))
+			} catch (e: Exception) {
+				Log.w(TAG, "stop failed", e)
+				LogStore.append(app, app.getString(R.string.log_stop_service_failed, e.message ?: e.toString()))
 			}
 		}
 	}
@@ -289,7 +296,16 @@ class StatusBarOverlayService : Service() {
 				startForeground(NOTIF_ID, notif)
 			}
 		} catch (e: Exception) {
+			// startForegroundService() already succeeded, so the system is waiting
+			// for this call: swallow it and the app dies ~5 s later with
+			// ForegroundServiceDidNotStartInTimeException, cause visible only in
+			// logcat. Record why and drop the service instead.
 			Log.w(TAG, "startForeground failed", e)
+			LogStore.append(
+				this,
+				getString(R.string.log_start_foreground_failed, e.message ?: e.toString())
+			)
+			stopSelf()
 		}
 	}
 

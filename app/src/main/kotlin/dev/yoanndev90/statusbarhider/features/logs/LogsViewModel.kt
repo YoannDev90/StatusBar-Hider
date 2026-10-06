@@ -16,7 +16,7 @@ class LogsViewModel(
 	application: Application
 ) : AndroidViewModel(application) {
 	init {
-		LogStore.ensureLoaded(application)
+		LogStore.ensureLoadedAsync(application)
 	}
 
 	/** Live log lines (newest last), already bounded by LogStore. */

@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
 		super.onCreate(savedInstanceState)
 		enableEdgeToEdge()
 		// Persisted lines (from a previous run, or a boot auto-hide) are shown too.
-		LogStore.ensureLoaded(this)
+		LogStore.ensureLoadedAsync(this)
 		SystemUiWatcher.start(this, this)
 		setContent {
 			StatusBarHiderTheme {

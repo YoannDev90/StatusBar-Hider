@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider.data
 
+import android.util.Log
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,12 +52,23 @@ class ShizukuRepository private constructor() {
 	 * Shows the Shizuku authorization dialog. The result is delivered through
 	 * [permissionListener] above, so the request code is an opaque identifier
 	 * owned by this class.
+	 *
+	 * Returns false when the dialog could not be shown - Shizuku throws when
+	 * the binder died between the state check and the call - in which case the
+	 * state is already refreshed so the caller can log instead of crash.
 	 */
-	fun requestPermission() {
-		Shizuku.requestPermission(REQUEST_CODE)
-	}
+	fun requestPermission(): Boolean =
+		try {
+			Shizuku.requestPermission(REQUEST_CODE)
+			true
+		} catch (e: Exception) {
+			Log.w(TAG, "Shizuku permission request failed", e)
+			_state.value = ShizukuState.NOT_RUNNING
+			false
+		}
 
 	companion object {
+		private const val TAG = "ShizukuRepository"
 		private const val REQUEST_CODE = 1001
 
 		private fun currentState(): ShizukuState =

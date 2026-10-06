@@ -34,10 +34,14 @@
         </intent>
     </queries>
 
+    <!-- Backup is off: the preferences holding the control-API token are
+         excluded from Auto Backup / device-to-device transfer, so the secret
+         only leaves the device through the explicit settings export. -->
     <application
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
+        android:allowBackup="false"
         android:theme="@style/Theme.StatusBarHider">
 
         <activity
