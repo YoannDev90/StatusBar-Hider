@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -30,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -186,20 +188,59 @@ private fun AppPickerDialog(
 	)
 }
 
-/** App icon at a fixed raster size; missing icons simply leave the slot empty. */
+/**
+ * App icon at a fixed raster size, decoded off the main thread.
+ *
+ * Rasterising the full-resolution adaptive icon inside composition dropped a
+ * frame for every row that scrolled into view, and leaving the composition
+ * threw the bitmap away, so scrolling back decoded it again. The slot is always
+ * laid out (even for a missing icon) so a late bitmap cannot shift the row.
+ */
 @Composable
 private fun AppIcon(
 	pkg: String,
 	modifier: Modifier
 ) {
 	val pm = LocalContext.current.packageManager
-	val bitmap = remember(pkg) { runCatching { pm.getApplicationIcon(pkg).toBitmap(96, 96) }.getOrNull() }
-	if (bitmap != null) {
-		Image(
-			bitmap = bitmap.asImageBitmap(),
-			contentDescription = null,
-			modifier = modifier
-		)
+	val bitmap by produceState(AppIconCache[pkg]) {
+		if (value == null) {
+			value =
+				withContext(Dispatchers.IO) {
+					runCatching { pm.getApplicationIcon(pkg).toBitmap(96, 96).asImageBitmap() }
+						.getOrNull()
+						?.also { AppIconCache[pkg] = it }
+				}
+		}
+	}
+	Box(modifier = modifier) {
+		bitmap?.let {
+			Image(bitmap = it, contentDescription = null, modifier = Modifier.fillMaxSize())
+		}
+	}
+}
+
+/**
+ * LRU of decoded icons, big enough for the visible page of the picker and then
+ * some (128 x 96 x 96 px is about 4.5 MB of heap).
+ */
+private object AppIconCache {
+	private const val MAX_ENTRIES = 128
+
+	private val lock = Any()
+
+	/** Access-ordered, so the first key is the least recently used one. */
+	private val entries = LinkedHashMap<String, ImageBitmap>(16, 0.75f, true)
+
+	operator fun get(pkg: String): ImageBitmap? = synchronized(lock) { entries[pkg] }
+
+	operator fun set(
+		pkg: String,
+		bitmap: ImageBitmap
+	) {
+		synchronized(lock) {
+			entries[pkg] = bitmap
+			while (entries.size > MAX_ENTRIES) entries.remove(entries.keys.first())
+		}
 	}
 }
 
