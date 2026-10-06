@@ -37,8 +37,27 @@ jobs:
           echo "keyAlias=${{ secrets.KEYSTORE_KEY_ALIAS }}" >> keystore.properties
           echo "keyPassword=${{ secrets.KEYSTORE_KEY_PASSWORD }}" >> keystore.properties
 
+      - name: Read version from tag
+        id: version
+        # v1.2.3 -> name 1.2.3, code 1002003 (major*1e6 + minor*1e3 + patch,
+        # the layout Android expects: each component must stay under 1000).
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          IFS=. read -r major minor patch <<< "$tag"
+          echo "name=$tag" >> "$GITHUB_OUTPUT"
+          echo "code=$(( ${major:-0} * 1000000 + ${minor:-0} * 1000 + ${patch:-0} ))" >> "$GITHUB_OUTPUT"
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Lint
+        run: ./gradlew lintDebug
+
       - name: Build release APK
-        run: ./gradlew assembleRelease
+        run: >
+          ./gradlew assembleRelease
+          -PversionCode=${{ steps.version.outputs.code }}
+          -PversionName=${{ steps.version.outputs.name }}
 
       - name: Create release
         uses: softprops/action-gh-release@v2

@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Nothing in this workflow publishes: read is all it needs.
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4

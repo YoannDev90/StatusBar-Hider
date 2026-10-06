@@ -21,8 +21,11 @@ android {
 		applicationId = "dev.yoanndev90.statusbarhider"
 		minSdk = 26
 		targetSdk = 37
-		versionCode = 1
-		versionName = "1.0"
+		// The release workflow derives these from the pushed tag (v1.2.3 ->
+		// 1002003 / "1.2.3") so every build can be told apart; local builds
+		// fall back to the placeholders below.
+		versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+		versionName = (findProperty("versionName") as String?) ?: "1.0"
 	}
 
 	signingConfigs {
