@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,14 +21,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +49,8 @@ import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.NotifListenerService
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private const val TAG = "SetupScreen"
 
@@ -61,8 +65,7 @@ fun SetupScreen(
 	// Same contract as every other screen owning a PrefsViewModel.
 	HandlePrefsEvents(vm)
 	// Bumped on every resume: the grants happen in other screens, so the rows
-	// are re-read when the user comes back. `key` is what subscribes this
-	// composition to the tick.
+	// are re-read when the user comes back. The tick is the key of that read.
 	var resumeTick by remember { mutableStateOf(0) }
 	LifecycleResumeEffect(Unit) {
 		resumeTick++
@@ -73,6 +76,12 @@ fun SetupScreen(
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	val notificationsLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
+	// The permission rows are binder calls (overlay, listener, AppOps, grants):
+	// read them once per resume on IO instead of on every recomposition. Values
+	// from the previous read stay on screen while a refresh is in flight.
+	val grants by produceState<SetupGrants?>(null, resumeTick) {
+		value = withContext(Dispatchers.IO) { readGrants(context) }
+	}
 
 	Column(
 		modifier =
@@ -88,41 +97,49 @@ fun SetupScreen(
 			modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
 		)
 
-		key(resumeTick) {
-			SettingGroup(R.string.section_shizuku) {
-				SetupRow(
-					label = R.string.setup_shizuku,
-					done = shizuku == ShizukuState.READY,
-					actionLabel = R.string.action_authorize_shizuku
-				) { vm.requestShizukuPermission() }
-			}
+		SettingGroup(R.string.section_shizuku) {
+			SetupRow(
+				label = R.string.setup_shizuku,
+				done = shizuku == ShizukuState.READY,
+				actionLabel = R.string.action_authorize_shizuku
+			) { vm.requestShizukuPermission() }
+		}
 
+		val loaded = grants
+		if (loaded == null) {
+			Box(
+				modifier = Modifier.fillMaxWidth().padding(16.dp),
+				contentAlignment = Alignment.Center
+			) {
+				CircularProgressIndicator(Modifier.size(24.dp))
+			}
+		} else {
 			SettingGroup(R.string.setup_group_permissions) {
 				SetupRow(
 					label = R.string.setup_overlay,
-					done = Settings.canDrawOverlays(context),
+					done = loaded.overlay,
 					actionLabel = R.string.action_grant
 				) { openSpecialAccess(context, Settings.ACTION_MANAGE_OVERLAY_PERMISSION) }
 				SetupRow(
 					label = R.string.setup_notif_access,
-					done = NotifListenerService.isEnabled(context),
+					done = loaded.notifListener,
 					actionLabel = R.string.action_grant
 				) { openSettings(context, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
 				SetupRow(
 					label = R.string.setup_calendar,
-					done = context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED,
+					done = loaded.calendar,
 					actionLabel = R.string.action_grant
 				) { calendarLauncher.launch(Manifest.permission.READ_CALENDAR) }
 				if (Build.VERSION.SDK_INT >= 33) {
 					SetupRow(
 						label = R.string.setup_post_notifs,
-						done = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
+						done = loaded.postNotifs,
 						actionLabel = R.string.action_grant
 					) { notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
 				}
 				SetupRow(
 					label = R.string.setup_usage,
-					done = UsageAccess.granted(context),
+					done = loaded.usage,
 					actionLabel = R.string.action_grant
 				) { openSettings(context, Settings.ACTION_USAGE_ACCESS_SETTINGS) }
 			}
@@ -138,6 +155,25 @@ fun SetupScreen(
 		}
 	}
 }
+
+/** The four system answers behind the permission rows. */
+private data class SetupGrants(
+	val overlay: Boolean,
+	val notifListener: Boolean,
+	val calendar: Boolean,
+	val postNotifs: Boolean,
+	val usage: Boolean
+)
+
+/** Reads [SetupGrants]; every line is a binder call, so never on the main thread. */
+private fun readGrants(context: Context): SetupGrants =
+	SetupGrants(
+		overlay = Settings.canDrawOverlays(context),
+		notifListener = NotifListenerService.isEnabled(context),
+		calendar = context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED,
+		postNotifs = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
+		usage = UsageAccess.granted(context)
+	)
 
 /** One checklist line: status icon, label, and a Grant button while missing. */
 @Composable
