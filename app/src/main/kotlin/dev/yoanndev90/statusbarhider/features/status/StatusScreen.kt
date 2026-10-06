@@ -55,57 +55,67 @@ fun StatusScreen(
 	HandlePrefsEvents(vm)
 
 	SettingsScreen {
-		SettingGroup { DeviceHeader(state) }
-
-		// First screen, first controls: show / hide without hunting in Style.
-		SettingGroup(R.string.section_custom_bar) {
-			SettingAction(R.drawable.ic_visibility, R.string.action_show_custom_bar) { vm.showOverlayBar() }
-			SettingAction(R.drawable.ic_visibility_off, R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
+		item {
+			SettingGroup { DeviceHeader(state) }
 		}
 
-		SettingGroup(R.string.section_shizuku) {
-			SettingAction(R.drawable.ic_adb, R.string.action_authorize_shizuku) { vm.requestShizukuPermission() }
-			if (state.shizuku != ShizukuState.READY) {
-				Text(
-					text = stringResource(R.string.hint_authorize_shizuku),
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-				)
+		item {
+			// First screen, first controls: show / hide without hunting in Style.
+			SettingGroup(R.string.section_custom_bar) {
+				SettingAction(R.drawable.ic_visibility, R.string.action_show_custom_bar) { vm.showOverlayBar() }
+				SettingAction(R.drawable.ic_visibility_off, R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
 			}
 		}
 
-		SettingGroup(R.string.section_status_bar) {
-			OemPicker(
-				currentId = state.oemId,
-				currentName = state.oemName,
-				onSelect = vm::selectOem
-			)
-			SettingAction(R.drawable.ic_refresh, R.string.action_redetect_oem) { vm.redetectOem() }
-			SettingAction(R.drawable.ic_hide_source, R.string.action_hide_status_bar) { vm.applyHide() }
-			SettingAction(R.drawable.ic_fact_check, R.string.action_check_state) { vm.checkState() }
-			SettingAction(R.drawable.ic_restore, R.string.action_restore) { vm.restore() }
-		}
-
-		SettingGroup(R.string.section_app) {
-			SettingAction(R.drawable.ic_key, R.string.action_copy_control_token) { copyControlToken(context) }
-			Text(
-				text = stringResource(R.string.hint_control_token),
-				style = MaterialTheme.typography.bodySmall,
-				color = MaterialTheme.colorScheme.onSurfaceVariant,
-				modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-			)
-			SettingAction(R.drawable.ic_settings, R.string.action_open_setup) { onOpenSetup() }
-			SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) {
-				vm.exportSettings { intent ->
-					if (intent == null) {
-						Toast.makeText(context, R.string.toast_export_failed, Toast.LENGTH_LONG).show()
-					} else {
-						context.startActivity(Intent.createChooser(intent, null))
-					}
+		item {
+			SettingGroup(R.string.section_shizuku) {
+				SettingAction(R.drawable.ic_adb, R.string.action_authorize_shizuku) { vm.requestShizukuPermission() }
+				if (state.shizuku != ShizukuState.READY) {
+					Text(
+						text = stringResource(R.string.hint_authorize_shizuku),
+						style = MaterialTheme.typography.bodySmall,
+						color = MaterialTheme.colorScheme.onSurfaceVariant,
+						modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+					)
 				}
 			}
-			SettingAction(R.drawable.ic_upload, R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
+		}
+
+		item {
+			SettingGroup(R.string.section_status_bar) {
+				OemPicker(
+					currentId = state.oemId,
+					currentName = state.oemName,
+					onSelect = vm::selectOem
+				)
+				SettingAction(R.drawable.ic_refresh, R.string.action_redetect_oem) { vm.redetectOem() }
+				SettingAction(R.drawable.ic_hide_source, R.string.action_hide_status_bar) { vm.applyHide() }
+				SettingAction(R.drawable.ic_fact_check, R.string.action_check_state) { vm.checkState() }
+				SettingAction(R.drawable.ic_restore, R.string.action_restore) { vm.restore() }
+			}
+		}
+
+		item {
+			SettingGroup(R.string.section_app) {
+				SettingAction(R.drawable.ic_key, R.string.action_copy_control_token) { copyControlToken(context) }
+				Text(
+					text = stringResource(R.string.hint_control_token),
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+				)
+				SettingAction(R.drawable.ic_settings, R.string.action_open_setup) { onOpenSetup() }
+				SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) {
+					vm.exportSettings { intent ->
+						if (intent == null) {
+							Toast.makeText(context, R.string.toast_export_failed, Toast.LENGTH_LONG).show()
+						} else {
+							context.startActivity(Intent.createChooser(intent, null))
+						}
+					}
+				}
+				SettingAction(R.drawable.ic_upload, R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
+			}
 		}
 	}
 }

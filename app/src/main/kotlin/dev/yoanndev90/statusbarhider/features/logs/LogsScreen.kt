@@ -33,37 +33,39 @@ fun LogsScreen(vm: LogsViewModel) {
 	val cannotShareToast = stringResource(R.string.toast_cannot_share_logs)
 
 	SettingsScreen {
-		SettingGroup(R.string.section_log) {
-			SettingAction(R.drawable.ic_content_copy, R.string.action_export_logs) {
-				val clip = ClipData.newPlainText(clipboardLabel, logs.joinToString("\n"))
-				context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
-				Toast.makeText(context, logsCopiedToast, Toast.LENGTH_SHORT).show()
-			}
-			SettingAction(R.drawable.ic_share, R.string.action_share_logs) {
-				vm.shareLogs { intent ->
-					if (intent == null) {
-						Toast.makeText(context, cannotShareToast, Toast.LENGTH_SHORT).show()
-					} else {
-						context.startActivity(Intent.createChooser(intent, null))
+		item {
+			SettingGroup(R.string.section_log) {
+				SettingAction(R.drawable.ic_content_copy, R.string.action_export_logs) {
+					val clip = ClipData.newPlainText(clipboardLabel, logs.joinToString("\n"))
+					context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
+					Toast.makeText(context, logsCopiedToast, Toast.LENGTH_SHORT).show()
+				}
+				SettingAction(R.drawable.ic_share, R.string.action_share_logs) {
+					vm.shareLogs { intent ->
+						if (intent == null) {
+							Toast.makeText(context, cannotShareToast, Toast.LENGTH_SHORT).show()
+						} else {
+							context.startActivity(Intent.createChooser(intent, null))
+						}
 					}
 				}
-			}
-			if (logs.isEmpty()) {
-				Text(
-					text = stringResource(R.string.log_empty),
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					modifier = Modifier.padding(top = 8.dp)
-				)
-			} else {
-				HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp))
-				SelectionContainer {
+				if (logs.isEmpty()) {
 					Text(
-						text = logs.joinToString("\n"),
-						fontSize = 12.sp,
+						text = stringResource(R.string.log_empty),
+						style = MaterialTheme.typography.bodySmall,
 						color = MaterialTheme.colorScheme.onSurfaceVariant,
-						modifier = Modifier.fillMaxWidth()
+						modifier = Modifier.padding(top = 8.dp)
 					)
+				} else {
+					HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp))
+					SelectionContainer {
+						Text(
+							text = logs.joinToString("\n"),
+							fontSize = 12.sp,
+							color = MaterialTheme.colorScheme.onSurfaceVariant,
+							modifier = Modifier.fillMaxWidth()
+						)
+					}
 				}
 			}
 		}

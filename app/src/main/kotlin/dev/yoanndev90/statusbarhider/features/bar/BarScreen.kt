@@ -27,12 +27,12 @@ fun BarScreen(vm: PrefsViewModel) {
 	HandlePrefsEvents(vm)
 
 	SettingsScreen {
-		ClockSection(prefs, vm)
-		LockScreenSection(prefs, vm)
-		BatterySection(prefs, vm)
-		NotificationsSection(prefs, vm)
-		ConnectivitySection(prefs, vm)
-		AppsSection(prefs, vm)
-		BehaviorSection(prefs, vm)
+		item { ClockSection(prefs, vm) }
+		item { LockScreenSection(prefs, vm) }
+		item { BatterySection(prefs, vm) }
+		item { NotificationsSection(prefs, vm) }
+		item { ConnectivitySection(prefs, vm) }
+		item { AppsSection(prefs, vm) }
+		item { BehaviorSection(prefs, vm) }
 	}
 }

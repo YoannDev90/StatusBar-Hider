@@ -18,9 +18,9 @@ fun StyleScreen(vm: PrefsViewModel) {
 	HandlePrefsEvents(vm)
 
 	SettingsScreen {
-		WidgetOrderSection(prefs, vm)
-		LookSection(prefs, vm)
-		CutoutSection(prefs, vm)
-		TestSection(prefs, vm)
+		item { WidgetOrderSection(prefs, vm) }
+		item { LookSection(prefs, vm) }
+		item { CutoutSection(prefs, vm) }
+		item { TestSection(prefs, vm) }
 	}
 }
