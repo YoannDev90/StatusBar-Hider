@@ -10,6 +10,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
+import java.util.concurrent.ConcurrentHashMap
 
 private const val PREFS_NAME = "statusbarhider"
 private const val PREF_OEM_ID = "oem_id"
@@ -117,7 +118,7 @@ data class OemConfig(
 				if (props.contains(id)) return id
 			}
 			for (id in available) {
-				if (load(context, id).match.any { props.contains(it) }) return id
+				if (loadCached(context, id).match.any { props.contains(it) }) return id
 			}
 			if (DEFAULT_ID !in available) {
 				// Picking the alphabetically first config would run another
@@ -149,6 +150,21 @@ data class OemConfig(
 				reportFallback(context, id, e)
 			}
 		}
+
+		/**
+		 * Parse cache, one entry per shipped id. Assets only change with an APK
+		 * update, and the OEM dropdown reads every config file, so paying the
+		 * asset read and the JSON parse once per process instead of once per
+		 * screen (or once per tab visit) is the difference between a settings
+		 * page that appears and one that stalls the main thread.
+		 */
+		private val parsed = ConcurrentHashMap<String, OemConfig>()
+
+		/** [load], memoized for the lifetime of the process. */
+		fun loadCached(
+			context: Context,
+			id: String
+		): OemConfig = parsed.getOrPut(id) { load(context, id) }
 
 		@Throws(OemConfigException::class)
 		fun parseJson(

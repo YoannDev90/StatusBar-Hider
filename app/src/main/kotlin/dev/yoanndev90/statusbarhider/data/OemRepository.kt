@@ -37,7 +37,7 @@ class OemRepository private constructor(
 	private fun loadActive(): OemConfig {
 		val oemId = OemConfig.detect(appContext)
 		OemConfig.saveId(appContext, oemId)
-		return OemConfig.load(appContext, oemId)
+		return OemConfig.loadCached(appContext, oemId)
 	}
 
 	companion object {

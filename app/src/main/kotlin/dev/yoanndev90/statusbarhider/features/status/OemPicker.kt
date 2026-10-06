@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -15,9 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -25,6 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.oem.OemConfig
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private data class OemOption(
 	val id: String,
@@ -34,7 +38,7 @@ private data class OemOption(
 private fun oemOptions(context: Context): List<OemOption> =
 	OemConfig
 		.listAvailable(context)
-		.map { id -> OemOption(id, OemConfig.load(context, id).name) }
+		.map { id -> OemOption(id, OemConfig.loadCached(context, id).name) }
 
 /** Dropdown over every shipped OEM config; the button shows the active one. */
 @Composable
@@ -44,8 +48,12 @@ fun OemPicker(
 	onSelect: (String) -> Unit
 ) {
 	val context = LocalContext.current
-	// Assets read once per composition subtree; the list only changes with an APK update.
-	val options = remember(context) { oemOptions(context) }
+	// Opening and parsing every shipped config is real work: run it once per
+	// process, off the main thread. `remember` re-ran it every time the Status
+	// tab re-entered composition, stalling the tab switch.
+	val options by produceState<List<OemOption>?>(null) {
+		value = withContext(Dispatchers.IO) { oemOptions(context) }
+	}
 	var expanded by rememberSaveable { mutableStateOf(false) }
 
 	Box(modifier = Modifier.fillMaxWidth()) {
@@ -65,22 +73,32 @@ fun OemPicker(
 			expanded = expanded,
 			onDismissRequest = { expanded = false }
 		) {
-			options.forEach { option ->
-				DropdownMenuItem(
-					text = { Text("${option.name} (${option.id})") },
-					trailingIcon = {
-						if (option.id == currentId) {
-							Icon(
-								painter = painterResource(R.drawable.ic_check),
-								contentDescription = null
-							)
+			val list = options
+			if (list == null) {
+				Box(
+					modifier = Modifier.fillMaxWidth().padding(16.dp),
+					contentAlignment = Alignment.Center
+				) {
+					CircularProgressIndicator(Modifier.size(24.dp))
+				}
+			} else {
+				list.forEach { option ->
+					DropdownMenuItem(
+						text = { Text("${option.name} (${option.id})") },
+						trailingIcon = {
+							if (option.id == currentId) {
+								Icon(
+									painter = painterResource(R.drawable.ic_check),
+									contentDescription = null
+								)
+							}
+						},
+						onClick = {
+							expanded = false
+							onSelect(option.id)
 						}
-					},
-					onClick = {
-						expanded = false
-						onSelect(option.id)
-					}
-				)
+					)
+				}
 			}
 		}
 	}
