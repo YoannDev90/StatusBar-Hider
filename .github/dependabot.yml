@@ -1,0 +1,39 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+      compose-bom:
+        patterns:
+          - "androidx.compose:compose-bom"
+      shizuku:
+        patterns:
+          - "dev.rikka.shizuku:*"
+      kotlin-toolchain:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "com.android.application"
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: cargo
+    directory: /tools/logstream
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: monthly
