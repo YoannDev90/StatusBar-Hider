@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 
 /**
@@ -30,9 +31,7 @@ class NotifListenerService : NotificationListenerService() {
 
 	override fun onCreate() {
 		super.onCreate()
-		rebuildScope.launch {
-			for (request in rebuilds) rebuild()
-		}
+		rebuildScope.launch { rebuilds.consumeEach { rebuild() } }
 	}
 
 	override fun onDestroy() {
