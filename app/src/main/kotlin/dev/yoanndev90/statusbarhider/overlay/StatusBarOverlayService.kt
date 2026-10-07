@@ -688,7 +688,7 @@ class StatusBarOverlayService : Service() {
 	/** Recomputes the suppression state from the app currently in front. */
 	private suspend fun updateSuppressed() {
 		// UsageStats queries are binder IPC: off the 2s poll's main thread.
-		val pkg = withContext(Dispatchers.IO) { indicators.foregroundPackage() } ?: return
+		val pkg = withContext(Dispatchers.IO) { UsageAccess.foregroundPackage(applicationContext) } ?: return
 		setSuppressedState(pkg in prefs.hiddenApps)
 	}
 

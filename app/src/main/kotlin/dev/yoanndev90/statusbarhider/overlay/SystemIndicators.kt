@@ -3,8 +3,6 @@ package dev.yoanndev90.statusbarhider.overlay
 import android.Manifest
 import android.app.AlarmManager
 import android.app.KeyguardManager
-import android.app.usage.UsageEvents
-import android.app.usage.UsageStatsManager
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -117,26 +115,6 @@ internal class SystemIndicators(
 			null
 		}
 	}
-
-	/** Package of the last resumed activity in the trailing window, or null when unknown. */
-	fun foregroundPackage(): String? =
-		try {
-			val usm = context.getSystemService(UsageStatsManager::class.java) ?: return null
-			val now = System.currentTimeMillis()
-			val events = usm.queryEvents(now - FOREGROUND_WINDOW_MS, now)
-			val event = UsageEvents.Event()
-			var pkg: String? = null
-			while (events.hasNextEvent()) {
-				events.getNextEvent(event)
-				if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED) {
-					pkg = event.packageName
-				}
-			}
-			pkg
-		} catch (e: Exception) {
-			warn("foregroundPackage", e)
-			null
-		}
 
 	fun isAirplaneOn(): Boolean =
 		try {
@@ -287,12 +265,5 @@ internal class SystemIndicators(
 
 	companion object {
 		private const val TAG = "SystemIndicators"
-
-		/**
-		 * Trailing window of the foreground-app query. It must outlive a service
-		 * restart (the bar would otherwise show over a blacklisted app until the
-		 * next switch), but stay small: it is scanned every 2 s.
-		 */
-		private const val FOREGROUND_WINDOW_MS = 10 * 60 * 1000L
 	}
 }
