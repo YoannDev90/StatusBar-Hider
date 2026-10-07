@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
@@ -448,7 +449,20 @@ class StatusBarOverlayService : Service() {
 						trySend(intent)
 					}
 				}
-			runSafely(this@StatusBarOverlayService) { registerReceiver(receiver, filter) }
+			// RECEIVER_EXPORTED, not NOT_EXPORTED: these actions all come from
+			// system_server, and Android documents that NOT_EXPORTED drops
+			// broadcasts from highly privileged apps that do not run under the
+			// system UID. Without a flag the framework already forces EXPORTED
+			// for protected broadcasts, so this is the same behaviour made
+			// explicit — which is what Android 14+ enforcement and lint want.
+			runSafely(this@StatusBarOverlayService) {
+				ContextCompat.registerReceiver(
+					this@StatusBarOverlayService,
+					receiver,
+					filter,
+					ContextCompat.RECEIVER_EXPORTED
+				)
+			}
 			awaitClose { runSafely(this@StatusBarOverlayService) { unregisterReceiver(receiver) } }
 		}
 
