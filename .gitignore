@@ -10,5 +10,8 @@ keystore.properties
 *.keystore
 *.jks
 
+# Local dump of the Shizuku classes for reading the API offline
+shz/
+
 # Rust tooling
 tools/logstream/target/
