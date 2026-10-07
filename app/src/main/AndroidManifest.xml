@@ -98,11 +98,15 @@
         <!-- External control API for Tasker / `am broadcast`. No intent filter:
              only explicit broadcasts targeting this component are accepted, and
              ControlAuth drops any of them without this install's token. Actions
-             documented in docs/control-api.md. -->
+             documented in docs/control-api.md.
+             exported="true" cannot carry android:permission: the whole point is
+             that Tasker and `adb shell am broadcast` reach it, and neither can
+             hold a custom signature permission. The token is the gate. -->
         <receiver
             android:name="dev.yoanndev90.statusbarhider.control.ControlReceiver"
             android:enabled="true"
-            android:exported="true" />
+            android:exported="true"
+            tools:ignore="ExportedReceiver" />
 
         <!-- Home screen widget: toggles the custom bar and the system bar. -->
         <receiver
