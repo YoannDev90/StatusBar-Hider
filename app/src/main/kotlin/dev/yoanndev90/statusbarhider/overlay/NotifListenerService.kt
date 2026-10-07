@@ -77,15 +77,18 @@ class NotifListenerService : NotificationListenerService() {
 				}
 			val best = pickProgress(actives)
 			val pm = packageManager
-			val seen = LinkedHashSet<String>()
-			val out = mutableListOf<NotifIcons.Entry>()
-			for (sbn in actives) {
-				val pkg = sbn.packageName ?: continue
-				if (pkg == packageName) continue
-				if (!seen.add(pkg)) continue
-				if (out.size >= MAX_ICON_ENTRIES) break
-				out += NotifIcons.Entry(pkg, loadIcon(pm, sbn, pkg))
-			}
+			// One icon per notifying package, ours excluded, first
+			// MAX_ICON_ENTRIES wins. Sequence keeps loadIcon() lazy, so the
+			// cap is honoured before any IPC beyond it.
+			val out =
+				actives
+					.asSequence()
+					.mapNotNull { sbn -> sbn.packageName?.let { pkg -> pkg to sbn } }
+					.filter { (pkg, _) -> pkg != packageName }
+					.distinctBy { (pkg, _) -> pkg }
+					.take(MAX_ICON_ENTRIES)
+					.map { (pkg, sbn) -> NotifIcons.Entry(pkg, loadIcon(pm, sbn, pkg)) }
+					.toList()
 			NotifIcons.update(out, best)
 		} catch (e: Exception) {
 			Log.w(TAG, "rebuild", e)
@@ -107,9 +110,7 @@ class NotifListenerService : NotificationListenerService() {
 		var bestOngoing = false
 		var bestWhen = Long.MIN_VALUE
 		for (sbn in actives) {
-			val pkg = sbn.packageName ?: continue
-			if (pkg == packageName) continue
-			val candidate = extractProgress(sbn) ?: continue
+			val candidate = relevantProgress(sbn) ?: continue
 			val candidateWhen = sbn.notification?.`when` ?: 0L
 			val better =
 				best == null ||
@@ -122,6 +123,17 @@ class NotifListenerService : NotificationListenerService() {
 			}
 		}
 		return best
+	}
+
+	/**
+	 * Progress of a notification this bar would also show an icon for, or null
+	 * when the notification is ours or carries no progress worth displaying.
+	 * Split out so [pickProgress] has a single skip path.
+	 */
+	private fun relevantProgress(sbn: StatusBarNotification): NotifIcons.Progress? {
+		val pkg = sbn.packageName ?: return null
+		if (pkg == packageName) return null
+		return extractProgress(sbn)
 	}
 
 	/**

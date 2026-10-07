@@ -8,6 +8,7 @@ import android.app.usage.UsageStatsManager
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -68,35 +69,36 @@ internal class SystemIndicators(
 					CalendarContract.Instances.TITLE,
 					CalendarContract.Instances.ALL_DAY
 				)
-			var text: String? = null
 			context.contentResolver
 				.query(uri, projection, null, null, "${CalendarContract.Instances.BEGIN} ASC")
-				?.use { c ->
-					while (c.moveToNext()) {
-						val begin = c.getLong(0)
-						val end = c.getLong(1)
-						val title = c.getString(2)?.trim().orEmpty()
-						val allDay = c.getInt(3) == 1
-						if (title.isEmpty()) continue
-						// Skip events already finished (Instances range includes ongoing ones).
-						if (!allDay && end <= now) continue
-						text =
-							if (allDay) {
-								title
-							} else {
-								// The clock follows the pref: a hardcoded 24 h
-								// pattern next to a 12 h clock reads as a bug.
-								val fmt = SimpleDateFormat(if (use24h) "HH:mm" else "h:mm a", Locale.getDefault())
-								"${fmt.format(Date(begin))} $title"
-							}
-						break
-					}
-				}
-			text
+				?.use { c -> firstUpcoming(c, now, use24h) }
 		} catch (e: Exception) {
 			warn("queryCalendar", e)
 			null
 		}
+	}
+
+	/** The first instance worth showing, or null when the window holds none. */
+	private fun firstUpcoming(
+		c: Cursor,
+		now: Long,
+		use24h: Boolean
+	): String? {
+		// Built once for the whole scan. The clock follows the pref: a hardcoded
+		// 24 h pattern next to a 12 h clock reads as a bug.
+		val fmt = SimpleDateFormat(if (use24h) "HH:mm" else "h:mm a", Locale.getDefault())
+		while (c.moveToNext()) {
+			val title = c.getString(2)?.trim().orEmpty()
+			val allDay = c.getInt(3) == 1
+			// Empty titles are noise; the Instances range also contains events
+			// that already finished, but an all-day instance covers its day.
+			val stillAhead = allDay || c.getLong(1) > now
+			if (title.isNotEmpty() && stillAhead) {
+				val clock = if (allDay) "" else "${fmt.format(Date(c.getLong(0)))} "
+				return "$clock$title"
+			}
+		}
+		return null
 	}
 
 	/** Next alarm clock, or null when none / feature off. */
