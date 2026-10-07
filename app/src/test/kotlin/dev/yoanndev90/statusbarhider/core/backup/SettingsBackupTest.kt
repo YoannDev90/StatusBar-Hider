@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.InputStream
 
 class SettingsBackupTest {
 	@Test
@@ -62,5 +63,42 @@ class SettingsBackupTest {
 		val prefs = SettingsBackup.parse(raw).prefs
 		assertEquals(60, prefs.updateIntervalSec)
 		assertEquals(10, prefs.fontSizeSp)
+	}
+
+	@Test
+	fun `small blob is read in full`() {
+		val raw = """{"schema_version":1}"""
+		assertEquals(raw, SettingsBackup.readCapped(raw.byteInputStream()))
+	}
+
+	@Test
+	fun `stream past the byte limit is refused before it is buffered`() {
+		val data = ByteArray(SettingsBackup.MAX_BYTES * 2) { ' '.code.toByte() }
+		val counting = CountingInputStream(data)
+		val e = assertThrows(SettingsBackupException::class.java) { SettingsBackup.readCapped(counting) }
+		assertTrue(e.message.orEmpty().contains("limit"))
+		assertTrue(counting.consumed < data.size)
+	}
+
+	@Test
+	fun `oversized string is refused by the parser before json runs`() {
+		val raw = "not json ".repeat(SettingsBackup.MAX_BYTES / 9 + 1)
+		val e = assertThrows(SettingsBackupException::class.java) { SettingsBackup.parse(raw) }
+		assertTrue(e.message.orEmpty().contains("byte limit"))
+	}
+}
+
+/** Counts how much of the backing array a reader actually pulled. */
+private class CountingInputStream(
+	private val data: ByteArray
+) : InputStream() {
+	var consumed = 0
+		private set
+	private var pos = 0
+
+	override fun read(): Int {
+		if (pos >= data.size) return -1
+		consumed++
+		return data[pos++].toInt() and 0xFF
 	}
 }
