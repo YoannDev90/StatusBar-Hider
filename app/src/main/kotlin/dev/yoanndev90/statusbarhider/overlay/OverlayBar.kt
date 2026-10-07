@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -386,6 +387,58 @@ private fun rememberTick(
 
 private val tnum = TextStyle(fontFeatureSettings = "tnum")
 
+/**
+ * Renders [pattern] at [tick], logging a bad pattern once instead of letting
+ * the frame crash on every recomposition.
+ */
+@Composable
+private fun formattedText(
+	tick: Long,
+	pattern: String,
+	what: String
+): String {
+	val context = LocalContext.current
+	val errorFormat = stringResource(R.string.log_error)
+	return remember(tick, pattern) {
+		try {
+			SimpleDateFormat(pattern, Locale.getDefault()).format(Date(tick))
+		} catch (e: Exception) {
+			Log.w(TAG, "$what format", e)
+			LogStore.appendOnce(
+				context,
+				"$TAG#${what}Format#$pattern",
+				String.format(errorFormat, "bad $what format: ${e.message}")
+			)
+			""
+		}
+	}
+}
+
+/** Shared clock/date typography: one line, optional click, tabular figures when asked. */
+@Composable
+private fun WidgetText(
+	prefs: OverlayPrefs,
+	text: String,
+	fontSize: TextUnit,
+	fg: Color,
+	numeric: Boolean,
+	onClick: () -> Unit
+) {
+	Text(
+		text = text,
+		fontSize = fontSize,
+		fontWeight = prefs.fontWeightValue,
+		color = fg,
+		style = if (numeric) tnum else LocalTextStyle.current,
+		maxLines = 1,
+		overflow = TextOverflow.Ellipsis,
+		modifier =
+			Modifier.then(
+				if (prefs.interactive) Modifier.clickable(onClick = onClick) else Modifier
+			)
+	)
+}
+
 @Composable
 private fun ClockWidget(
 	prefs: OverlayPrefs,
@@ -393,35 +446,14 @@ private fun ClockWidget(
 	fg: Color,
 	onClick: () -> Unit
 ) {
-	val context = LocalContext.current
-	val errorFormat = stringResource(R.string.log_error)
 	val tick = rememberTick(if (prefs.hasSeconds()) 1000L else 60_000L, screenOn)
-	val text =
-		remember(tick, prefs.effectiveTimeFormat()) {
-			try {
-				SimpleDateFormat(prefs.effectiveTimeFormat(), Locale.getDefault()).format(Date(tick))
-			} catch (e: Exception) {
-				Log.w(TAG, "time format", e)
-				LogStore.appendOnce(
-					context,
-					"$TAG#timeFormat#${prefs.effectiveTimeFormat()}",
-					String.format(errorFormat, "bad time format: ${e.message}")
-				)
-				""
-			}
-		}
-	Text(
-		text = text,
+	WidgetText(
+		prefs = prefs,
+		text = formattedText(tick, prefs.effectiveTimeFormat(), "time"),
 		fontSize = prefs.textSp(),
-		fontWeight = prefs.fontWeightValue,
-		color = fg,
-		style = tnum,
-		maxLines = 1,
-		overflow = TextOverflow.Ellipsis,
-		modifier =
-			Modifier.then(
-				if (prefs.interactive) Modifier.clickable(onClick = onClick) else Modifier
-			)
+		fg = fg,
+		numeric = true,
+		onClick = onClick
 	)
 }
 
@@ -433,34 +465,14 @@ private fun DateWidget(
 	onClick: () -> Unit
 ) {
 	if (!prefs.showDate) return
-	val context = LocalContext.current
-	val errorFormat = stringResource(R.string.log_error)
 	val tick = rememberTick(60_000L, screenOn)
-	val text =
-		remember(tick, prefs.dateFormat) {
-			try {
-				SimpleDateFormat(prefs.dateFormat, Locale.getDefault()).format(Date(tick))
-			} catch (e: Exception) {
-				Log.w(TAG, "date format", e)
-				LogStore.appendOnce(
-					context,
-					"$TAG#dateFormat#${prefs.dateFormat}",
-					String.format(errorFormat, "bad date format: ${e.message}")
-				)
-				""
-			}
-		}
-	Text(
-		text = text,
+	WidgetText(
+		prefs = prefs,
+		text = formattedText(tick, prefs.dateFormat, "date"),
 		fontSize = prefs.textSp(-1),
-		fontWeight = prefs.fontWeightValue,
-		color = fg,
-		maxLines = 1,
-		overflow = TextOverflow.Ellipsis,
-		modifier =
-			Modifier.then(
-				if (prefs.interactive) Modifier.clickable(onClick = onClick) else Modifier
-			)
+		fg = fg,
+		numeric = false,
+		onClick = onClick
 	)
 }
 
