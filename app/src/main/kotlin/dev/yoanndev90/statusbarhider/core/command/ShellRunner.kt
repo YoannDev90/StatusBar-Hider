@@ -198,7 +198,7 @@ object ShellRunner {
 					exitTask.get(timeoutSec, TimeUnit.SECONDS)
 				} catch (e: TimeoutException) {
 					exitTask.cancel(true)
-					Log.w(TAG, "Command timed out after ${timeoutSec}s: $cmd")
+					Log.w(TAG, "Command timed out after ${timeoutSec}s: $cmd", e)
 					return Result(-1, context.getString(R.string.err_command_timeout, timeoutSec))
 				} catch (e: Exception) {
 					Log.e(TAG, "waitFor failed for: $cmd", unwrap(e))

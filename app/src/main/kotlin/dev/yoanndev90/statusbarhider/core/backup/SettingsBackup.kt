@@ -18,8 +18,9 @@ import kotlinx.serialization.json.jsonObject
 import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
 
 class SettingsBackupException(
-	message: String
-) : Exception(message)
+	message: String,
+	cause: Throwable? = null
+) : Exception(message, cause)
 
 /**
  * Export / import of everything a user would want to keep: the overlay
@@ -84,27 +85,38 @@ object SettingsBackup {
 			null
 		}
 
-	/** Reads a backup blob; throws [SettingsBackupException] on anything unusable. */
+	/**
+	 * Reads a backup blob; throws [SettingsBackupException] on anything unusable.
+	 *
+	 * Split in two so each half has one job: [readEnvelope] answers "is this a
+	 * backup we understand", [parse] answers "are its blocks usable".
+	 */
 	fun parse(raw: String): Backup {
-		val root =
-			try {
-				json.parseToJsonElement(raw).jsonObject
-			} catch (e: Exception) {
-				throw SettingsBackupException("Not a valid JSON file: ${e.message}")
-			}
-		val version = (root[KEY_SCHEMA] as? JsonPrimitive)?.intOrNull ?: 0
-		if (version > CURRENT_SCHEMA) {
-			throw SettingsBackupException("Backup schema $version is newer than the supported $CURRENT_SCHEMA")
-		}
+		val root = readEnvelope(raw)
 		val overlay = root[KEY_OVERLAY] ?: throw SettingsBackupException("Missing '$KEY_OVERLAY' block")
 		val prefs =
 			try {
 				OverlayPrefs.decodeStrict(overlay)
 			} catch (e: Exception) {
-				throw SettingsBackupException("Unreadable overlay block: ${e.message}")
+				throw SettingsBackupException("Unreadable overlay block: ${e.message}", e)
 			}
 		val oemId = (root[KEY_OEM] as? JsonPrimitive)?.content.orEmpty()
 		return Backup(oemId, prefs)
+	}
+
+	/** Parses the blob and enforces the schema gate; throws on anything unusable. */
+	private fun readEnvelope(raw: String): JsonObject {
+		val root =
+			try {
+				json.parseToJsonElement(raw).jsonObject
+			} catch (e: Exception) {
+				throw SettingsBackupException("Not a valid JSON file: ${e.message}", e)
+			}
+		val version = (root[KEY_SCHEMA] as? JsonPrimitive)?.intOrNull ?: 0
+		if (version > CURRENT_SCHEMA) {
+			throw SettingsBackupException("Backup schema $version is newer than the supported $CURRENT_SCHEMA")
+		}
+		return root
 	}
 
 	/**
