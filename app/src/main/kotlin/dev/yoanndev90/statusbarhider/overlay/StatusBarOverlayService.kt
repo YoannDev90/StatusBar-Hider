@@ -4,17 +4,13 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
-import android.database.ContentObserver
-import android.hardware.camera2.CameraManager
 import android.location.LocationManager
 import android.net.ConnectivityManager
-import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.TrafficStats
 import android.net.Uri
@@ -26,13 +22,11 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.AlarmClock
-import android.provider.Settings
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmap
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
@@ -48,8 +42,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -421,12 +413,12 @@ class StatusBarOverlayService : Service() {
 		}
 		serviceScope.launch {
 			// DND / auto-rotate changes land here so the icons react immediately.
-			systemSettingsFlow().collect {
+			systemSettingsFlow(handler).collect {
 				if (barState.screenOn) updateConnectivity()
 			}
 		}
 		serviceScope.launch {
-			torchFlow().collect { (cameraId, enabled) ->
+			torchFlow(handler).collect { (cameraId, enabled) ->
 				if (enabled) {
 					torchIds.add(cameraId)
 				} else {
@@ -436,101 +428,6 @@ class StatusBarOverlayService : Service() {
 			}
 		}
 	}
-
-	/** Registers a receiver for [filter]; the collection's cancel unregisters it. */
-	private fun receiverFlow(filter: IntentFilter): Flow<Intent> =
-		callbackFlow {
-			val receiver =
-				object : BroadcastReceiver() {
-					override fun onReceive(
-						context: Context,
-						intent: Intent
-					) {
-						trySend(intent)
-					}
-				}
-			// RECEIVER_EXPORTED, not NOT_EXPORTED: these actions all come from
-			// system_server, and Android documents that NOT_EXPORTED drops
-			// broadcasts from highly privileged apps that do not run under the
-			// system UID. Without a flag the framework already forces EXPORTED
-			// for protected broadcasts, so this is the same behaviour made
-			// explicit — which is what Android 14+ enforcement and lint want.
-			runSafely(this@StatusBarOverlayService) {
-				ContextCompat.registerReceiver(
-					this@StatusBarOverlayService,
-					receiver,
-					filter,
-					ContextCompat.RECEIVER_EXPORTED
-				)
-			}
-			awaitClose { runSafely(this@StatusBarOverlayService) { unregisterReceiver(receiver) } }
-		}
-
-	/** zen_mode + auto-rotate changes; the collection's cancel unregisters it. */
-	private fun systemSettingsFlow(): Flow<Unit> =
-		callbackFlow {
-			val observer =
-				object : ContentObserver(handler) {
-					override fun onChange(selfChange: Boolean) {
-						trySend(Unit)
-					}
-				}
-			runSafely(this@StatusBarOverlayService) {
-				contentResolver.registerContentObserver(Settings.Global.getUriFor("zen_mode"), false, observer)
-				contentResolver.registerContentObserver(
-					Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
-					false,
-					observer
-				)
-			}
-			awaitClose { runSafely(this@StatusBarOverlayService) { contentResolver.unregisterContentObserver(observer) } }
-		}
-
-	/** Torch on/off per camera id; the collection's cancel unregisters it. */
-	private fun torchFlow(): Flow<Pair<String, Boolean>> =
-		callbackFlow {
-			val cm = getSystemService(CameraManager::class.java) ?: return@callbackFlow
-			val cb =
-				object : CameraManager.TorchCallback() {
-					override fun onTorchModeChanged(
-						cameraId: String,
-						enabled: Boolean
-					) {
-						trySend(cameraId to enabled)
-					}
-				}
-			try {
-				cm.registerTorchCallback(cb, handler)
-			} catch (_: Exception) {
-				return@callbackFlow
-			}
-			awaitClose { runSafely(this@StatusBarOverlayService) { cm.unregisterTorchCallback(cb) } }
-		}
-
-	/** Default network changes; the collection's cancel unregisters it. */
-	private fun networkFlow(): Flow<Unit> =
-		callbackFlow {
-			val cm = getSystemService(ConnectivityManager::class.java)
-			val cb =
-				object : ConnectivityManager.NetworkCallback() {
-					override fun onAvailable(network: Network) {
-						trySend(Unit)
-					}
-
-					override fun onLost(network: Network) {
-						trySend(Unit)
-					}
-
-					override fun onCapabilitiesChanged(
-						network: Network,
-						caps: NetworkCapabilities
-					) {
-						trySend(Unit)
-					}
-				}
-			runSafely(this@StatusBarOverlayService) { cm?.registerDefaultNetworkCallback(cb) }
-			awaitClose { runSafely(this@StatusBarOverlayService) { cm?.unregisterNetworkCallback(cb) } }
-		}
 
 	private fun onBattery(intent: Intent) {
 		val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
