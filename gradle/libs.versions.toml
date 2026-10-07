@@ -1,10 +1,12 @@
 [versions]
 agp = "9.4.1"
 activity = "1.13.0"
+androidxCore = "1.18.0"
 api = "13.1.5"
 composeBom = "2026.09.00"
 junit = "4.13.2"
 kotlin = "2.4.20"
+kotlinxCoroutines = "1.9.0"
 kotlinxSerialization = "1.11.0"
 lifecycle = "2.11.0"
 navigation = "2.10.2"
@@ -14,6 +16,7 @@ reorderable = "3.1.0"
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity" }
 activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activity" }
 aidl = { module = "dev.rikka.shizuku:aidl", version.ref = "api" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCore" }
 api = { module = "dev.rikka.shizuku:api", version.ref = "api" }
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
@@ -23,6 +26,7 @@ compose-ui = { group = "androidx.compose.ui", name = "ui" }
 compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 junit = { module = "junit:junit", version.ref = "junit" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }

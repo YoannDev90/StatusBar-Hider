@@ -73,11 +73,17 @@ dependencies {
 	implementation(platform(libs.compose.bom))
 	implementation(libs.activity.compose)
 	implementation(libs.activity.ktx)
+	// Direct declarations, not transitive conveniences: androidx.core and
+	// kotlinx.coroutines are imported across the app, so pinning them here
+	// stops an unrelated bump of androidx.activity/lifecycle from silently
+	// swapping their versions out from under us.
+	implementation(libs.androidx.core.ktx)
 	implementation(libs.compose.foundation)
 	implementation(libs.compose.material.icons.core)
 	implementation(libs.compose.material3)
 	implementation(libs.compose.ui)
 	implementation(libs.compose.ui.tooling.preview)
+	implementation(libs.kotlinx.coroutines.android)
 	implementation(libs.kotlinx.serialization.json)
 	implementation(libs.lifecycle.runtime.compose)
 	implementation(libs.lifecycle.runtime.ktx)
