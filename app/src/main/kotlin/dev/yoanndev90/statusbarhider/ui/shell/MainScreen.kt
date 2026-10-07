@@ -121,33 +121,19 @@ fun MainScreen() {
 		}
 	) { inner ->
 		Box(Modifier.fillMaxSize().padding(inner)) {
-			AppDestination.entries.forEach { destination ->
-				val visited =
-					destination == current || (visitedMask and (1 shl destination.ordinal)) != 0
-				if (visited) {
-					key(destination) {
-						val selected = !setupOpen && destination == current
-						Box(
-							modifier =
-								Modifier
-									.fillMaxSize()
-									.zIndex(if (selected) 1f else 0f)
-									.then(if (selected) Modifier else Modifier.hiddenLayer())
-						) {
-							when (destination) {
-								AppDestination.STATUS ->
-									StatusScreen(statusViewModel, onOpenSetup = {
-										setupReopened = true
-										setupOpen = true
-									})
-								AppDestination.BAR -> BarScreen(barViewModel)
-								AppDestination.STYLE -> StyleScreen(styleViewModel)
-								AppDestination.LOG -> LogsScreen(logsViewModel, selected)
-							}
-						}
-					}
+			TabContent(
+				current = current,
+				visitedMask = visitedMask,
+				setupOpen = setupOpen,
+				statusViewModel = statusViewModel,
+				barViewModel = barViewModel,
+				styleViewModel = styleViewModel,
+				logsViewModel = logsViewModel,
+				onOpenSetup = {
+					setupReopened = true
+					setupOpen = true
 				}
-			}
+			)
 			if (setupOpen) {
 				SetupScreen(
 					viewModel(),
@@ -158,6 +144,46 @@ fun MainScreen() {
 						current = AppDestination.START
 					}
 				)
+			}
+		}
+	}
+}
+
+/**
+ * Draws every tab the user has opened at least once: the selected one on top,
+ * the rest behind [hiddenLayer] so they keep their measured state.
+ */
+@Composable
+private fun TabContent(
+	current: AppDestination,
+	visitedMask: Int,
+	setupOpen: Boolean,
+	statusViewModel: StatusViewModel,
+	barViewModel: PrefsViewModel,
+	styleViewModel: PrefsViewModel,
+	logsViewModel: LogsViewModel,
+	onOpenSetup: () -> Unit
+) {
+	AppDestination.entries.forEach { destination ->
+		val visited = destination == current || (visitedMask and (1 shl destination.ordinal)) != 0
+		if (visited) {
+			key(destination) {
+				val selected = !setupOpen && destination == current
+				Box(
+					modifier =
+						Modifier
+							.fillMaxSize()
+							.zIndex(if (selected) 1f else 0f)
+							.then(if (selected) Modifier else Modifier.hiddenLayer())
+				) {
+					when (destination) {
+						AppDestination.STATUS ->
+							StatusScreen(statusViewModel, onOpenSetup = onOpenSetup)
+						AppDestination.BAR -> BarScreen(barViewModel)
+						AppDestination.STYLE -> StyleScreen(styleViewModel)
+						AppDestination.LOG -> LogsScreen(logsViewModel, selected)
+					}
+				}
 			}
 		}
 	}
