@@ -26,6 +26,11 @@ fun LockScreenSection(
 				vm.enableLockScreenOverlay()
 			}
 		}
+		// Reachable even with the toggle off: the service can still be on from
+		// an earlier session, and the app must not be why it stays that way.
+		SettingAction(R.drawable.ic_close, R.string.action_disable_lock_overlay) {
+			vm.disableLockScreenOverlay()
+		}
 		SettingRadioRow(
 			icon = R.drawable.ic_visibility,
 			options =

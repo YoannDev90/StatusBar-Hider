@@ -71,24 +71,58 @@ open class PrefsViewModel(
 	 */
 	fun enableLockScreenOverlay() {
 		val app = getApplication<Application>()
-		val component = ComponentName(app, LockScreenOverlayService::class.java).flattenToString()
 		ShellRunner.run(app, R.string.log_enabling_lock_a11y) {
-			val (_, current) = ShellRunner.run(app, "settings get secure enabled_accessibility_services")
-			val existing = current.trim().let { if (it == "null" || it.isEmpty()) "" else it }
-			val merged =
-				if (existing.split(':').none { it == component }) {
-					if (existing.isEmpty()) component else "$existing:$component"
-				} else {
-					existing
-				}
-			val (exit, out) =
-				ShellRunner.run(app, "settings put secure enabled_accessibility_services '$merged'")
-			val (exit2, out2) = ShellRunner.run(app, "settings put secure accessibility_enabled 1")
-			if (exit == 0 && exit2 == 0) {
+			val error = writeLockOverlay(app, lockOverlayComponent(app), enable = true)
+			if (error == null) {
 				log(R.string.log_lock_a11y_ok)
 			} else {
-				log(R.string.log_lock_a11y_failed, (out + out2).trim().ifEmpty { "exit $exit/$exit2" })
+				log(R.string.log_lock_a11y_failed, error)
 			}
+		}
+	}
+
+	/**
+	 * Removes [LockScreenOverlayService] again: the same merge in reverse, so
+	 * every other service the user turned on stays on, and
+	 * `accessibility_enabled` only drops when nothing is left.
+	 */
+	fun disableLockScreenOverlay() {
+		val app = getApplication<Application>()
+		ShellRunner.run(app, R.string.log_disabling_lock_a11y) {
+			val error = writeLockOverlay(app, lockOverlayComponent(app), enable = false)
+			if (error == null) {
+				log(R.string.log_lock_a11y_disabled)
+			} else {
+				log(R.string.log_lock_a11y_disable_failed, error)
+			}
+		}
+	}
+
+	private fun lockOverlayComponent(app: Application): String =
+		ComponentName(app, LockScreenOverlayService::class.java).flattenToString()
+
+	/**
+	 * Adds or drops [component] in the secure enabled-accessibility list and
+	 * keeps `accessibility_enabled` in step with what is left. Returns the
+	 * shell failure text, or null when both writes took.
+	 */
+	private suspend fun writeLockOverlay(
+		app: Application,
+		component: String,
+		enable: Boolean
+	): String? {
+		val (_, current) = ShellRunner.run(app, "settings get secure enabled_accessibility_services")
+		val existing = current.trim().let { if (it == "null" || it.isEmpty()) "" else it }
+		val others = existing.split(':').filter { it.isNotEmpty() && it != component }
+		val merged = if (enable) (others + component).joinToString(":") else others.joinToString(":")
+		val (exit, out) =
+			ShellRunner.run(app, "settings put secure enabled_accessibility_services '$merged'")
+		val enabledFlag = if (enable || others.isNotEmpty()) 1 else 0
+		val (exit2, out2) = ShellRunner.run(app, "settings put secure accessibility_enabled $enabledFlag")
+		return if (exit == 0 && exit2 == 0) {
+			null
+		} else {
+			(out + out2).trim().ifEmpty { "exit $exit/$exit2" }
 		}
 	}
 
