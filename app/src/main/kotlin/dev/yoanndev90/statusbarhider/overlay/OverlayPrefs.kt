@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
+import java.util.Locale
 
 internal const val PREFS = "overlay_prefs"
 
@@ -470,8 +471,9 @@ data class OverlayPrefs(
 		/** Human-readable throughput, e.g. 512B, 12K, 3.4M (per second). */
 		fun formatSpeed(bytesPerSecond: Long): String =
 			when {
-				bytesPerSecond >= 1_048_576L -> String.format("%.1fM", bytesPerSecond / 1_048_576.0)
-				bytesPerSecond >= 1_024L -> String.format("%.0fK", bytesPerSecond / 1_024.0)
+				bytesPerSecond >= 1_048_576L ->
+					String.format(Locale.ROOT, "%.1fM", bytesPerSecond / 1_048_576.0)
+				bytesPerSecond >= 1_024L -> String.format(Locale.ROOT, "%.0fK", bytesPerSecond / 1_024.0)
 				else -> "${bytesPerSecond.coerceAtLeast(0)}B"
 			}
 
