@@ -776,29 +776,8 @@ class StatusBarOverlayService : Service() {
 	}
 
 	private suspend fun updateConnectivity() {
-		// Every indicator is a binder/Settings read: collect them off the main
-		// thread, then apply one fresh copy on the caller's (main) context.
 		val p = prefs
-		val c =
-			withContext(Dispatchers.IO) {
-				val airplane = indicators.isAirplaneOn()
-				val showRest = !airplane
-				val mobile = showRest && p.showMobileData && indicators.isMobile()
-				Connectivity(
-					airplane = airplane,
-					wifi = showRest && p.showWifi && indicators.isWifi(),
-					mobile = mobile,
-					mobileType = if (mobile) indicators.mobileTypeLabel().ifEmpty { "4G" } else "",
-					bluetooth = showRest && p.showBluetooth && indicators.isBluetoothOn(),
-					vpn = showRest && p.showVpn && indicators.isVpn(),
-					hotspot = showRest && p.showHotspot && indicators.isHotspotOn(),
-					nfc = showRest && p.showNfc && indicators.isNfcOn(),
-					gps = p.showGps && indicators.isGpsOn(),
-					dnd = p.showDnd && indicators.isDndOn(),
-					dataSaver = p.showDataSaver && indicators.isDataSaverOn(),
-					autoRotate = p.showRotate && indicators.isAutoRotateOn()
-				)
-			}
+		val c = readConnectivity(p)
 		barState =
 			barState.copy(
 				usbConnected = usbConnected,
@@ -817,6 +796,38 @@ class StatusBarOverlayService : Service() {
 				torch = p.showTorch && torchIds.isNotEmpty()
 			)
 	}
+
+	/**
+	 * Reads every connectivity indicator in one shot. The whole block runs off
+	 * the main thread; the caller applies the result on its own context.
+	 *
+	 * [radio] skips the read when airplane mode has already turned the radio
+	 * off for real, [plain] covers the flags that survive it.
+	 */
+	private suspend fun readConnectivity(p: OverlayPrefs): Connectivity =
+		withContext(Dispatchers.IO) {
+			val airplane = indicators.isAirplaneOn()
+
+			fun radio(show: Boolean, read: () -> Boolean) = !airplane && show && read()
+
+			fun plain(show: Boolean, read: () -> Boolean) = show && read()
+
+			val mobile = radio(p.showMobileData) { indicators.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
+			Connectivity(
+				airplane = airplane,
+				wifi = radio(p.showWifi) { indicators.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) },
+				mobile = mobile,
+				mobileType = if (mobile) indicators.mobileTypeLabel().ifEmpty { "4G" } else "",
+				bluetooth = radio(p.showBluetooth) { indicators.isBluetoothOn() },
+				vpn = radio(p.showVpn) { indicators.isVpn() },
+				hotspot = radio(p.showHotspot) { indicators.isHotspotOn() },
+				nfc = radio(p.showNfc) { indicators.isNfcOn() },
+				gps = plain(p.showGps) { indicators.isGpsOn() },
+				dnd = plain(p.showDnd) { indicators.isDndOn() },
+				dataSaver = plain(p.showDataSaver) { indicators.isDataSaverOn() },
+				autoRotate = plain(p.showRotate) { indicators.isAutoRotateOn() }
+			)
+		}
 
 	private suspend fun updateAlarm() {
 		val show = prefs.showAlarm

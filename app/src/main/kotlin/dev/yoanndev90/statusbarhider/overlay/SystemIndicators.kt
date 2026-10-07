@@ -133,9 +133,9 @@ internal class SystemIndicators(
 			null
 		}
 
-	fun isWifi(): Boolean = activeCaps()?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-
-	fun isMobile(): Boolean = activeCaps()?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true
+	/** True when the active network offers [transport]; one caps query answers every caller. */
+	fun hasTransport(transport: Int): Boolean =
+		activeCaps()?.hasTransport(transport) == true
 
 	fun isVpn(): Boolean =
 		try {
