@@ -5,5 +5,6 @@
 - The overlay uses `FLAG_SHOW_WHEN_LOCKED` to draw above the keyguard; without the toggle it behaves like a normal overlay window. "Clock only" is strict: the clock widget is the only thing drawn while locked.
 - The app blacklist needs **usage access** (Settings > Apps > Special access > Usage access) and polls the foreground package every 2 s while the feature is on; without the grant the feature stays inert and says so in the log.
 - The SystemUI watcher polls the SystemUI PID (no system callback exists for it), so a restart can take up to **60 s** to be noticed, and the hide commands are re-applied only while the app is running (the `BOOT_COMPLETED` receiver covers reboots).
-- Backup files carry a `schema_version`; a backup written by a newer build is refused instead of being half-applied.
+- Backup files carry a `schema_version`; a backup written by a newer build is refused instead of being half-applied. An import larger than 64 KiB is refused while reading, so a hostile file is never buffered whole.
+- The lock-screen overlay runs through an accessibility service. Enabling it writes into `enabled_accessibility_services` (merging with whatever is already there), and it stays on like any other accessibility service until *Disable lock-screen overlay (accessibility)* is pressed.
 - The camera ring (including the Style-tab preview) can only be drawn around a **detected** cutout; devices without a punch-hole / notch get no ring geometry to place. The preview also requires the custom bar to be visible.
