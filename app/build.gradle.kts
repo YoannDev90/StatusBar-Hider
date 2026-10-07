@@ -23,8 +23,12 @@ android {
 		targetSdk = 37
 		// The release workflow derives these from the pushed tag (v1.2.3 ->
 		// 1002003 / "1.2.3") so every build can be told apart; local builds
-		// fall back to the placeholders below.
-		versionCode = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+		// fall back to the placeholders below. A supplied but malformed value
+		// fails the build instead of silently shipping versionCode 1.
+		versionCode =
+			(findProperty("versionCode") as String?)?.let { raw ->
+				raw.toIntOrNull()?.takeIf { it > 0 } ?: error("versionCode must be a positive integer, got '$raw'")
+			} ?: 1
 		versionName = (findProperty("versionName") as String?) ?: "1.0"
 	}
 
