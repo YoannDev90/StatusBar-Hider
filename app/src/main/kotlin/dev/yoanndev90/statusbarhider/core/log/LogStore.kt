@@ -31,7 +31,10 @@ object LogStore {
 
 	private val lock = Any()
 	private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.US)
-	private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+	// One lane: the mirror rewrites the whole file, so writes must not race
+	// each other. Nothing here ever runs on a caller's thread.
+	private val ioScope = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
 	private val onceKeys = Collections.synchronizedSet(mutableSetOf<String>())
 
 	private val _lines = MutableStateFlow<List<String>>(emptyList())
@@ -40,24 +43,30 @@ object LogStore {
 	@Volatile
 	private var loaded = false
 
-	/** Appends a line (prefixed with the time) and mirrors it to the log file. */
+	/**
+	 * Appends a line (prefixed with the time) and mirrors it to the log file.
+	 *
+	 * The caller only ever touches memory: UI callers append from the main
+	 * thread (selectOem, setOverlayEnabled...), and the disk half - loading a
+	 * previous session and rewriting the file - belongs to [ioScope], where the
+	 * last writer still dumps the full history.
+	 */
 	fun append(
 		context: Context,
 		line: String
 	) {
 		val app = context.applicationContext
 		synchronized(lock) {
-			ensureLoadedLocked(app)
 			// timeFormat is a shared SimpleDateFormat and append() is reached
 			// from both the main thread and Dispatchers.IO: format under the lock.
 			val stamped = "${timeFormat.format(Date())} $line"
 			val next = _lines.value + stamped
 			_lines.value = if (next.size > MAX_LINES) next.takeLast(MAX_LINES) else next
 		}
-		// Mirroring rewrites the whole file, and UI callers append from the main
-		// thread (selectOem, setOverlayEnabled...). Each writer dumps the current
-		// snapshot under the lock, so the last one always holds the full history.
-		ioScope.launch { synchronized(lock) { writeLocked(app) } }
+		ioScope.launch {
+			synchronized(lock) { ensureLoadedLocked(app) }
+			mirror(app)
+		}
 	}
 
 	/**
@@ -136,12 +145,17 @@ object LogStore {
 		_lines.value = if (stored.size > MAX_LINES) stored.takeLast(MAX_LINES) else stored
 	}
 
-	/** Rewrite with the current (already bounded) content; runs under [lock]. */
-	private fun writeLocked(context: Context) {
+	/**
+	 * Rewrites the file from the current snapshot. The copy is taken under
+	 * [lock] - so it never races a concurrent load - but the write itself runs
+	 * outside it, leaving no disk I/O behind the callers' critical section.
+	 */
+	private fun mirror(context: Context) {
+		val text = synchronized(lock) { _lines.value.joinToString("\n") } + "\n"
 		try {
 			val file = file(context)
 			file.parentFile?.mkdirs()
-			file.writeText(_lines.value.joinToString("\n") + "\n")
+			file.writeText(text)
 		} catch (e: Exception) {
 			Log.w(TAG, "Failed to write log file", e)
 		}
