@@ -3,6 +3,7 @@ package dev.yoanndev90.statusbarhider.overlay
 import android.app.Notification
 import android.content.ComponentName
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -155,18 +156,14 @@ class NotifListenerService : NotificationListenerService() {
 		pm: PackageManager,
 		sbn: StatusBarNotification,
 		pkg: String
-	): android.graphics.drawable.Drawable? {
+	): Drawable? {
 		// Icon.loadDrawable() logs an E/Icon stacktrace *before* throwing when the
 		// emitting package is gone (uninstalled apps can keep stale notifications),
 		// and that log can't be caught. Only resolve the notification icon while
 		// the package still exists.
 		if (isInstalled(pm, pkg)) {
-			try {
-				sbn.notification?.smallIcon?.let { icon ->
-					icon.loadDrawable(this)?.let { return it }
-				}
-			} catch (_: Exception) {
-			}
+			val own = notificationIcon(sbn)
+			if (own != null) return own
 		}
 		return try {
 			pm.getApplicationIcon(pkg)
@@ -174,6 +171,17 @@ class NotifListenerService : NotificationListenerService() {
 			null
 		}
 	}
+
+	/**
+	 * The emitting notification's small icon, or null when it cannot be
+	 * resolved (icon gone, package uninstalled mid-rebuild).
+	 */
+	private fun notificationIcon(sbn: StatusBarNotification): Drawable? =
+		try {
+			sbn.notification?.smallIcon?.loadDrawable(this)
+		} catch (_: Exception) {
+			null
+		}
 
 	/** True when [pkg] is still installed (its `getApplicationInfo` resolves). */
 	private fun isInstalled(
