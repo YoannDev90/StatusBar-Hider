@@ -1,13 +1,9 @@
 package dev.yoanndev90.statusbarhider.overlay
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.location.LocationManager
 import android.net.ConnectivityManager
@@ -16,7 +12,6 @@ import android.net.TrafficStats
 import android.net.Uri
 import android.nfc.NfcAdapter
 import android.os.BatteryManager
-import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -58,8 +53,6 @@ import java.util.concurrent.ConcurrentHashMap
 class StatusBarOverlayService : Service() {
 	companion object {
 		private const val TAG = "CustomBar"
-		private const val NOTIF_ID = 1001
-		private const val CHANNEL_ID = "overlay"
 		private const val REFRESH_DEBOUNCE_MS = 100L
 		private const val FOREGROUND_POLL_MS = 2_000L
 
@@ -209,7 +202,7 @@ class StatusBarOverlayService : Service() {
 				locked = indicators.isKeyguardUp(),
 				screenOn = getSystemService(PowerManager::class.java)?.isInteractive ?: true
 			)
-		startFg()
+		startOverlayForeground()
 		syncWindowAttachment()
 		if (!barState.screenOn) window.setRenderingActive(false)
 		observeSystem()
@@ -288,44 +281,6 @@ class StatusBarOverlayService : Service() {
 		// The overlay is gone: let SystemUI re-read the "Custom bar" tile state.
 		HideInteractor.notifyTiles(this)
 		super.onDestroy()
-	}
-
-	private fun startFg() {
-		val nm = getSystemService(NotificationManager::class.java) ?: return
-		if (nm.getNotificationChannel(CHANNEL_ID) == null) {
-			nm.createNotificationChannel(
-				NotificationChannel(
-					CHANNEL_ID,
-					getString(R.string.notif_channel_name),
-					NotificationManager.IMPORTANCE_MIN
-				)
-			)
-		}
-		val notif =
-			Notification
-				.Builder(this, CHANNEL_ID)
-				.setContentTitle(getString(R.string.notif_content_title))
-				.setContentText(getString(R.string.notif_content_text))
-				.setSmallIcon(R.drawable.ic_tile_bar)
-				.build()
-		try {
-			if (Build.VERSION.SDK_INT >= 34) {
-				startForeground(NOTIF_ID, notif, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-			} else {
-				startForeground(NOTIF_ID, notif)
-			}
-		} catch (e: Exception) {
-			// startForegroundService() already succeeded, so the system is waiting
-			// for this call: swallow it and the app dies ~5 s later with
-			// ForegroundServiceDidNotStartInTimeException, cause visible only in
-			// logcat. Record why and drop the service instead.
-			Log.w(TAG, "startForeground failed", e)
-			LogStore.append(
-				this,
-				getString(R.string.log_start_foreground_failed, e.message ?: e.toString())
-			)
-			stopSelf()
-		}
 	}
 
 	private fun onClockClick() {
