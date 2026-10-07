@@ -662,9 +662,15 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
+	/** The2s poll only earns its keep while something could actually hide. */
+	private fun CoroutineScope.foregroundPollWanted(): Boolean {
+		if (!isActive || !barState.screenOn) return false
+		return prefs.hideBarInApps && prefs.hiddenApps.isNotEmpty()
+	}
+
 	/** 2 s foreground-app poll; the loop dies with the feature or the screen. */
 	private suspend fun CoroutineScope.foregroundLoop() {
-		while (isActive && barState.screenOn && prefs.hideBarInApps && prefs.hiddenApps.isNotEmpty()) {
+		while (foregroundPollWanted()) {
 			updateSuppressed()
 			delay(FOREGROUND_POLL_MS)
 		}
