@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import android.content.res.Configuration
 import android.location.LocationManager
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.TrafficStats
 import android.net.Uri
 import android.nfc.NfcAdapter
@@ -132,22 +131,6 @@ class StatusBarOverlayService : Service() {
 
 	/** Camera ids with the torch currently on (filled by the torch flow). */
 	private val torchIds = ConcurrentHashMap.newKeySet<String>()
-
-	/** Indicator reads collected off the main thread (see [updateConnectivity]). */
-	private data class Connectivity(
-		val airplane: Boolean,
-		val wifi: Boolean,
-		val mobile: Boolean,
-		val mobileType: String,
-		val bluetooth: Boolean,
-		val vpn: Boolean,
-		val hotspot: Boolean,
-		val nfc: Boolean,
-		val gps: Boolean,
-		val dnd: Boolean,
-		val dataSaver: Boolean,
-		val autoRotate: Boolean
-	)
 
 	/** True while the overlay window is detached because a blacklisted app is up front. */
 	private var suppressed by SharedBar.suppressed
@@ -629,7 +612,7 @@ class StatusBarOverlayService : Service() {
 
 	private suspend fun updateConnectivity() {
 		val p = prefs
-		val c = readConnectivity(p)
+		val c = indicators.readConnectivity(p)
 		barState =
 			barState.copy(
 				usbConnected = usbConnected,
@@ -648,38 +631,6 @@ class StatusBarOverlayService : Service() {
 				torch = p.showTorch && torchIds.isNotEmpty()
 			)
 	}
-
-	/**
-	 * Reads every connectivity indicator in one shot. The whole block runs off
-	 * the main thread; the caller applies the result on its own context.
-	 *
-	 * [radio] skips the read when airplane mode has already turned the radio
-	 * off for real, [plain] covers the flags that survive it.
-	 */
-	private suspend fun readConnectivity(p: OverlayPrefs): Connectivity =
-		withContext(Dispatchers.IO) {
-			val airplane = indicators.isAirplaneOn()
-
-			fun radio(show: Boolean, read: () -> Boolean) = !airplane && show && read()
-
-			fun plain(show: Boolean, read: () -> Boolean) = show && read()
-
-			val mobile = radio(p.showMobileData) { indicators.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
-			Connectivity(
-				airplane = airplane,
-				wifi = radio(p.showWifi) { indicators.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) },
-				mobile = mobile,
-				mobileType = if (mobile) indicators.mobileTypeLabel().ifEmpty { "4G" } else "",
-				bluetooth = radio(p.showBluetooth) { indicators.isBluetoothOn() },
-				vpn = radio(p.showVpn) { indicators.isVpn() },
-				hotspot = radio(p.showHotspot) { indicators.isHotspotOn() },
-				nfc = radio(p.showNfc) { indicators.isNfcOn() },
-				gps = plain(p.showGps) { indicators.isGpsOn() },
-				dnd = plain(p.showDnd) { indicators.isDndOn() },
-				dataSaver = plain(p.showDataSaver) { indicators.isDataSaverOn() },
-				autoRotate = plain(p.showRotate) { indicators.isAutoRotateOn() }
-			)
-		}
 
 	private suspend fun updateAlarm() {
 		val show = prefs.showAlarm

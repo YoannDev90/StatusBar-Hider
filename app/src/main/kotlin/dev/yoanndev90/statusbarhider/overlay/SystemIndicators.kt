@@ -19,6 +19,8 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -267,3 +269,51 @@ internal class SystemIndicators(
 		private const val TAG = "SystemIndicators"
 	}
 }
+
+/** One shot of every connectivity indicator, already filtered by the prefs. */
+internal data class Connectivity(
+	val airplane: Boolean,
+	val wifi: Boolean,
+	val mobile: Boolean,
+	val mobileType: String,
+	val bluetooth: Boolean,
+	val vpn: Boolean,
+	val hotspot: Boolean,
+	val nfc: Boolean,
+	val gps: Boolean,
+	val dnd: Boolean,
+	val dataSaver: Boolean,
+	val autoRotate: Boolean
+)
+
+/**
+ * Reads every connectivity indicator in one shot. The whole block runs off
+ * the main thread; the caller applies the result on its own context.
+ *
+ * [radio] skips the read when airplane mode has already turned the radio
+ * off for real, [plain] covers the flags that survive it.
+ */
+internal suspend fun SystemIndicators.readConnectivity(p: OverlayPrefs): Connectivity =
+	withContext(Dispatchers.IO) {
+		val airplane = isAirplaneOn()
+
+		fun radio(show: Boolean, read: () -> Boolean) = !airplane && show && read()
+
+		fun plain(show: Boolean, read: () -> Boolean) = show && read()
+
+		val mobile = radio(p.showMobileData) { hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
+		Connectivity(
+			airplane = airplane,
+			wifi = radio(p.showWifi) { hasTransport(NetworkCapabilities.TRANSPORT_WIFI) },
+			mobile = mobile,
+			mobileType = if (mobile) mobileTypeLabel().ifEmpty { "4G" } else "",
+			bluetooth = radio(p.showBluetooth) { isBluetoothOn() },
+			vpn = radio(p.showVpn) { isVpn() },
+			hotspot = radio(p.showHotspot) { isHotspotOn() },
+			nfc = radio(p.showNfc) { isNfcOn() },
+			gps = plain(p.showGps) { isGpsOn() },
+			dnd = plain(p.showDnd) { isDndOn() },
+			dataSaver = plain(p.showDataSaver) { isDataSaverOn() },
+			autoRotate = plain(p.showRotate) { isAutoRotateOn() }
+		)
+	}
