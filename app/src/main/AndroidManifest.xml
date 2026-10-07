@@ -143,10 +143,17 @@
                 android:resource="@xml/lock_overlay_accessibility_service" />
         </service>
 
+        <!-- exported="true": NotificationManagerService binds this from
+             system_server, a different UID, so a non-exported service is
+             silently unreachable — Settings still writes
+             enabled_notification_listeners, so the app would report
+             "notification access granted" while onListenerConnected never
+             fires. BIND_NOTIFICATION_LISTENER_SERVICE (signature) keeps every
+             other caller out, same as the a11y and QS tile services above. -->
         <service
             android:name="dev.yoanndev90.statusbarhider.overlay.NotifListenerService"
             android:enabled="true"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/notif_listener_label"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
