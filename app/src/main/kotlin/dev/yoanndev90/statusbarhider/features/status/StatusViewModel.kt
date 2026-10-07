@@ -120,8 +120,7 @@ class StatusViewModel(
 					getApplication<Application>()
 						.contentResolver
 						.openInputStream(uri)
-						?.bufferedReader()
-						?.use { it.readText() }
+						?.let { stream -> SettingsBackup.readCapped(stream) }
 						?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
 				SettingsBackup.importSettings(getApplication(), raw)
 				log(R.string.log_settings_imported)

@@ -15,6 +15,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
+import java.io.InputStream
 import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
 
 class SettingsBackupException(
@@ -33,6 +34,13 @@ object SettingsBackup {
 	private const val TAG = "SettingsBackup"
 	private const val CURRENT_SCHEMA = 1
 	private const val FILE_NAME = "statusbarhider-settings.json"
+
+	/**
+	 * Ceiling on an imported blob. An export is a couple of kilobytes of
+	 * preferences, so anything past this is not a backup: refusing while
+	 * reading keeps a hostile file from being buffered before it is judged.
+	 */
+	const val MAX_BYTES = 64 * 1024
 
 	private const val KEY_SCHEMA = "schema_version"
 	private const val KEY_OEM = "oem_id"
@@ -86,6 +94,26 @@ object SettingsBackup {
 		}
 
 	/**
+	 * Reads [input] up to [MAX_BYTES] and closes it, refusing anything bigger
+	 * before the excess has been buffered.
+	 */
+	fun readCapped(input: InputStream): String {
+		val out = StringBuilder()
+		input.bufferedReader().use { reader ->
+			val buf = CharArray(DEFAULT_BUFFER_SIZE)
+			while (true) {
+				val n = reader.read(buf)
+				if (n < 0) break
+				out.append(buf, 0, n)
+				if (out.length > MAX_BYTES) {
+					throw SettingsBackupException("Backup is larger than the $MAX_BYTES byte limit")
+				}
+			}
+		}
+		return out.toString()
+	}
+
+	/**
 	 * Reads a backup blob; throws [SettingsBackupException] on anything unusable.
 	 *
 	 * Split in two so each half has one job: [readEnvelope] answers "is this a
@@ -104,8 +132,16 @@ object SettingsBackup {
 		return Backup(oemId, prefs)
 	}
 
+	/** Rejects anything past [MAX_BYTES] before it reaches the parser. */
+	private fun checkSize(raw: String) {
+		if (raw.length > MAX_BYTES) {
+			throw SettingsBackupException("Backup is ${raw.length} bytes, over the $MAX_BYTES byte limit")
+		}
+	}
+
 	/** Parses the blob and enforces the schema gate; throws on anything unusable. */
 	private fun readEnvelope(raw: String): JsonObject {
+		checkSize(raw)
 		val root =
 			try {
 				json.parseToJsonElement(raw).jsonObject
