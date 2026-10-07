@@ -79,4 +79,6 @@ Wander.
 
 ## License
 
+[MIT](LICENSE) — see [LICENSE](LICENSE) for the full text.
+
 This project is provided as-is for educational purposes. Use at your own risk.
