@@ -88,16 +88,23 @@ class StatusViewModel(
 		}
 	}
 
-	/** Switches to another shipped OEM config. */
+	/**
+	 * Switches to another shipped OEM config. Selecting re-reads and re-parses
+	 * the asset, so it moves to IO; the dropdown is already closed by then.
+	 */
 	fun selectOem(id: String) {
-		val config = oemRepo.select(id)
-		appendLog(str(R.string.log_oem_selected, config.name))
+		viewModelScope.launch {
+			val config = withContext(Dispatchers.IO) { oemRepo.select(id) }
+			appendLog(str(R.string.log_oem_selected, config.name))
+		}
 	}
 
-	/** Forgets the saved pick and re-runs device detection. */
+	/** Forgets the saved pick and re-runs device detection, off the main thread. */
 	fun redetectOem() {
-		val config = oemRepo.redetect()
-		appendLog(str(R.string.log_oem_redetected, config.name))
+		viewModelScope.launch {
+			val config = withContext(Dispatchers.IO) { oemRepo.redetect() }
+			appendLog(str(R.string.log_oem_redetected, config.name))
+		}
 	}
 
 	/** Writes the export file on IO and logs; null means the share intent could not be built. */

@@ -142,7 +142,7 @@ object ShellRunner {
 			if (labelRes != null) {
 				log(app, R.string.log_progress, app.getString(labelRes))
 			}
-			block(OemRepository.getInstance(app).config.value)
+			block(OemRepository.getInstance(app).awaitLoaded())
 			true
 		} catch (e: CancellationException) {
 			throw e

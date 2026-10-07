@@ -137,7 +137,7 @@ object HideInteractor {
 		context: Context,
 		hide: Boolean
 	): Result {
-		val config = OemRepository.getInstance(context).config.value
+		val config = OemRepository.getInstance(context).awaitLoaded()
 		val commands = if (hide) config.hide else config.restore
 		if (commands.isEmpty()) {
 			val resId = if (hide) R.string.log_no_hide_commands else R.string.log_no_restore_commands

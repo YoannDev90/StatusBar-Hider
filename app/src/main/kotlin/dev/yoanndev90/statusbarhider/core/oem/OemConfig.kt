@@ -198,6 +198,20 @@ data class OemConfig(
 		}
 
 		/**
+		 * Config before detection has finished: no id, no name and no
+		 * commands, so a consumer that does not wait cannot run anything off
+		 * it by accident.
+		 */
+		fun placeholder(): OemConfig =
+			OemConfig(
+				id = "",
+				name = "",
+				hide = emptyList(),
+				restore = emptyList(),
+				status = emptyList()
+			)
+
+		/**
 		 * Empty-command config used when no file could be loaded. The failure
 		 * also reaches the app log: otherwise hide/restore would quietly run
 		 * zero commands with nothing to explain it in the Logs tab.
@@ -212,11 +226,11 @@ data class OemConfig(
 				"$TAG#load#$id",
 				context.getString(R.string.log_oem_load_failed, id, e.message ?: e.toString())
 			)
-			return fallbackConfig(context)
+			return fallback(context)
 		}
 
 		/** Config used when no file could be loaded (stock AOSP defaults). */
-		private fun fallbackConfig(context: Context): OemConfig =
+		fun fallback(context: Context): OemConfig =
 			OemConfig(
 				id = "unknown",
 				name = context.getString(R.string.oem_unknown),
