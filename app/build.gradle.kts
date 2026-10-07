@@ -2,6 +2,7 @@ import java.util.Properties
 
 plugins {
 	alias(libs.plugins.android.application)
+	alias(libs.plugins.detekt)
 	alias(libs.plugins.kotlin.compose)
 	alias(libs.plugins.kotlin.serialization)
 }
@@ -70,6 +71,14 @@ android {
 	buildFeatures {
 		compose = true
 	}
+}
+
+detekt {
+	// Default ruleset plus config/detekt/detekt.yml on top, so new rules
+	// upstream never silently appear as build failures.
+	buildUponDefaultConfig = true
+	config.setFrom(rootProject.files("config/detekt/detekt.yml"))
+	source.setFrom("src/main/kotlin", "src/test/kotlin")
 }
 
 dependencies {

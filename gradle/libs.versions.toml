@@ -4,6 +4,7 @@ activity = "1.13.0"
 androidxCore = "1.19.1"
 api = "13.1.5"
 composeBom = "2026.09.00"
+detekt = "1.23.8"
 junit = "4.13.2"
 kotlin = "2.4.20"
 kotlinxCoroutines = "1.11.0"
@@ -38,5 +39,6 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

@@ -1,9 +1,11 @@
 # Project tooling — `mise install` then `mise run build`.
 # Only git hooks and the formatter live here; the build itself needs a JDK 21
 # and an Android SDK (ANDROID_HOME), see README.md.
+# Versions are pinned, not "latest": everyone (and CI) must get the exact same
+# formatter output, otherwise ktlint disagreements turn into commit noise.
 [tools]
-pre-commit = "latest"
-ktlint = "latest"
+pre-commit = "4.6.2"
+ktlint = "1.5.0"
 
 [vars]
 APK = "app/build/outputs/apk/release/app-release.apk"
@@ -24,6 +26,15 @@ run = "./gradlew testDebugUnitTest"
 [tasks.lint]
 description = "Run Android lint"
 run = "./gradlew lintDebug"
+
+[tasks.ktlint]
+description = "Check Kotlin formatting (no rewrite)"
+run = "ktlint"
+
+[tasks.check]
+description = "Everything CI runs: format, static analysis, tests, lint"
+depends = ["ktlint"]
+run = "./gradlew detekt testDebugUnitTest lintDebug"
 
 [tasks.format]
 run = "ktlint --format"

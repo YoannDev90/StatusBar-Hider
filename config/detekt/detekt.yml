@@ -1,0 +1,55 @@
+# Project overrides on top of detekt's default config (buildUponDefaultConfig).
+# Only rules we deliberately relax live here; the rest stays at upstream
+# defaults so newly shipped rules keep showing up.
+#
+# Guideline: silence rules that only fight Kotlin/Compose convention, keep
+# every rule that reports a real defect, and fix what remains.
+
+build:
+  maxIssues: 0
+
+complexity:
+  # Detekt's default of 60 predates Compose; stateful composables and the
+  # OEM detection blocks run longer by nature.
+  LongMethod:
+    threshold: 100
+  # Compose screens pass state as parameters, which reads fine.
+  LongParameterList:
+    ignoreAnnotated: ['Composable']
+  # A private helper is already scoped to its file or class, so counting it
+  # says nothing about accidental API growth - only about how a unit is
+  # organised, which the rules above cover.
+  TooManyFunctions:
+    ignorePrivate: true
+    thresholdInClasses: 15
+    thresholdInObjects: 15
+    thresholdInFiles: 15
+
+style:
+  # Keep in sync with max_line_length in .editorconfig.
+  MaxLineLength:
+    maxLineLength: 150
+  # Early returns are how this codebase guards boundaries; two per function is
+  # the real smell, five is.
+  ReturnCount:
+    max: 4
+    excludeGuardClauses: true
+  # dp / sp / colour / duration literals live in the expressions themselves;
+  # naming them would only move the number one line away. It also cannot tell
+  # `SDK_INT >= 33` (a required API guard) from a real magic number, and that
+  # pattern appears on every platform-version branch in the app.
+  MagicNumber:
+    active: false
+
+naming:
+  # Composables are PascalCase by Kotlin/Compose convention — same carve-out
+  # .editorconfig already gives ktlint.
+  FunctionNaming:
+    ignoreAnnotated: ['Composable', 'Test', 'ParameterizedTest']
+
+exceptions:
+  # The app logs every failure through runSafely / LogStore, so a broad
+  # catch(Exception) at a system boundary is intentional here. SwallowedException
+  # stays on and is what actually reports a silent catch.
+  TooGenericExceptionCaught:
+    active: false
