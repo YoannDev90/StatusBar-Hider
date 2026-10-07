@@ -128,6 +128,21 @@
                 android:value="Custom status bar overlay replacing the hidden system bar" />
         </service>
 
+        <!-- Lock-screen window: TYPE_ACCESSIBILITY_OVERLAY, above the keyguard. -->
+        <service
+            android:name="dev.yoanndev90.statusbarhider.overlay.LockScreenOverlayService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="@string/a11y_lock_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/lock_overlay_accessibility_service" />
+        </service>
+
         <service
             android:name="dev.yoanndev90.statusbarhider.overlay.NotifListenerService"
             android:enabled="true"

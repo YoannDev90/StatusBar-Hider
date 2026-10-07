@@ -1,15 +1,18 @@
 package dev.yoanndev90.statusbarhider.features.shared
 
 import android.app.Application
+import android.content.ComponentName
 import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.overlay.LockScreenOverlayService
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -59,6 +62,34 @@ open class PrefsViewModel(
 	fun setOverlayEnabled(enabled: Boolean) {
 		OverlayController.setEnabled(getApplication(), enabled)
 		log(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden)
+	}
+
+	/**
+	 * Enables [LockScreenOverlayService] by merging its component into the
+	 * secure `enabled_accessibility_services` list (never overwriting what is
+	 * already there) and turning `accessibility_enabled` on.
+	 */
+	fun enableLockScreenOverlay() {
+		val app = getApplication<Application>()
+		val component = ComponentName(app, LockScreenOverlayService::class.java).flattenToString()
+		ShellRunner.run(app, R.string.log_enabling_lock_a11y) {
+			val (_, current) = ShellRunner.run(app, "settings get secure enabled_accessibility_services")
+			val existing = current.trim().let { if (it == "null" || it.isEmpty()) "" else it }
+			val merged =
+				if (existing.split(':').none { it == component }) {
+					if (existing.isEmpty()) component else "$existing:$component"
+				} else {
+					existing
+				}
+			val (exit, out) =
+				ShellRunner.run(app, "settings put secure enabled_accessibility_services '$merged'")
+			val (exit2, out2) = ShellRunner.run(app, "settings put secure accessibility_enabled 1")
+			if (exit == 0 && exit2 == 0) {
+				log(R.string.log_lock_a11y_ok)
+			} else {
+				log(R.string.log_lock_a11y_failed, (out + out2).trim().ifEmpty { "exit $exit/$exit2" })
+			}
+		}
 	}
 
 	/** Persists the date pattern and logs it so the user can confirm it took. */

@@ -6,6 +6,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.LockScreenMode
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingRadioRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
@@ -19,6 +20,11 @@ fun LockScreenSection(
 	SettingGroup(R.string.group_lock_screen) {
 		SettingSwitch(R.drawable.ic_lock, R.string.switch_show_on_lock_screen, prefs.showOnLockScreen) {
 			vm.updatePrefs { copy(showOnLockScreen = it) }
+		}
+		if (prefs.showOnLockScreen) {
+			SettingAction(R.drawable.ic_key, R.string.action_enable_lock_overlay) {
+				vm.enableLockScreenOverlay()
+			}
 		}
 		SettingRadioRow(
 			icon = R.drawable.ic_visibility,

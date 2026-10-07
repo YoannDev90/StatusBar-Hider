@@ -132,7 +132,7 @@ fun MainScreen() {
 								Modifier
 									.fillMaxSize()
 									.zIndex(if (selected) 1f else 0f)
-									.then(if (selected) Modifier else Modifier.hiddenLayer)
+									.then(if (selected) Modifier else Modifier.hiddenLayer())
 						) {
 							when (destination) {
 								AppDestination.STATUS ->
@@ -167,14 +167,13 @@ fun MainScreen() {
  * Keeps a tab composed and measured but out of the frame: its subtree is never
  * drawn, and taps meant for the selected tab cannot fall through to it.
  */
-private val Modifier.hiddenLayer: Modifier
-	get() =
-		this
-			.drawWithContent { }
-			.pointerInput(Unit) {
-				awaitPointerEventScope {
-					while (true) {
-						awaitPointerEvent().changes.forEach { it.consume() }
-					}
+private fun Modifier.hiddenLayer(): Modifier =
+	this
+		.drawWithContent { }
+		.pointerInput(Unit) {
+			awaitPointerEventScope {
+				while (true) {
+					awaitPointerEvent().changes.forEach { it.consume() }
 				}
 			}
+		}

@@ -24,6 +24,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.provider.AlarmClock
 import android.provider.Settings
 import android.util.Log
@@ -119,7 +120,7 @@ class StatusBarOverlayService : Service() {
 	private val mediaSessions = MediaSessions(this, serviceScope)
 
 	private var prefs by mutableStateOf(OverlayPrefs())
-	private var barState by mutableStateOf(OverlayBarState())
+	private var barState by SharedBar.barState
 
 	private val window =
 		OverlayWindow(
@@ -163,7 +164,7 @@ class StatusBarOverlayService : Service() {
 	)
 
 	/** True while the overlay window is detached because a blacklisted app is up front. */
-	private var suppressed = false
+	private var suppressed by SharedBar.suppressed
 
 	/** The missing-usage-access hint is logged once per service run, not per poll. */
 	private var usageHintLogged = false
@@ -204,13 +205,20 @@ class StatusBarOverlayService : Service() {
 
 	override fun onCreate() {
 		super.onCreate()
-		// window.attach() needs the stored prefs (lock screen / touchability flags);
-		// the flow below keeps them up to date afterwards.
+		// window.sync() needs the stored prefs (lock screen / touchability flags)
+		// and the initial lock state; the flow below keeps them up to date afterwards.
 		prefs = prefsRepo.state.value
-		// The lock state decides the layout from the very first frame.
-		barState = barState.copy(locked = indicators.isKeyguardUp())
+		// Seed both flags from the device: SCREEN_ON/OFF are not sticky, so a
+		// start while the screen is off (boot / restart) would otherwise claim
+		// a lit screen until the next broadcast.
+		barState =
+			barState.copy(
+				locked = indicators.isKeyguardUp(),
+				screenOn = getSystemService(PowerManager::class.java)?.isInteractive ?: true
+			)
 		startFg()
-		window.attach()
+		syncWindowAttachment()
+		if (!barState.screenOn) window.setRenderingActive(false)
 		observeSystem()
 		serviceScope.launch {
 			refreshAll()
@@ -261,7 +269,8 @@ class StatusBarOverlayService : Service() {
 
 	private fun onPrefsChanged(next: OverlayPrefs) {
 		prefs = next
-		window.ensureFlags()
+		// Re-evaluates flags *and* the lock-screen teardown below.
+		syncWindowAttachment()
 		if (next.showMedia) mediaSessions.ensure()
 		scheduleBandwidth()
 		scheduleBurnIn()
@@ -535,9 +544,15 @@ class StatusBarOverlayService : Service() {
 				// Including the debounced refresh: it would otherwise run six
 				// widget updates, IPC included, while the screen is off.
 				refreshJob?.cancel()
+				// No pixels to draw: pause the composition, and drop the window
+				// entirely when the bar must not show on the lock screen.
+				window.setRenderingActive(false)
+				syncWindowAttachment()
 			}
 			Intent.ACTION_SCREEN_ON -> {
 				barState = barState.copy(screenOn = true, locked = indicators.isKeyguardUp())
+				window.setRenderingActive(true)
+				syncWindowAttachment()
 				refreshAll()
 				schedulePoll()
 				scheduleBandwidth()
@@ -546,6 +561,7 @@ class StatusBarOverlayService : Service() {
 			}
 			Intent.ACTION_USER_PRESENT -> {
 				barState = barState.copy(locked = false)
+				syncWindowAttachment()
 				updateNotifs()
 				reapplyHideAfterUnlock()
 			}
@@ -606,13 +622,13 @@ class StatusBarOverlayService : Service() {
 				Log.w(TAG, "Usage access not granted - app blacklist inactive")
 				LogStore.append(this, getString(R.string.log_usage_access_missing))
 			}
-			if (suppressed) setSuppressed(false)
+			if (suppressed) setSuppressedState(false)
 			return
 		}
 		if (active) {
 			foregroundJob = serviceScope.launch { foregroundLoop() }
 		} else if (suppressed) {
-			setSuppressed(false)
+			setSuppressedState(false)
 		}
 	}
 
@@ -653,21 +669,27 @@ class StatusBarOverlayService : Service() {
 	private suspend fun updateSuppressed() {
 		// UsageStats queries are binder IPC: off the 2s poll's main thread.
 		val pkg = withContext(Dispatchers.IO) { indicators.foregroundPackage() } ?: return
-		setSuppressed(pkg in prefs.hiddenApps)
+		setSuppressedState(pkg in prefs.hiddenApps)
+	}
+
+	/**
+	 * Single source of truth for the window's existence. It goes away when a
+	 * blacklisted app is in front, or while the keyguard is up and the lock
+	 * screen toggle is off — the latter tears the surface down instead of
+	 * composing a bar the keyguard would cover anyway.
+	 */
+	private fun syncWindowAttachment() {
+		window.sync(!suppressed && !(barState.locked && !prefs.showOnLockScreen))
 	}
 
 	/**
 	 * Attaches / detaches the whole overlay window: a half-empty bar would
 	 * still take touch space and paint its background over the app.
 	 */
-	private fun setSuppressed(value: Boolean) {
+	private fun setSuppressedState(value: Boolean) {
 		if (suppressed == value) return
 		suppressed = value
-		if (value) {
-			window.detach()
-		} else {
-			window.attach()
-		}
+		syncWindowAttachment()
 	}
 
 	private fun updateBattery() {

@@ -41,6 +41,9 @@
     <string name="action_restore">Restore (undo)</string>
     <string name="action_set">Set</string>
     <string name="action_enable_notification_access">Enable notification access</string>
+    <string name="action_enable_lock_overlay">Enable lock-screen overlay (accessibility)</string>
+    <string name="a11y_lock_service_label">Lock-screen overlay for the custom status bar</string>
+    <string name="a11y_lock_service_desc">Hosts the custom status bar above the lock screen. It draws no content outside the keyguard and never reads your screen.</string>
     <string name="action_export_logs">Export logs</string>
     <string name="action_share_logs">Share logs as file</string>
     <string name="action_redetect_oem">Re-detect OEM</string>
@@ -236,6 +239,9 @@
     <string name="log_applying_hide">applying hide...</string>
     <string name="log_reading_state">reading state...</string>
     <string name="log_restoring">restoring...</string>
+    <string name="log_enabling_lock_a11y">enabling lock-screen accessibility service...</string>
+    <string name="log_lock_a11y_ok">Lock-screen overlay service enabled. Lock the screen to see it.</string>
+    <string name="log_lock_a11y_failed">Could not enable lock-screen overlay service: %1$s</string>
     <string name="log_done">Done. Swipe-down is preserved.</string>
     <string name="log_untested_config">Warning: \'%1$s\' config is untested here - adjust commands if nothing happens.</string>
     <string name="log_note">note: %1$s</string>

@@ -18,6 +18,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.random.Random
 
 /**
  * The overlay window itself: owns the [ComposeView], its [WindowManager]
@@ -33,10 +34,15 @@ import kotlinx.coroutines.flow.asStateFlow
 internal class OverlayWindow(
 	private val context: Context,
 	private val prefsFlow: StateFlow<OverlayPrefs>,
+	/** Window type: APPLICATION_OVERLAY, or ACCESSIBILITY_OVERLAY from the lock-screen service. */
+	private val windowType: Int = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
 	private val content: @Composable () -> Unit
 ) {
 	companion object {
 		private const val TAG = "CustomBar"
+
+		/** Largest random burn-in offset: keeps the bar fully on screen. */
+		private const val BURN_IN_MAX_DP = 8
 	}
 
 	var view: ComposeView? = null
@@ -52,8 +58,11 @@ internal class OverlayWindow(
 	private var lifecycleOwner: ServiceLifecycleOwner? = null
 	private var viewModelStore: ViewModelStore? = null
 
-	/** Alternates the 1px burn-in nudge. */
-	private var burnInStep = false
+	/** Last burn-in offset applied to [WindowManager.LayoutParams.y] (px). */
+	private var burnInOffsetPx = 0
+
+	/** True while the Compose owners are paused because the screen is off. */
+	private var renderingPaused = false
 
 	/**
 	 * Window flags the overlay currently needs. [WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED]
@@ -91,7 +100,7 @@ internal class OverlayWindow(
 			WindowManager.LayoutParams(
 				WindowManager.LayoutParams.MATCH_PARENT,
 				WindowManager.LayoutParams.WRAP_CONTENT,
-				WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+				windowType,
 				desiredFlags(),
 				PixelFormat.TRANSLUCENT
 			)
@@ -105,6 +114,9 @@ internal class OverlayWindow(
 				setContent(content)
 			}
 		attachComposeOwners(view)
+		// An attach can happen while the screen is off (boot / restart):
+		// don't leave the fresh owners resumed in that case.
+		if (renderingPaused) lifecycleOwner?.pause()
 		try {
 			wm.addView(view, params)
 			this.view = view
@@ -121,12 +133,41 @@ internal class OverlayWindow(
 		view.post { updateCamera() }
 	}
 
-	/** Re-attaches when a toggle changed the window flags (touchability, lock screen). */
-	fun ensureFlags() {
-		val p = params ?: return
-		if (desiredFlags() != p.flags) {
+	/**
+	 * Single attachment point, driven by the service: attaches (or re-applies
+	 * the window flags when a toggle changed them) when [shouldAttach] is true,
+	 * removes the whole window otherwise. Tearing the surface down — instead of
+	 * leaving it behind the keyguard — means nothing is composed or painted
+	 * while the bar has no reason to exist (app blacklist, keyguard up with
+	 * the lock-screen toggle off).
+	 */
+	fun sync(shouldAttach: Boolean) {
+		if (!shouldAttach) {
+			detach()
+			return
+		}
+		val p = params
+		if (p == null) {
+			attach()
+		} else if (desiredFlags() != p.flags) {
 			detach()
 			attach()
+		}
+	}
+
+	/**
+	 * Pauses / resumes the synthetic lifecycle the ComposeView runs on: with
+	 * the screen off the composition would otherwise keep living (and could
+	 * still invalidate) for no visual result.
+	 */
+	fun setRenderingActive(active: Boolean) {
+		if (renderingPaused == !active) return
+		renderingPaused = !active
+		val owner = lifecycleOwner ?: return
+		if (active) {
+			owner.resume()
+		} else {
+			owner.pause()
 		}
 	}
 
@@ -151,14 +192,19 @@ internal class OverlayWindow(
 		_cameraGeometry.value = InsetsUtils.resolveCamera(v, width, height, prefsFlow.value)
 	}
 
-	/** OLED burn-in protection: nudges the whole bar by 1px. */
+	/** OLED burn-in protection: moves the whole bar to a fresh random offset (0..8dp). */
 	fun shiftForBurnIn() {
 		val wm = context.getSystemService(WindowManager::class.java) ?: return
 		val v = view ?: return
 		val p = params ?: return
 		runSafely(context) {
-			burnInStep = !burnInStep
-			p.y = if (burnInStep) 1 else 0
+			val maxPx = (BURN_IN_MAX_DP * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
+			var next: Int
+			do {
+				next = Random.nextInt(maxPx + 1)
+			} while (next == burnInOffsetPx)
+			burnInOffsetPx = next
+			p.y = next
 			wm.updateViewLayout(v, p)
 		}
 	}
