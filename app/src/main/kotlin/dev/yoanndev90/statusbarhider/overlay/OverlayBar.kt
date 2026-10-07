@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
@@ -105,20 +107,7 @@ fun OverlayBar(
 		}
 
 	val cell: @Composable RowScope.(String) -> Unit = { id ->
-		key(id) {
-			when (id) {
-				WidgetId.CLOCK -> ClockWidget(prefs, state.screenOn, fg, onClockClick)
-				WidgetId.DATE -> DateWidget(prefs, state.screenOn, fg, onDateClick)
-				WidgetId.CALENDAR -> state.calendarText?.let { CalendarWidget(prefs, it, fg) }
-				WidgetId.NOTIFS -> NotifWidget(prefs, state, fg)
-				WidgetId.MEDIA -> state.mediaText?.let { MediaWidget(prefs, it, fg) }
-				WidgetId.SPACER -> Spacer(Modifier.weight(1f))
-				WidgetId.CONNECTIVITY -> ConnectivityWidget(prefs, state, fg)
-				WidgetId.BATTERY -> BatteryWidget(prefs, state, fg)
-				WidgetId.ALARM -> state.alarmText?.let { AlarmWidget(prefs, it, fg) }
-				WidgetId.BANDWIDTH -> BandwidthWidget(prefs, state, fg)
-			}
-		}
+		key(id) { WidgetSlot(id, prefs, state, fg, onClockClick, onDateClick) }
 	}
 
 	Box(
@@ -129,116 +118,203 @@ fun OverlayBar(
 				.background(Color(prefs.backgroundColor()))
 	) {
 		val clockOnly = state.locked && prefs.lockScreenMode == LockScreenMode.CLOCK_ONLY
-		val split = camera != null && camera.anchor == CameraAnchor.Center && WidgetId.SPACER in prefs.widgetOrder
-		if (clockOnly) {
-			// Lock screen, minimal layout: the clock alone, clear of the cutout slot.
-			Row(
-				modifier =
-					Modifier
-						.align(Alignment.Center)
-						.fillMaxWidth()
-						.padding(start = padStart, top = padTop, end = padEnd, bottom = padBottom),
-				verticalAlignment = Alignment.CenterVertically,
-				horizontalArrangement = Arrangement.spacedBy(spacing)
-			) {
-				cell(WidgetId.CLOCK)
-			}
-		} else if (camera != null && split) {
-			// Two clusters: content on each side of the camera, bounded by its slot.
-			val leftIds = prefs.widgetOrder.takeWhile { it != WidgetId.SPACER }
-			val rightIds = prefs.widgetOrder.dropWhile { it != WidgetId.SPACER }.drop(1)
-			val leftMax =
-				with(density) { (camera.slotLeft - ringClearancePx).toDp() }.coerceAtLeast(0.dp)
-			val rightMax =
-				with(density) { (camera.screenWidth - camera.slotRight - ringClearancePx).toDp() }.coerceAtLeast(0.dp)
-			Row(
-				modifier =
-					Modifier
-						.align(Alignment.CenterStart)
-						.widthIn(max = leftMax)
-						// Children that still overflow must not bleed over the camera.
-						.clipToBounds()
-						.padding(start = padStart, top = padTop, bottom = padBottom),
-				verticalAlignment = Alignment.CenterVertically,
-				horizontalArrangement = Arrangement.spacedBy(spacing)
-			) {
-				leftIds.forEach { cell(it) }
-			}
-			Row(
-				modifier =
-					Modifier
-						.align(Alignment.CenterEnd)
-						.widthIn(max = rightMax)
-						.clipToBounds()
-						.padding(end = padEnd, top = padTop, bottom = padBottom),
-				verticalAlignment = Alignment.CenterVertically,
-				horizontalArrangement = Arrangement.spacedBy(spacing)
-			) {
-				rightIds.forEach { cell(it) }
-			}
-		} else {
-			// No cutout, side-hugging notch (edge anchor) or no split marker:
-			// a single row; edge anchors push the content clear of the slot.
-			val clearStart =
-				if (camera != null && camera.anchor == CameraAnchor.Start) {
-					with(density) { (camera.slotRight + ringClearancePx).toDp() }
-				} else {
-					0.dp
-				}
-			val clearEnd =
-				if (camera != null && camera.anchor == CameraAnchor.End) {
-					with(density) { (camera.screenWidth - camera.slotLeft + ringClearancePx).toDp() }
-				} else {
-					0.dp
-				}
-			Row(
-				modifier =
-					Modifier
-						.align(Alignment.Center)
-						.fillMaxWidth()
-						.padding(
-							start = maxOf(padStart, clearStart),
-							top = padTop,
-							end = maxOf(padEnd, clearEnd),
-							bottom = padBottom
-						),
-				verticalAlignment = Alignment.CenterVertically,
-				horizontalArrangement = Arrangement.spacedBy(spacing)
-			) {
-				prefs.widgetOrder.forEach { cell(it) }
-			}
+		BarLayout(
+			prefs = prefs,
+			clockOnly = clockOnly,
+			camera = camera,
+			cell = cell,
+			spacing = spacing,
+			padStart = padStart,
+			padTop = padTop,
+			padEnd = padEnd,
+			padBottom = padBottom,
+			ringClearancePx = ringClearancePx
+		)
+		if (showRing && !clockOnly) {
+			CameraRing(camera, ringProgress, prefs, fg)
 		}
+	}
+}
 
-		if (showRing && !clockOnly && camera != null && ringProgress != null) {
-			val ringColor =
-				remember(prefs.cameraRingColor, fg) {
-					if (prefs.cameraRingColor.isEmpty()) {
-						fg
-					} else {
-						runCatching { Color(android.graphics.Color.parseColor(prefs.cameraRingColor)) }.getOrElse { fg }
-					}
-				}
-			val stroke = prefs.cameraRingStrokeDp.dp
-			if (ringProgress.indeterminate) {
-				val infinite = rememberInfiniteTransition(label = "ringSpin")
-				val spin by
-					infinite.animateFloat(
-						initialValue = 0f,
-						targetValue = 360f,
-						animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
-						label = "ringSpin"
-					)
-				RingCanvas(camera, stroke, ringColor, spin - 90f, 90f, Modifier.align(Alignment.TopStart))
+/** Dispatches one widget id to the widget that draws it. */
+@Composable
+private fun RowScope.WidgetSlot(
+	id: String,
+	prefs: OverlayPrefs,
+	state: OverlayBarState,
+	fg: Color,
+	onClockClick: () -> Unit,
+	onDateClick: () -> Unit
+) {
+	when (id) {
+		WidgetId.CLOCK -> ClockWidget(prefs, state.screenOn, fg, onClockClick)
+		WidgetId.DATE -> DateWidget(prefs, state.screenOn, fg, onDateClick)
+		WidgetId.CALENDAR -> state.calendarText?.let { CalendarWidget(prefs, it, fg) }
+		WidgetId.NOTIFS -> NotifWidget(prefs, state, fg)
+		WidgetId.MEDIA -> state.mediaText?.let { MediaWidget(prefs, it, fg) }
+		WidgetId.SPACER -> Spacer(Modifier.weight(1f))
+		WidgetId.CONNECTIVITY -> ConnectivityWidget(prefs, state, fg)
+		WidgetId.BATTERY -> BatteryWidget(prefs, state, fg)
+		WidgetId.ALARM -> state.alarmText?.let { AlarmWidget(prefs, it, fg) }
+		WidgetId.BANDWIDTH -> BandwidthWidget(prefs, state, fg)
+	}
+}
+
+/**
+ * Places the widget row: alone under the lock screen's clock-only mode, split
+ * around a centred cutout, or as one row that edge-anchored notches get pushed
+ * clear of.
+ */
+@Composable
+private fun BoxScope.BarLayout(
+	prefs: OverlayPrefs,
+	clockOnly: Boolean,
+	camera: CameraGeometry?,
+	cell: @Composable RowScope.(String) -> Unit,
+	spacing: Dp,
+	padStart: Dp,
+	padTop: Dp,
+	padEnd: Dp,
+	padBottom: Dp,
+	ringClearancePx: Float
+) {
+	val density = LocalDensity.current
+	val split = camera != null && camera.anchor == CameraAnchor.Center && WidgetId.SPACER in prefs.widgetOrder
+	if (clockOnly) {
+		// Lock screen, minimal layout: the clock alone, clear of the cutout slot.
+		Row(
+			modifier =
+				Modifier
+					.align(Alignment.Center)
+					.fillMaxWidth()
+					.padding(start = padStart, top = padTop, end = padEnd, bottom = padBottom),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(spacing)
+		) {
+			cell(WidgetId.CLOCK)
+		}
+	} else if (split) {
+		// Two clusters: content on each side of the camera, bounded by its slot.
+		val leftIds = prefs.widgetOrder.takeWhile { it != WidgetId.SPACER }
+		val rightIds = prefs.widgetOrder.dropWhile { it != WidgetId.SPACER }.drop(1)
+		val leftMax =
+			with(density) { (camera.slotLeft - ringClearancePx).toDp() }.coerceAtLeast(0.dp)
+		val rightMax =
+			with(density) { (camera.screenWidth - camera.slotRight - ringClearancePx).toDp() }.coerceAtLeast(0.dp)
+		Row(
+			modifier =
+				Modifier
+					.align(Alignment.CenterStart)
+					.widthIn(max = leftMax)
+					// Children that still overflow must not bleed over the camera.
+					.clipToBounds()
+					.padding(start = padStart, top = padTop, bottom = padBottom),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(spacing)
+		) {
+			leftIds.forEach { cell(it) }
+		}
+		Row(
+			modifier =
+				Modifier
+					.align(Alignment.CenterEnd)
+					.widthIn(max = rightMax)
+					.clipToBounds()
+					.padding(end = padEnd, top = padTop, bottom = padBottom),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(spacing)
+		) {
+			rightIds.forEach { cell(it) }
+		}
+	} else {
+		// No cutout, side-hugging notch (edge anchor) or no split marker:
+		// a single row; edge anchors push the content clear of the slot.
+		val clearance = edgeClearance(camera, density, ringClearancePx)
+		Row(
+			modifier =
+				Modifier
+					.align(Alignment.Center)
+					.fillMaxWidth()
+					.padding(
+						start = maxOf(padStart, clearance.start),
+						top = padTop,
+						end = maxOf(padEnd, clearance.end),
+						bottom = padBottom
+					),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(spacing)
+		) {
+			prefs.widgetOrder.forEach { cell(it) }
+		}
+	}
+}
+
+/** How far the single row must stay clear of a side-hugging notch; zero elsewhere. */
+private data class EdgeClearance(
+	val start: Dp,
+	val end: Dp
+)
+
+private fun edgeClearance(
+	camera: CameraGeometry?,
+	density: Density,
+	ringClearancePx: Float
+): EdgeClearance =
+	EdgeClearance(
+		start =
+			if (camera != null && camera.anchor == CameraAnchor.Start) {
+				with(density) { (camera.slotRight + ringClearancePx).toDp() }
 			} else {
-				val fraction by
-					animateFloatAsState(
-						targetValue = ringProgress.fraction,
-						animationSpec = tween(400),
-						label = "ringFraction"
-					)
-				RingCanvas(camera, stroke, ringColor, -90f, 360f * fraction, Modifier.align(Alignment.TopStart))
+				0.dp
+			},
+		end =
+			if (camera != null && camera.anchor == CameraAnchor.End) {
+				with(density) { (camera.screenWidth - camera.slotLeft + ringClearancePx).toDp() }
+			} else {
+				0.dp
+			}
+	)
+
+/**
+ * Camera-clearance track plus the notification progress arc, aligned on the
+ * cutout. A preview run spins a full circle so the ring can be positioned
+ * without a real progress bar.
+ */
+@Composable
+private fun BoxScope.CameraRing(
+	camera: CameraGeometry?,
+	ringProgress: OverlayProgress?,
+	prefs: OverlayPrefs,
+	fg: Color
+) {
+	if (camera == null || ringProgress == null) return
+	val ringColor =
+		remember(prefs.cameraRingColor, fg) {
+			if (prefs.cameraRingColor.isEmpty()) {
+				fg
+			} else {
+				runCatching { Color(android.graphics.Color.parseColor(prefs.cameraRingColor)) }.getOrElse { fg }
 			}
 		}
+	val stroke = prefs.cameraRingStrokeDp.dp
+	if (ringProgress.indeterminate) {
+		val infinite = rememberInfiniteTransition(label = "ringSpin")
+		val spin by
+			infinite.animateFloat(
+				initialValue = 0f,
+				targetValue = 360f,
+				animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
+				label = "ringSpin"
+			)
+		RingCanvas(camera, stroke, ringColor, spin - 90f, 90f, Modifier.align(Alignment.TopStart))
+	} else {
+		val fraction by
+			animateFloatAsState(
+				targetValue = ringProgress.fraction,
+				animationSpec = tween(400),
+				label = "ringFraction"
+			)
+		RingCanvas(camera, stroke, ringColor, -90f, 360f * fraction, Modifier.align(Alignment.TopStart))
 	}
 }
 
@@ -535,69 +611,64 @@ private fun AlarmWidget(
 	)
 }
 
+/**
+ * One connectivity icon: visible while its toggle is on, the underlying state
+ * applies, and airplane mode has not silenced its radio.
+ */
+private data class Indicator(
+	val icon: Int,
+	val label: Int,
+	val shown: Boolean,
+	val active: Boolean,
+	val radio: Boolean = false,
+	val typeLabel: Boolean = false
+) {
+	fun isVisible(airplaneOff: Boolean): Boolean = shown && active && (!radio || airplaneOff)
+}
+
+/** Every icon the connectivity widget can draw, in bar order. */
+private fun connectivityIndicators(prefs: OverlayPrefs, state: OverlayBarState): List<Indicator> =
+	listOf(
+		Indicator(R.drawable.ic_plane, R.string.cd_airplane_mode, prefs.showAirplane, state.airplane),
+		Indicator(R.drawable.ic_wifi, R.string.cd_wifi, prefs.showWifi, state.wifi, radio = true),
+		Indicator(R.drawable.ic_signal, R.string.cd_mobile_data, prefs.showMobileData, state.mobile, radio = true, typeLabel = true),
+		Indicator(R.drawable.ic_bt, R.string.cd_bluetooth, prefs.showBluetooth, state.bluetooth, radio = true),
+		Indicator(R.drawable.ic_vpn, R.string.cd_vpn, prefs.showVpn, state.vpn, radio = true),
+		Indicator(R.drawable.ic_hotspot, R.string.cd_hotspot, prefs.showHotspot, state.hotspot, radio = true),
+		Indicator(R.drawable.ic_usb, R.string.cd_usb, prefs.showUsb, state.usbConnected),
+		Indicator(R.drawable.ic_nfc, R.string.cd_nfc, prefs.showNfc, state.nfc, radio = true),
+		Indicator(R.drawable.ic_gps, R.string.cd_gps, prefs.showGps, state.gps),
+		// Unaffected by airplane mode: DND, data saver, auto-rotate, torch and USB are
+		// device-wide states that stay meaningful while offline.
+		Indicator(R.drawable.ic_dnd, R.string.cd_do_not_disturb, prefs.showDnd, state.dnd),
+		Indicator(R.drawable.ic_data_saver, R.string.cd_data_saver, prefs.showDataSaver, state.dataSaver),
+		Indicator(R.drawable.ic_rotation, R.string.cd_auto_rotate, prefs.showRotate, state.autoRotate),
+		Indicator(R.drawable.ic_torch, R.string.cd_flashlight, prefs.showTorch, state.torch)
+	)
+
 @Composable
 private fun ConnectivityWidget(
 	prefs: OverlayPrefs,
 	state: OverlayBarState,
 	fg: Color
 ) {
-	val showRest = !state.airplane
-	val items = mutableListOf<@Composable () -> Unit>()
-	if (state.airplane && prefs.showAirplane) {
-		items += { IconImage(R.drawable.ic_plane, stringResource(R.string.cd_airplane_mode), fg) }
-	}
-	if (showRest && prefs.showWifi && state.wifi) {
-		items += { IconImage(R.drawable.ic_wifi, stringResource(R.string.cd_wifi), fg) }
-	}
-	if (showRest && prefs.showMobileData && state.mobile) {
-		items += { IconImage(R.drawable.ic_signal, stringResource(R.string.cd_mobile_data), fg) }
-		items += {
-			Text(
-				text = state.mobileType.ifEmpty { "4G" },
-				fontSize = prefs.textSp(-3),
-				color = fg,
-				modifier = Modifier.padding(start = 1.dp, end = 2.dp)
-			)
-		}
-	}
-	if (showRest && prefs.showBluetooth && state.bluetooth) {
-		items += { IconImage(R.drawable.ic_bt, stringResource(R.string.cd_bluetooth), fg) }
-	}
-	if (showRest && prefs.showVpn && state.vpn) {
-		items += { IconImage(R.drawable.ic_vpn, stringResource(R.string.cd_vpn), fg) }
-	}
-	if (showRest && prefs.showHotspot && state.hotspot) {
-		items += { IconImage(R.drawable.ic_hotspot, stringResource(R.string.cd_hotspot), fg) }
-	}
-	if (prefs.showUsb && state.usbConnected) {
-		items += { IconImage(R.drawable.ic_usb, stringResource(R.string.cd_usb), fg) }
-	}
-	if (showRest && prefs.showNfc && state.nfc) {
-		items += { IconImage(R.drawable.ic_nfc, stringResource(R.string.cd_nfc), fg) }
-	}
-	if (prefs.showGps && state.gps) {
-		items += { IconImage(R.drawable.ic_gps, stringResource(R.string.cd_gps), fg) }
-	}
-	// Unaffected by airplane mode: DND, data saver, auto-rotate and torch are
-	// device-wide states that stay meaningful while offline.
-	if (prefs.showDnd && state.dnd) {
-		items += { IconImage(R.drawable.ic_dnd, stringResource(R.string.cd_do_not_disturb), fg) }
-	}
-	if (prefs.showDataSaver && state.dataSaver) {
-		items += { IconImage(R.drawable.ic_data_saver, stringResource(R.string.cd_data_saver), fg) }
-	}
-	if (prefs.showRotate && state.autoRotate) {
-		items += { IconImage(R.drawable.ic_rotation, stringResource(R.string.cd_auto_rotate), fg) }
-	}
-	if (prefs.showTorch && state.torch) {
-		items += { IconImage(R.drawable.ic_torch, stringResource(R.string.cd_flashlight), fg) }
-	}
-	if (items.isEmpty()) return
+	val visible = connectivityIndicators(prefs, state).filter { it.isVisible(airplaneOff = !state.airplane) }
+	if (visible.isEmpty()) return
 	Row(
 		verticalAlignment = Alignment.CenterVertically,
 		horizontalArrangement = Arrangement.spacedBy(2.dp)
 	) {
-		items.forEach { it() }
+		visible.forEach { indicator ->
+			IconImage(indicator.icon, stringResource(indicator.label), fg)
+			if (indicator.typeLabel) {
+				Text(
+					text = state.mobileType.ifEmpty { "4G" },
+					fontSize = prefs.textSp(-3),
+					color = fg,
+					modifier = Modifier.padding(start = 1.dp, end = 2.dp)
+				)
+			}
+		}
 	}
 }
 
