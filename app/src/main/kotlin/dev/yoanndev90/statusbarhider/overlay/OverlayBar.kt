@@ -671,14 +671,24 @@ private fun ConnectivityWidget(
 		horizontalArrangement = Arrangement.spacedBy(2.dp)
 	) {
 		visible.forEach { indicator ->
-			IconImage(indicator.icon, stringResource(indicator.label), fg)
 			if (indicator.typeLabel) {
+				// Cellular: the bars track the signal level, the label the real
+				// network type; a level the platform never reported (-1) keeps
+				// the static drawable so the icon never turns into a blank.
+				val level = state.signalLevel
+				if (level >= 0) {
+					SignalIcon(level, fg, stringResource(R.string.cd_signal_level, level))
+				} else {
+					IconImage(indicator.icon, stringResource(indicator.label), fg)
+				}
 				Text(
 					text = state.mobileType.ifEmpty { "4G" },
 					fontSize = prefs.textSp(-3),
 					color = fg,
 					modifier = Modifier.padding(start = 1.dp, end = 2.dp)
 				)
+			} else {
+				IconImage(indicator.icon, stringResource(indicator.label), fg)
 			}
 		}
 	}

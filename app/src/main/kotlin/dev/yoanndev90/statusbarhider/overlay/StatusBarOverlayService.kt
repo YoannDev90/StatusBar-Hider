@@ -56,6 +56,12 @@ class StatusBarOverlayService : Service() {
 		private const val FOREGROUND_POLL_MS = 2_000L
 
 		/**
+		 * The label and the signal bars are what the eye tracks; the general
+		 * poll (5..60 s) is far too slow for a level that moves on its own.
+		 */
+		private const val MOBILE_POLL_MS = 2_000L
+
+		/**
 		 * Largest gap still taken as "the previous sample": the sampler stops
 		 * with the screen, so a restart after a long sleep must re-baseline
 		 * instead of reporting the whole gap as traffic.
@@ -168,6 +174,7 @@ class StatusBarOverlayService : Service() {
 	private var burnInJob: Job? = null
 	private var bandwidthJob: Job? = null
 	private var foregroundJob: Job? = null
+	private var mobileJob: Job? = null
 	private var refreshJob: Job? = null
 
 	override fun onBind(intent: Intent?): IBinder? = null
@@ -213,6 +220,7 @@ class StatusBarOverlayService : Service() {
 		schedulePoll()
 		scheduleBandwidth()
 		scheduleForegroundPoll()
+		scheduleMobile()
 		// The overlay is up for hours: it is the natural owner of the SystemUI watcher.
 		SystemUiWatcher.start(this, this)
 	}
@@ -244,6 +252,7 @@ class StatusBarOverlayService : Service() {
 		scheduleBandwidth()
 		scheduleBurnIn()
 		scheduleForegroundPoll()
+		scheduleMobile()
 		// Trailing-edge debounce: a slider drag calls this per frame, and
 		// refreshAll() itself runs six widget updates.
 		refreshJob?.cancel()
@@ -390,6 +399,7 @@ class StatusBarOverlayService : Service() {
 				burnInJob?.cancel()
 				bandwidthJob?.cancel()
 				foregroundJob?.cancel()
+				mobileJob?.cancel()
 				// Including the debounced refresh: it would otherwise run six
 				// widget updates, IPC included, while the screen is off.
 				refreshJob?.cancel()
@@ -407,6 +417,7 @@ class StatusBarOverlayService : Service() {
 				scheduleBandwidth()
 				scheduleBurnIn()
 				scheduleForegroundPoll()
+				scheduleMobile()
 			}
 			Intent.ACTION_USER_PRESENT -> {
 				barState = barState.copy(locked = false)
@@ -495,6 +506,33 @@ class StatusBarOverlayService : Service() {
 			updateBandwidth()
 			delay(1000L)
 		}
+	}
+
+	/**
+	 * (Re)arms the 2 s cellular refresh. The loop dies with the screen or the
+	 * "Mobile data" toggle; turning the toggle off must go through here so the
+	 * bar does not keep polling a radio it no longer draws.
+	 */
+	private fun scheduleMobile() {
+		mobileJob?.cancel()
+		mobileJob = null
+		if (prefs.showMobileData && barState.screenOn) {
+			mobileJob = serviceScope.launch { mobileLoop() }
+		}
+	}
+
+	/** 2 s cellular label / signal-level refresh; see [scheduleMobile]. */
+	private suspend fun CoroutineScope.mobileLoop() {
+		while (isActive && barState.screenOn && prefs.showMobileData) {
+			updateMobile()
+			delay(MOBILE_POLL_MS)
+		}
+	}
+
+	/** Refreshes only the cellular indicator, on the faster loop's own cadence. */
+	private suspend fun updateMobile() {
+		val m = indicators.readMobile(prefs)
+		barState = barState.copy(mobile = m.active, mobileType = m.type, signalLevel = m.level)
 	}
 
 	/** The2s poll only earns its keep while something could actually hide. */
@@ -620,6 +658,7 @@ class StatusBarOverlayService : Service() {
 				wifi = c.wifi,
 				mobile = c.mobile,
 				mobileType = c.mobileType,
+				signalLevel = c.signalLevel,
 				bluetooth = c.bluetooth,
 				vpn = c.vpn,
 				hotspot = c.hotspot,

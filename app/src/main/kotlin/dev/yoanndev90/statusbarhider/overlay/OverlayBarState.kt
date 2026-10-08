@@ -41,6 +41,8 @@ data class OverlayBarState(
 	val wifi: Boolean = false,
 	val mobile: Boolean = false,
 	val mobileType: String = "",
+	/** Cellular signal level 0..4 (-1 = unknown, drawn with the static icon). */
+	val signalLevel: Int = -1,
 	val bluetooth: Boolean = false,
 	val vpn: Boolean = false,
 	val hotspot: Boolean = false,

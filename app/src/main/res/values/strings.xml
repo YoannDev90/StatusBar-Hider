@@ -221,6 +221,7 @@
     <string name="cd_airplane_mode">Airplane mode</string>
     <string name="cd_wifi">WiFi</string>
     <string name="cd_mobile_data">Mobile data</string>
+    <string name="cd_signal_level">Mobile data signal, %1$d of 4 bars</string>
     <string name="cd_bluetooth">Bluetooth</string>
     <string name="cd_vpn">VPN</string>
     <string name="cd_hotspot">Hotspot</string>

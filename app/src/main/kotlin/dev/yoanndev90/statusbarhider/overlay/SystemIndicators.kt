@@ -13,6 +13,7 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import android.net.wifi.WifiManager
 import android.nfc.NfcAdapter
+import android.os.Build
 import android.provider.CalendarContract
 import android.provider.Settings
 import android.telephony.TelephonyManager
@@ -148,8 +149,21 @@ internal class SystemIndicators(
 			activeCaps()?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
 		}
 
+	/**
+	 * Label plus signal level for the cellular indicator, both neutral while it
+	 * is not the transport in use. One entry point for the full connectivity
+	 * read and for the service's faster mobile loop, so the two can never show
+	 * different values.
+	 */
+	fun mobileStatus(active: Boolean): MobileStatus =
+		if (active) {
+			MobileStatus(active = true, type = mobileTypeLabel().ifEmpty { "4G" }, level = signalLevel())
+		} else {
+			MobileStatus(active = false, type = "", level = -1)
+		}
+
 	/** Network generation label like Dragon's getMobileDataStatus (LTE/5G/3G/2G). */
-	fun mobileTypeLabel(): String {
+	private fun mobileTypeLabel(): String {
 		// READ_BASIC_PHONE_STATE is install-time (API 29+); older devices keep
 		// the dangerous READ_PHONE_STATE unrequested and fall back to "4G".
 		val allowed =
@@ -158,19 +172,31 @@ internal class SystemIndicators(
 		if (!allowed) return "4G"
 		return try {
 			val tm = context.getSystemService(TelephonyManager::class.java) ?: return "4G"
-			when (tm.dataNetworkType) {
-				TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
-				TelephonyManager.NETWORK_TYPE_NR -> "5G"
-				TelephonyManager.NETWORK_TYPE_HSPAP,
-				TelephonyManager.NETWORK_TYPE_HSDPA,
-				TelephonyManager.NETWORK_TYPE_HSUPA,
-				TelephonyManager.NETWORK_TYPE_UMTS -> "3G"
-				TelephonyManager.NETWORK_TYPE_UNKNOWN -> "4G"
-				else -> "4G"
-			}
+			// The data radio is the one the label is about; the voice radio only
+			// fills in when the modem reports no usable data type (IWLAN, lag).
+			networkTypeLabel(tm.dataNetworkType)
+				.ifEmpty { networkTypeLabel(tm.voiceNetworkType) }
+				.ifEmpty { "4G" }
 		} catch (e: Exception) {
 			warn("mobileTypeLabel", e)
 			"4G"
+		}
+	}
+
+	/**
+	 * Signal level 0..4 on the same 5-step scale the system bars use, or -1 when
+	 * it cannot be read (no telephony radio, API < 28, modem not reporting).
+	 */
+	private fun signalLevel(): Int {
+		// getSignalStrength() arrived in API 28: below that the call is a
+		// NoSuchMethodError, which catch(Exception) below would never see.
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return -1
+		return try {
+			val tm = context.getSystemService(TelephonyManager::class.java) ?: return -1
+			tm.signalStrength?.level?.coerceIn(0, 4) ?: -1
+		} catch (e: Exception) {
+			warn("signalLevel", e)
+			-1
 		}
 	}
 
@@ -270,12 +296,65 @@ internal class SystemIndicators(
 	}
 }
 
+/**
+ * Generation label for one [TelephonyManager] NETWORK_TYPE_* value, or "" when
+ * the platform reports no usable type so the caller can fall back (voice radio
+ * first, "4G" last).
+ *
+ * The CDMA / iDEN constants are deprecated as the networks retire, but a modem
+ * still reports them and the bar must not mislabel a 2G cell as "4G".
+ */
+@Suppress("DEPRECATION")
+internal fun networkTypeLabel(type: Int): String =
+	when (type) {
+		TelephonyManager.NETWORK_TYPE_NR -> "5G"
+		TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
+		TelephonyManager.NETWORK_TYPE_HSPAP,
+		TelephonyManager.NETWORK_TYPE_HSDPA,
+		TelephonyManager.NETWORK_TYPE_HSUPA,
+		TelephonyManager.NETWORK_TYPE_HSPA,
+		TelephonyManager.NETWORK_TYPE_UMTS,
+		TelephonyManager.NETWORK_TYPE_TD_SCDMA,
+		TelephonyManager.NETWORK_TYPE_EHRPD,
+		TelephonyManager.NETWORK_TYPE_EVDO_0,
+		TelephonyManager.NETWORK_TYPE_EVDO_A,
+		TelephonyManager.NETWORK_TYPE_EVDO_B -> "3G"
+		TelephonyManager.NETWORK_TYPE_GSM,
+		TelephonyManager.NETWORK_TYPE_GPRS,
+		TelephonyManager.NETWORK_TYPE_EDGE,
+		TelephonyManager.NETWORK_TYPE_CDMA,
+		TelephonyManager.NETWORK_TYPE_1xRTT,
+		TelephonyManager.NETWORK_TYPE_IDEN -> "2G"
+		else -> ""
+	}
+
+/** Cellular indicator snapshot: transport in use, generation label, signal level. */
+internal data class MobileStatus(
+	val active: Boolean,
+	val type: String,
+	/** Signal level 0..4, or -1 when it could not be read. */
+	val level: Int
+)
+
+/**
+ * Cellular indicator alone, without the rest of the connectivity block: the
+ * overlay service refreshes the label and the bars on their own faster loop,
+ * through the same [SystemIndicators.mobileStatus] [readConnectivity] uses so
+ * both paths always agree on what the bar shows.
+ */
+internal suspend fun SystemIndicators.readMobile(p: OverlayPrefs): MobileStatus =
+	withContext(Dispatchers.IO) {
+		val active = !isAirplaneOn() && p.showMobileData && hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+		mobileStatus(active)
+	}
+
 /** One shot of every connectivity indicator, already filtered by the prefs. */
 internal data class Connectivity(
 	val airplane: Boolean,
 	val wifi: Boolean,
 	val mobile: Boolean,
 	val mobileType: String,
+	val signalLevel: Int,
 	val bluetooth: Boolean,
 	val vpn: Boolean,
 	val hotspot: Boolean,
@@ -302,11 +381,13 @@ internal suspend fun SystemIndicators.readConnectivity(p: OverlayPrefs): Connect
 		fun plain(show: Boolean, read: () -> Boolean) = show && read()
 
 		val mobile = radio(p.showMobileData) { hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
+		val status = mobileStatus(mobile)
 		Connectivity(
 			airplane = airplane,
 			wifi = radio(p.showWifi) { hasTransport(NetworkCapabilities.TRANSPORT_WIFI) },
-			mobile = mobile,
-			mobileType = if (mobile) mobileTypeLabel().ifEmpty { "4G" } else "",
+			mobile = status.active,
+			mobileType = status.type,
+			signalLevel = status.level,
 			bluetooth = radio(p.showBluetooth) { isBluetoothOn() },
 			vpn = radio(p.showVpn) { isVpn() },
 			hotspot = radio(p.showHotspot) { isHotspotOn() },
