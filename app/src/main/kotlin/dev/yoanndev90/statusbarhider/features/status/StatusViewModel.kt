@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.backup.SettingsBackup
 import dev.yoanndev90.statusbarhider.core.backup.SettingsBackupException
+import dev.yoanndev90.statusbarhider.core.backup.SettingsProvider
+import dev.yoanndev90.statusbarhider.core.backup.SisterBuild
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
@@ -15,8 +17,10 @@ import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -40,6 +44,19 @@ class StatusViewModel(
 ) : PrefsViewModel(application) {
 	private val shizukuRepo = ShizukuRepository.getInstance()
 	private val oemRepo = OemRepository.getInstance(application)
+
+	private val _sisterLabel = MutableStateFlow<String?>(null)
+
+	/** Installed name of the other build (release <-> debug), or null when only this build is installed. */
+	val sisterLabel: StateFlow<String?> = _sisterLabel.asStateFlow()
+
+	init {
+		// Package visibility costs a binder round-trip, so detection stays off
+		// the main thread; the row simply appears once it answers.
+		viewModelScope.launch {
+			_sisterLabel.value = withContext(Dispatchers.IO) { SisterBuild.installedLabel(application) }
+		}
+	}
 
 	val uiState: StateFlow<StatusUiState> =
 		combine(shizukuRepo.state, oemRepo.config) { shizuku, oem ->
@@ -155,5 +172,31 @@ class StatusViewModel(
 		onDone: (Boolean) -> Unit
 	) {
 		viewModelScope.launch { onDone(importSettings(uri)) }
+	}
+
+	/**
+	 * Pulls the backup blob from the sister build's provider and applies it
+	 * through the same path as a file import. False (and a log line) when the
+	 * sibling is unreachable or its blob is unusable; toasts belong to the
+	 * screen.
+	 */
+	suspend fun importFromSister(): Boolean =
+		withContext(Dispatchers.IO) {
+			try {
+				val raw = SettingsProvider.fetchSisterBlob(getApplication())
+				SettingsBackup.importSettings(getApplication(), raw)
+				log(R.string.log_settings_imported)
+				true
+			} catch (e: CancellationException) {
+				throw e
+			} catch (e: Exception) {
+				log(R.string.log_error, e.message)
+				false
+			}
+		}
+
+	/** Same contract as [importSettings]: the cross-build pull completes even if the tab goes away. */
+	fun importFromSister(onDone: (Boolean) -> Unit) {
+		viewModelScope.launch { onDone(importFromSister()) }
 	}
 }

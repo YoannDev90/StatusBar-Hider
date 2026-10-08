@@ -30,12 +30,19 @@
         android:name="android.hardware.location.gps"
         android:required="false" />
 
-    <!-- Launcher apps list (the app blacklist picker); required on API 30+. -->
+    <!-- Launcher apps list (the app blacklist picker); required on API 30+.
+         The debug and release installs are separate packages: both are listed
+         so each build can detect its sister and reach its settings provider
+         (settings import from the other build). -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <package android:name="dev.yoanndev90.statusbarhider" />
+        <package android:name="dev.yoanndev90.statusbarhider.debug" />
+        <provider android:authorities="dev.yoanndev90.statusbarhider.settingsprovider" />
+        <provider android:authorities="dev.yoanndev90.statusbarhider.debug.settingsprovider" />
     </queries>
 
     <!-- Backup is off: the preferences holding the control-API token are
@@ -66,6 +73,18 @@
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- Serves this install's settings JSON to the sister build (debug <->
+             release). exported=true: the sibling is a separate package signed
+             with a different key, so exported="false" and a signature
+             permission would both lock it out. SettingsProvider.call only
+             answers the sister package, which the system derives from the
+             caller's UID and cannot be forged. -->
+        <provider
+            android:name="dev.yoanndev90.statusbarhider.core.backup.SettingsProvider"
+            android:authorities="${applicationId}.settingsprovider"
+            android:exported="true"
+            tools:ignore="ExportedContentProvider" />
 
         <!-- Shares the on-disk app log (cache/logs). -->
         <provider

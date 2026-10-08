@@ -10,10 +10,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -42,6 +47,8 @@ fun StatusScreen(
 	val context = LocalContext.current
 	val importFailedToast = stringResource(R.string.toast_import_failed)
 	val importOkToast = stringResource(R.string.toast_import_ok)
+	val sisterLabel by vm.sisterLabel.collectAsStateWithLifecycle()
+	var showSisterDialog by rememberSaveable { mutableStateOf(false) }
 	// Backup I/O (file + provider stream) runs in the ViewModel's scope: leaving
 	// the tab must not cancel a write half-way through.
 	val importLauncher =
@@ -115,7 +122,27 @@ fun StatusScreen(
 					}
 				}
 				SettingAction(R.drawable.ic_upload, R.string.action_import_settings) { importLauncher.launch(arrayOf("*/*")) }
+				// Only offered when the other build (debug <-> release) is installed too.
+				sisterLabel?.let {
+					SettingAction(R.drawable.ic_sync, R.string.action_import_sister) { showSisterDialog = true }
+				}
 			}
+		}
+	}
+
+	// Confirmation before the pull: one tap would otherwise replace every setting.
+	sisterLabel?.let { label ->
+		if (showSisterDialog) {
+			SisterImportDialog(
+				label = label,
+				onDismiss = { showSisterDialog = false },
+				onConfirm = {
+					showSisterDialog = false
+					vm.importFromSister { ok ->
+						Toast.makeText(context, if (ok) importOkToast else importFailedToast, Toast.LENGTH_LONG).show()
+					}
+				}
+			)
 		}
 	}
 }
@@ -125,6 +152,26 @@ private fun copyControlToken(context: Context) {
 	val clipboard = context.getSystemService(ClipboardManager::class.java)
 	clipboard?.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), AppSettings.controlToken(context)))
 	Toast.makeText(context, R.string.toast_token_copied, Toast.LENGTH_SHORT).show()
+}
+
+/** Asks before pulling the sister build's settings; [label] is its installed app name. */
+@Composable
+private fun SisterImportDialog(
+	label: String,
+	onDismiss: () -> Unit,
+	onConfirm: () -> Unit
+) {
+	AlertDialog(
+		onDismissRequest = onDismiss,
+		title = { Text(stringResource(R.string.dialog_import_sister_title)) },
+		text = { Text(stringResource(R.string.dialog_import_sister, label)) },
+		confirmButton = {
+			TextButton(onClick = onConfirm) { Text(stringResource(R.string.action_import_settings)) }
+		},
+		dismissButton = {
+			TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+		}
+	)
 }
 
 /** Device name, untested badge and Shizuku status. */
