@@ -7,7 +7,6 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
 import androidx.core.net.toUri
-import androidx.core.os.bundleOf
 
 /**
  * Serves this install's settings blob to the sister build (debug <-> release).
@@ -32,7 +31,7 @@ class SettingsProvider : ContentProvider() {
 			throw SecurityException("Only ${SisterBuild.sisterPackageOf(app.packageName)} may read the settings backup")
 		}
 		require(method == METHOD_EXPORT) { "Unknown method '$method'" }
-		return bundleOf(KEY_BLOB to SettingsBackup.export(app))
+		return Bundle().apply { putString(KEY_BLOB, SettingsBackup.export(app)) }
 	}
 
 	// Read-only by design: only call(METHOD_EXPORT) has an answer.

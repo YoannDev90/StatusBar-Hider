@@ -143,6 +143,11 @@ internal class SystemIndicators(
 	fun isVpn(): Boolean =
 		try {
 			val cm = context.getSystemService(ConnectivityManager::class.java) ?: return false
+			// getAllNetworks() is deprecated because polling races and never
+			// notifies, but a callback is asynchronous while this poll must
+			// answer synchronously (and may cover a non-default VPN network,
+			// which getActiveNetwork() would miss).
+			@Suppress("DEPRECATION")
 			cm.allNetworks.any { cm.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true }
 		} catch (e: Exception) {
 			warn("isVpn", e)

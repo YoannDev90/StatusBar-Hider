@@ -4,7 +4,6 @@ import android.app.AppOpsManager
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.os.Build
 import android.os.Process
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
@@ -28,13 +27,7 @@ object UsageAccess {
 	fun granted(context: Context): Boolean =
 		try {
 			val appOps = context.getSystemService(AppOpsManager::class.java) ?: return false
-			val mode =
-				if (Build.VERSION.SDK_INT >= 29) {
-					appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
-				} else {
-					@Suppress("DEPRECATION")
-					appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
-				}
+			val mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
 			mode == AppOpsManager.MODE_ALLOWED
 		} catch (e: Exception) {
 			Log.w(TAG, "granted", e)
