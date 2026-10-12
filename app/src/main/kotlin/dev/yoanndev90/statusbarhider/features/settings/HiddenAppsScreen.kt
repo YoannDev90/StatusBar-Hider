@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.features.bar.sections
+package dev.yoanndev90.statusbarhider.features.settings
 
 import android.content.Context
 import android.content.Intent
@@ -38,18 +38,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
-import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
+import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
+import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private const val TAG = "AppsSection"
+private const val TAG = "HiddenAppsScreen"
 
 /** One launchable app shown in the picker (own package excluded). */
 private data class AppEntry(
@@ -59,14 +61,12 @@ private data class AppEntry(
 
 /** Apps the custom bar must stay out of: camera viewfinders, video players, games... */
 @Composable
-fun AppsSection(
-	prefs: OverlayPrefs,
-	vm: PrefsViewModel
-) {
+fun HiddenAppsScreen(vm: StatusViewModel) {
 	val context = LocalContext.current
+	val prefs by vm.prefs.collectAsStateWithLifecycle()
 	val errorFormat = stringResource(R.string.log_error)
 	// Querying and labelling every installed app is a few hundred binder calls:
-	// run once per process, off the main thread, and never per tab visit.
+	// run once per process, off the main thread, and never per screen visit.
 	val apps by produceState(AppListCache.peek()) {
 		if (value == null) {
 			value = withContext(Dispatchers.IO) { AppListCache.load(context) }
@@ -80,43 +80,48 @@ fun AppsSection(
 		usageGranted = UsageAccess.granted(context)
 		onPauseOrDispose { }
 	}
+	HandlePrefsEvents(vm)
 
-	SettingGroup(R.string.group_apps) {
-		SettingSwitch(R.drawable.ic_app_blocking, R.string.switch_hide_bar_in_apps, prefs.hideBarInApps) {
-			vm.updatePrefs { copy(hideBarInApps = it) }
-		}
-		if (!usageGranted) {
-			Text(
-				text = stringResource(R.string.hint_usage_access),
-				style = MaterialTheme.typography.bodySmall,
-				color = MaterialTheme.colorScheme.onSurfaceVariant,
-				modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-			)
-			SettingAction(R.drawable.ic_query_stats, R.string.action_grant_usage_access) {
-				try {
-					context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-				} catch (e: Exception) {
-					Log.w(TAG, "usage settings", e)
-					LogStore.appendOnce(
-						context,
-						"$TAG#usageSettings",
-						String.format(errorFormat, "usage settings: ${e.message}")
-					)
+	SettingsScreen {
+		item {
+			SettingGroup {
+				SettingSwitch(R.drawable.ic_app_blocking, R.string.switch_hide_bar_in_apps, prefs.hideBarInApps) {
+					vm.updatePrefs { copy(hideBarInApps = it) }
 				}
+				if (!usageGranted) {
+					Text(
+						text = stringResource(R.string.hint_usage_access),
+						style = MaterialTheme.typography.bodySmall,
+						color = MaterialTheme.colorScheme.onSurfaceVariant,
+						modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
+					)
+					SettingAction(R.drawable.ic_query_stats, R.string.action_grant_usage_access) {
+						try {
+							context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+						} catch (e: Exception) {
+							Log.w(TAG, "usage settings", e)
+							LogStore.appendOnce(
+								context,
+								"$TAG#usageSettings",
+								String.format(errorFormat, "usage settings: ${e.message}")
+							)
+						}
+					}
+				}
+				SettingAction(R.drawable.ic_apps, R.string.action_choose_apps) { pickerOpen = true }
+				Text(
+					text =
+						if (prefs.hiddenApps.isEmpty()) {
+							stringResource(R.string.hint_no_apps_selected)
+						} else {
+							prefs.hiddenApps.joinToString(", ") { pkg -> apps?.firstOrNull { it.pkg == pkg }?.label ?: pkg }
+						},
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+				)
 			}
 		}
-		SettingAction(R.drawable.ic_apps, R.string.action_choose_apps) { pickerOpen = true }
-		Text(
-			text =
-				if (prefs.hiddenApps.isEmpty()) {
-					stringResource(R.string.hint_no_apps_selected)
-				} else {
-					prefs.hiddenApps.joinToString(", ") { pkg -> apps?.firstOrNull { it.pkg == pkg }?.label ?: pkg }
-				},
-			style = MaterialTheme.typography.bodySmall,
-			color = MaterialTheme.colorScheme.onSurfaceVariant,
-			modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-		)
 	}
 
 	if (pickerOpen) {
@@ -250,7 +255,7 @@ private object AppIconCache {
  * [query] is a few hundred binder calls (one `loadLabel` per app, each able to
  * build a `Resources` for another package), so it is computed at most once per
  * process and never on the main thread. A plain `remember` re-ran it every time
- * the Bar tab left and re-entered composition, freezing the tab switch.
+ * the screen left and re-entered composition, freezing the switch.
  */
 private object AppListCache {
 	@Volatile

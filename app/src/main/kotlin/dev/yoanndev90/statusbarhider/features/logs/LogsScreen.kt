@@ -12,8 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -26,24 +24,11 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 
 /**
- * Logs tab: export / share the app log, then the raw command output.
- *
- * [selected] freezes the log while the tab is hidden: every appended line
- * otherwise re-lays out the whole history (~120ms on the test device) on
- * whatever the user happens to be doing in another tab. The freeze costs one
- * catch-up layout when the tab is reopened.
+ * Logs: export / share the app log, then the raw command output.
  */
 @Composable
-fun LogsScreen(
-	vm: LogsViewModel,
-	selected: Boolean
-) {
-	val logs by
-		if (selected) {
-			vm.lines.collectAsStateWithLifecycle()
-		} else {
-			remember { mutableStateOf(vm.lines.value) }
-		}
+fun LogsScreen(vm: LogsViewModel) {
+	val logs by vm.lines.collectAsStateWithLifecycle()
 	val context = LocalContext.current
 	val clipboardLabel = stringResource(R.string.clipboard_label)
 	val logsCopiedToast = stringResource(R.string.toast_logs_copied)

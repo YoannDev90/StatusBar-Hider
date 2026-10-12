@@ -36,8 +36,11 @@ fun SettingGroup(
 
 /** Card without a title, for blocks labelled inside their content. */
 @Composable
-fun SettingGroup(content: @Composable ColumnScope.() -> Unit) {
-	Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+fun SettingGroup(
+	modifier: Modifier = Modifier,
+	content: @Composable ColumnScope.() -> Unit
+) {
+	Card(modifier = modifier.fillMaxWidth().padding(vertical = 4.dp)) {
 		Column(
 			modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
 			content = content

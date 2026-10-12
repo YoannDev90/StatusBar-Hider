@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -133,6 +134,79 @@ fun SettingAction(
 		Icon(painter = painterResource(icon), contentDescription = null, modifier = Modifier.size(18.dp))
 		Spacer(Modifier.width(8.dp))
 		Text(stringResource(label))
+	}
+}
+
+/**
+ * Navigation row for the Settings list: icon, title, optional subtitle and a
+ * chevron; the whole row navigates to [route] via [onNavigate].
+ */
+@Composable
+fun SettingNavRow(
+	@DrawableRes icon: Int,
+	@StringRes title: Int,
+	@StringRes subtitle: Int,
+	route: String,
+	onNavigate: (String) -> Unit
+) {
+	Row(
+		modifier =
+			Modifier
+				.fillMaxWidth()
+				.clickable { onNavigate(route) }
+				.padding(vertical = 12.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		SettingIcon(icon)
+		Spacer(Modifier.width(12.dp))
+		Column(Modifier.weight(1f)) {
+			Text(
+				text = stringResource(title),
+				style = MaterialTheme.typography.bodyLarge
+			)
+			Text(
+				text = stringResource(subtitle),
+				style = MaterialTheme.typography.bodySmall,
+				color = MaterialTheme.colorScheme.onSurfaceVariant
+			)
+		}
+		Icon(
+			painter = painterResource(R.drawable.ic_chevron_right),
+			contentDescription = null,
+			tint = MaterialTheme.colorScheme.onSurfaceVariant,
+			modifier = Modifier.size(20.dp)
+		)
+	}
+}
+
+/** Compact navigation row for sub-screens (Lock screen, Debug hubs). */
+@Composable
+fun SettingSubRow(
+	@DrawableRes icon: Int,
+	@StringRes title: Int,
+	onClick: () -> Unit
+) {
+	Row(
+		modifier =
+			Modifier
+				.fillMaxWidth()
+				.clickable(onClick = onClick)
+				.padding(vertical = 12.dp),
+		verticalAlignment = Alignment.CenterVertically
+	) {
+		SettingIcon(icon)
+		Spacer(Modifier.width(12.dp))
+		Text(
+			text = stringResource(title),
+			modifier = Modifier.weight(1f),
+			style = MaterialTheme.typography.bodyLarge
+		)
+		Icon(
+			painter = painterResource(R.drawable.ic_chevron_right),
+			contentDescription = null,
+			tint = MaterialTheme.colorScheme.onSurfaceVariant,
+			modifier = Modifier.size(20.dp)
+		)
 	}
 }
 

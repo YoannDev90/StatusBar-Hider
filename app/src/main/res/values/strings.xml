@@ -12,27 +12,89 @@
     <!-- Section titles (card headings on the settings screens) -->
     <string name="section_shizuku">Shizuku</string>
     <string name="section_status_bar">Status bar</string>
-    <string name="section_custom_bar">Custom bar</string>
-    <string name="section_widget_order">Widget order</string>
-    <string name="section_cutout">Cutout</string>
     <string name="section_test">Test</string>
-    <string name="section_app">App</string>
+    <string name="section_custom_bar">Custom bar</string>
+    <string name="section_app_group">App</string>
+    <string name="section_widget_order">Widget order</string>
     <string name="section_log">Log</string>
 
-    <!-- Bottom navigation tabs (also used as top bar titles) -->
-    <string name="nav_status">Status</string>
-    <string name="nav_bar">Custom bar</string>
-    <string name="nav_style">Style</string>
-    <string name="nav_log">Logs</string>
+    <!-- Settings navigation -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_search">Search settings</string>
+    <string name="settings_no_results">No matching settings</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_open_settings">Open settings</string>
+    <string name="cd_clear">Clear</string>
 
-    <!-- Custom bar setting groups -->
-    <string name="group_clock_date">Clock &amp; date</string>
-    <string name="group_lock_screen">Lock screen</string>
-    <string name="group_battery">Battery</string>
-    <string name="group_notifications">Notifications &amp; media</string>
-    <string name="group_connectivity">Connectivity</string>
-    <string name="group_apps">Hidden apps</string>
-    <string name="group_behavior">Behavior</string>
+    <!-- Home -->
+    <string name="home_bar_visible">Custom bar: visible</string>
+    <string name="home_bar_hidden">Custom bar: hidden</string>
+
+    <!-- Settings categories (root list + top bar titles) -->
+    <string name="cat_general">General</string>
+    <string name="cat_general_sub">Refresh, boot, touch</string>
+    <string name="cat_appearance">Appearance</string>
+    <string name="cat_appearance_sub">Background, text, widget order</string>
+    <string name="cat_cutout">Cutout / Camera</string>
+    <string name="cat_cutout_sub">Notch position and progress ring</string>
+    <string name="cat_clock">Clock &amp; date</string>
+    <string name="cat_clock_sub">Time, date, alarm, calendar</string>
+    <string name="cat_battery">Battery</string>
+    <string name="cat_battery_sub">Level, percentage, icon</string>
+    <string name="cat_notifications">Notifications &amp; media</string>
+    <string name="cat_notifications_sub">Icons and now playing</string>
+    <string name="cat_connectivity">Connectivity</string>
+    <string name="cat_connectivity_sub">Radios, network, bandwidth</string>
+    <string name="cat_hidden_apps">Hidden apps</string>
+    <string name="cat_hidden_apps_sub">Keep the bar out of apps</string>
+    <string name="cat_lock_screen">Lock screen</string>
+    <string name="cat_lock_screen_sub">Appearance and behavior when locked</string>
+    <string name="cat_profiles">Profiles</string>
+    <string name="cat_profiles_sub">Coming soon</string>
+    <string name="cat_oem">Device / OEM</string>
+    <string name="cat_oem_sub">Hide and restore the status bar</string>
+    <string name="cat_debug">Debug</string>
+    <string name="cat_debug_sub">Device info and permissions</string>
+    <string name="cat_logs">Logs</string>
+    <string name="cat_logs_sub">Command output</string>
+    <string name="cat_backup">Backup</string>
+    <string name="cat_backup_sub">Export and import settings</string>
+    <string name="cat_about">About</string>
+    <string name="cat_about_sub">Version, token, setup</string>
+
+    <!-- Sub-screens -->
+    <string name="lock_sub_appearance">Appearance</string>
+    <string name="lock_sub_behavior">Behavior</string>
+    <string name="debug_sub_info">Device info</string>
+    <string name="debug_sub_permissions">Permissions</string>
+
+    <!-- Profiles placeholder -->
+    <string name="hint_profiles_coming_soon">Profiles are on the way: save different settings sets and switch between them in one tap.</string>
+
+    <!-- Debug: device info -->
+    <string name="debug_manufacturer">Manufacturer</string>
+    <string name="debug_model">Model</string>
+    <string name="debug_android">Android</string>
+    <string name="debug_sdk">SDK</string>
+    <string name="debug_build_type">Build type</string>
+    <string name="debug_app_version">App version</string>
+    <string name="debug_oem_config">OEM config</string>
+    <string name="debug_build_debug">debug</string>
+    <string name="debug_build_release">release</string>
+
+    <!-- Debug: permissions -->
+    <string name="perm_status_allowed">allowed</string>
+    <string name="perm_status_blocked">blocked</string>
+    <string name="perm_shizuku">Shizuku</string>
+    <string name="perm_overlay">Display over other apps</string>
+    <string name="perm_notif_access">Notification access</string>
+    <string name="perm_calendar">Calendar</string>
+    <string name="perm_post_notifs">Post notifications</string>
+    <string name="perm_usage">Usage access</string>
+    <string name="perm_accessibility">Accessibility (lock screen)</string>
+
+    <!-- About -->
+    <string name="about_version">Version %1$s (%2$s)</string>
 
     <!-- Buttons -->
     <string name="action_authorize_shizuku">Authorize Shizuku</string>
@@ -70,7 +132,7 @@
 
     <!-- Setup checklist -->
     <string name="setup_title">Setup</string>
-    <string name="setup_subtitle">Grant what the app needs. Every step can be done later from the Status tab.</string>
+    <string name="setup_subtitle">Grant what the app needs. Every step can be done later from Settings &gt; Debug &gt; Permissions.</string>
     <string name="setup_shizuku">Shizuku running and authorized</string>
     <string name="setup_group_permissions">Permissions</string>
     <string name="setup_overlay">Display over other apps</string>
@@ -113,6 +175,8 @@
     <string name="switch_camera_ring">Progress ring around camera</string>
     <string name="switch_ring_preview">Preview camera ring</string>
     <string name="switch_hide_bar_in_apps">Hide the bar in selected apps</string>
+    <string name="switch_vpn">VPN</string>
+    <string name="switch_hotspot">Hotspot</string>
 
     <!-- Hints -->
     <string name="hint_usage_access">Usage access is needed to know which app is in front. The blacklist stays inactive without it.</string>

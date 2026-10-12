@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.features.style.sections
+package dev.yoanndev90.statusbarhider.features.settings
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -30,8 +30,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import sh.calvin.reorderable.ReorderableColumn
@@ -39,12 +37,11 @@ import sh.calvin.reorderable.ReorderableItem
 
 /** Drag-to-reorder list defining the widget order of the bar, left to right. */
 @Composable
-fun WidgetOrderSection(
-	prefs: OverlayPrefs,
-	vm: PrefsViewModel
+fun WidgetOrderGroup(
+	order: List<String>,
+	onMove: (Int, Int) -> Unit
 ) {
 	val haptic = LocalHapticFeedback.current
-	val order = prefs.widgetOrder
 
 	SettingGroup(R.string.section_widget_order) {
 		Text(
@@ -59,7 +56,7 @@ fun WidgetOrderSection(
 
 		ReorderableColumn(
 			list = order,
-			onSettle = { fromIndex, toIndex -> vm.moveWidget(fromIndex, toIndex) },
+			onSettle = { fromIndex, toIndex -> onMove(fromIndex, toIndex) },
 			onMove = { haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick) },
 			verticalArrangement = Arrangement.spacedBy(0.dp)
 		) { index, id, isDragging ->
@@ -68,7 +65,6 @@ fun WidgetOrderSection(
 					val elevation by animateDpAsState(if (isDragging) 6.dp else 0.dp)
 					val spacer = id == WidgetId.SPACER
 					Column {
-						// Own separator, dropped while this row is the one floating.
 						if (index > 0 && !isDragging) {
 							HorizontalDivider(
 								thickness = 1.dp,
@@ -100,7 +96,6 @@ fun WidgetOrderSection(
 										),
 								verticalAlignment = Alignment.CenterVertically
 							) {
-								// Position: row 1 is the leftmost widget on the bar.
 								Text(
 									text = "${index + 1}",
 									style = MaterialTheme.typography.labelMedium,
