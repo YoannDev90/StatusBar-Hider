@@ -64,9 +64,13 @@
 
     <!-- Sub-screens -->
     <string name="lock_sub_appearance">Appearance</string>
+    <string name="lock_sub_appearance_sub">Full layout or clock only</string>
     <string name="lock_sub_behavior">Behavior</string>
+    <string name="lock_sub_behavior_sub">Visibility, overlay, notifications</string>
     <string name="debug_sub_info">Device info</string>
+    <string name="debug_sub_info_sub">Manufacturer, model, build</string>
     <string name="debug_sub_permissions">Permissions</string>
+    <string name="debug_sub_permissions_sub">Allowed and blocked grants</string>
 
     <!-- Profiles placeholder -->
     <string name="hint_profiles_coming_soon">Profiles are on the way: save different settings sets and switch between them in one tap.</string>

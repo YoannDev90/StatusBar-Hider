@@ -151,13 +151,14 @@ fun SettingAction(
 
 /**
  * Navigation row for the Settings list: icon, title, optional subtitle and a
- * chevron; the whole row navigates to [route] via [onNavigate].
+ * chevron; the whole row navigates to [route] via [onNavigate]. Titles are
+ * pre-resolved strings (the root screen resolves them once for search too).
  */
 @Composable
 fun SettingNavRow(
 	@DrawableRes icon: Int,
-	@StringRes title: Int,
-	@StringRes subtitle: Int,
+	title: String,
+	subtitle: String,
 	route: String,
 	onNavigate: (String) -> Unit
 ) {
@@ -173,11 +174,11 @@ fun SettingNavRow(
 		Spacer(Modifier.width(12.dp))
 		Column(Modifier.weight(1f)) {
 			Text(
-				text = stringResource(title),
+				text = title,
 				style = MaterialTheme.typography.bodyLarge
 			)
 			Text(
-				text = stringResource(subtitle),
+				text = subtitle,
 				style = MaterialTheme.typography.bodySmall,
 				color = MaterialTheme.colorScheme.onSurfaceVariant
 			)
