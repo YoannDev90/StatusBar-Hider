@@ -30,7 +30,7 @@ fun LockBehaviorScreen(vm: StatusViewModel) {
 				}
 				// Reachable even with the toggle off: the service can still be on from
 				// an earlier session, and the app must not be why it stays that way.
-				SettingAction(R.drawable.ic_close, R.string.action_disable_lock_overlay) {
+				SettingAction(R.drawable.ic_close, R.string.action_disable_lock_overlay, danger = true) {
 					vm.disableLockScreenOverlay()
 				}
 				SettingSwitch(R.drawable.ic_notifications_off, R.string.switch_hide_notifs_on_lock, prefs.hideNotifsOnLock) {

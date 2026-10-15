@@ -1,21 +1,9 @@
 package dev.yoanndev90.statusbarhider.features.settings
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
@@ -24,6 +12,7 @@ import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.ColorSwatch
 import dev.yoanndev90.statusbarhider.ui.components.ColorSwatchRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingLabelRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingSlider
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
@@ -66,22 +55,7 @@ fun CutoutScreen(vm: StatusViewModel) {
 					SettingSlider(R.drawable.ic_line_weight, R.string.slider_camera_ring_stroke, prefs.cameraRingStrokeDp, 1, 8, R.string.suffix_dp) {
 						vm.updatePrefs { copy(cameraRingStrokeDp = it) }
 					}
-					Row(
-						modifier = Modifier.padding(top = 8.dp),
-						verticalAlignment = Alignment.CenterVertically
-					) {
-						Icon(
-							painter = painterResource(R.drawable.ic_color_lens),
-							contentDescription = null,
-							tint = MaterialTheme.colorScheme.onSurfaceVariant,
-							modifier = Modifier.size(20.dp)
-						)
-						Spacer(Modifier.width(12.dp))
-						Text(
-							text = stringResource(R.string.label_ring_color),
-							style = MaterialTheme.typography.bodyMedium
-						)
-					}
+					SettingLabelRow(R.string.label_ring_color, R.drawable.ic_color_lens)
 					ColorSwatchRow(
 						swatches = ringSwatches(prefs),
 						selected = prefs.cameraRingColor,

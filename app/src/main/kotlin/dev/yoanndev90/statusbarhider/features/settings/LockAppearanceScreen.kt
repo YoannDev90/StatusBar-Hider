@@ -2,7 +2,6 @@ package dev.yoanndev90.statusbarhider.features.settings
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
@@ -25,8 +24,8 @@ fun LockAppearanceScreen(vm: StatusViewModel) {
 					icon = R.drawable.ic_visibility,
 					options =
 						listOf(
-							stringResource(R.string.lock_mode_full),
-							stringResource(R.string.lock_mode_clock_only)
+							R.string.lock_mode_full,
+							R.string.lock_mode_clock_only
 						),
 					selected = if (prefs.lockScreenMode == LockScreenMode.CLOCK_ONLY) 1 else 0,
 					onSelect = { index ->

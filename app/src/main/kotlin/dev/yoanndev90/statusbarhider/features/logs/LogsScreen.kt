@@ -21,6 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingHint
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 
 /**
@@ -52,12 +53,7 @@ fun LogsScreen(vm: LogsViewModel) {
 					}
 				}
 				if (logs.isEmpty()) {
-					Text(
-						text = stringResource(R.string.log_empty),
-						style = MaterialTheme.typography.bodySmall,
-						color = MaterialTheme.colorScheme.onSurfaceVariant,
-						modifier = Modifier.padding(top = 8.dp)
-					)
+					SettingHint(R.string.log_empty, Modifier.padding(top = 8.dp))
 				} else {
 					HorizontalDivider(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp))
 					SelectionContainer {

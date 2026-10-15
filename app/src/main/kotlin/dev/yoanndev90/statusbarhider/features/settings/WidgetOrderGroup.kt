@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingHint
 import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
 
@@ -44,12 +45,7 @@ fun WidgetOrderGroup(
 	val haptic = LocalHapticFeedback.current
 
 	SettingGroup(R.string.section_widget_order) {
-		Text(
-			text = stringResource(R.string.label_widget_order_hint),
-			style = MaterialTheme.typography.bodySmall,
-			color = MaterialTheme.colorScheme.onSurfaceVariant,
-			modifier = Modifier.padding(bottom = 6.dp)
-		)
+		SettingHint(R.string.label_widget_order_hint, Modifier.padding(bottom = 6.dp))
 
 		// Mini bar: the widgets as chips, in the order the bar draws them.
 		OrderPreview(order, Modifier.padding(bottom = 8.dp))

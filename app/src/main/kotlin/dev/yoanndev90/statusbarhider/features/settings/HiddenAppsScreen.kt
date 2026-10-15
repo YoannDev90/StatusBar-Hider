@@ -46,6 +46,7 @@ import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingHint
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 import kotlinx.coroutines.Dispatchers
@@ -89,12 +90,7 @@ fun HiddenAppsScreen(vm: StatusViewModel) {
 					vm.updatePrefs { copy(hideBarInApps = it) }
 				}
 				if (!usageGranted) {
-					Text(
-						text = stringResource(R.string.hint_usage_access),
-						style = MaterialTheme.typography.bodySmall,
-						color = MaterialTheme.colorScheme.onSurfaceVariant,
-						modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)
-					)
+					SettingHint(R.string.hint_usage_access, Modifier.padding(bottom = 4.dp))
 					SettingAction(R.drawable.ic_query_stats, R.string.action_grant_usage_access) {
 						try {
 							context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -109,16 +105,14 @@ fun HiddenAppsScreen(vm: StatusViewModel) {
 					}
 				}
 				SettingAction(R.drawable.ic_apps, R.string.action_choose_apps) { pickerOpen = true }
-				Text(
+				SettingHint(
 					text =
 						if (prefs.hiddenApps.isEmpty()) {
 							stringResource(R.string.hint_no_apps_selected)
 						} else {
 							prefs.hiddenApps.joinToString(", ") { pkg -> apps?.firstOrNull { it.pkg == pkg }?.label ?: pkg }
 						},
-					style = MaterialTheme.typography.bodySmall,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
+					modifier = Modifier.padding(top = 4.dp)
 				)
 			}
 		}

@@ -1,19 +1,14 @@
 package dev.yoanndev90.statusbarhider.features.settings
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingLabelRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingRadioRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingSlider
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
@@ -36,9 +31,9 @@ fun AppearanceScreen(vm: StatusViewModel) {
 					icon = R.drawable.ic_palette,
 					options =
 						listOf(
-							stringResource(R.string.background_transparent),
-							stringResource(R.string.background_semi),
-							stringResource(R.string.background_black)
+							R.string.background_transparent,
+							R.string.background_semi,
+							R.string.background_black
 						),
 					selected = backgroundIndex(prefs.background),
 					onSelect = { index ->
@@ -69,18 +64,14 @@ fun AppearanceScreen(vm: StatusViewModel) {
 				SettingSlider(R.drawable.ic_space_bar, R.string.slider_widget_spacing, prefs.widgetSpacingDp, 0, 12, R.string.suffix_dp) {
 					vm.updatePrefs { copy(widgetSpacingDp = it) }
 				}
-				Text(
-					text = stringResource(R.string.label_text_weight),
-					style = MaterialTheme.typography.bodyMedium,
-					modifier = Modifier.padding(top = 8.dp)
-				)
+				SettingLabelRow(R.string.label_text_weight)
 				SettingRadioRow(
 					icon = R.drawable.ic_format_bold,
 					options =
 						listOf(
-							stringResource(R.string.font_weight_normal),
-							stringResource(R.string.font_weight_medium),
-							stringResource(R.string.font_weight_bold)
+							R.string.font_weight_normal,
+							R.string.font_weight_medium,
+							R.string.font_weight_bold
 						),
 					selected = FONT_WEIGHT_IDS.indexOf(prefs.fontWeightName).coerceAtLeast(0),
 					onSelect = { vm.updatePrefs { copy(fontWeightName = FONT_WEIGHT_IDS[it]) } }
