@@ -16,7 +16,6 @@
     <string name="section_custom_bar">Custom bar</string>
     <string name="section_app_group">App</string>
     <string name="section_widget_order">Widget order</string>
-    <string name="section_log">Log</string>
 
     <!-- Settings navigation -->
     <string name="settings_title">Settings</string>
@@ -67,7 +66,7 @@
     <string name="cat_about_sub">Version, token, setup</string>
 
     <!-- Sub-screens -->
-    <string name="lock_sub_appearance">Appearance</string>
+    <string name="lock_sub_appearance">Layout</string>
     <string name="lock_sub_appearance_sub">Full layout or clock only</string>
     <string name="lock_sub_behavior">Behavior</string>
     <string name="lock_sub_behavior_sub">Visibility, overlay, notifications</string>
@@ -188,7 +187,6 @@
     <string name="switch_auto_start_bar">Auto-start bar on boot</string>
     <string name="switch_camera_auto">Auto-detect cutout</string>
     <string name="switch_camera_ring">Progress ring around camera</string>
-    <string name="switch_ring_preview">Preview camera ring</string>
     <string name="switch_hide_bar_in_apps">Hide the bar in selected apps</string>
     <string name="switch_vpn">VPN</string>
     <string name="switch_hotspot">Hotspot</string>
@@ -196,7 +194,6 @@
     <!-- Hints -->
     <string name="hint_usage_access">Usage access is needed to know which app is in front. The blacklist stays inactive without it.</string>
     <string name="hint_no_apps_selected">No app selected yet.</string>
-    <string name="hint_ring_preview">Draws a full circle around the detected cutout, without waiting for a progress notification. The bar turns on automatically.</string>
     <string name="dialog_pick_apps">Hide the bar in…</string>
 
     <!-- Sliders, labels and hints -->

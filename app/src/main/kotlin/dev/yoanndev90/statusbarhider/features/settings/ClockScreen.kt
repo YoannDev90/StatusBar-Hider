@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
@@ -85,7 +86,7 @@ fun ClockScreen(vm: StatusViewModel) {
 					)
 					Button(
 						onClick = {
-							val fmt = dateFormat.ifEmpty { "EEE dd MMM" }
+							val fmt = dateFormat.ifEmpty { OverlayPrefs.DEFAULT_DATE_FORMAT }
 							try {
 								SimpleDateFormat(fmt, Locale.getDefault()).format(Date())
 							} catch (_: Exception) {

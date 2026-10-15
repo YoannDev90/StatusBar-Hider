@@ -83,17 +83,8 @@ fun OverlayBar(
 	val padTop = prefs.padTopDp.dp
 	val padBottom = prefs.padBottomDp.dp
 	val spacing = prefs.widgetSpacingDp.dp
-	// The Style-page preview draws a full circle regardless of notifications,
-	// so the ring placement can be tuned without waiting for a progress bar.
-	val preview = prefs.cameraRingPreview
-	val showRing = camera != null && (preview || (prefs.cameraRing && progress != null))
-	// Preview wins: a static full circle is what you want to judge alignment.
-	val ringProgress: OverlayProgress? =
-		when {
-			!showRing -> null
-			preview -> OverlayProgress(1f, false, "preview")
-			else -> progress
-		}
+	val showRing = camera != null && prefs.cameraRing && progress != null
+	val ringProgress: OverlayProgress? = if (showRing) progress else null
 	val ringStrokePx = with(density) { prefs.cameraRingStrokeDp.dp.toPx() }
 	// Widgets keep clear of the ring too, not just of the cutout slot.
 	val ringClearancePx = if (showRing) ringStrokePx else 0f

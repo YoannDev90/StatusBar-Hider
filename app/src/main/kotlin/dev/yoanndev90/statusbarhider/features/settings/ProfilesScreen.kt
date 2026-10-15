@@ -17,7 +17,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 fun ProfilesScreen() {
 	SettingsScreen {
 		item {
-			SettingGroup(R.string.cat_profiles) {
+			SettingGroup {
 				Text(
 					text = stringResource(R.string.hint_profiles_coming_soon),
 					style = MaterialTheme.typography.bodyMedium,

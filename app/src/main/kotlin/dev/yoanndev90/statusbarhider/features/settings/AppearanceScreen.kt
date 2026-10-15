@@ -25,7 +25,7 @@ fun AppearanceScreen(vm: StatusViewModel) {
 
 	SettingsScreen {
 		item {
-			SettingGroup(R.string.section_custom_bar) {
+			SettingGroup {
 				SettingSwitch(
 					icon = R.drawable.ic_contrast,
 					label = R.string.switch_dark_text,

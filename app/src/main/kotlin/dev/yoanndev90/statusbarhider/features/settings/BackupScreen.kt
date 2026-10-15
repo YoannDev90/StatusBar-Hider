@@ -44,7 +44,7 @@ fun BackupScreen(vm: StatusViewModel) {
 
 	SettingsScreen {
 		item {
-			SettingGroup(R.string.cat_backup) {
+			SettingGroup {
 				SettingAction(R.drawable.ic_save_alt, R.string.action_export_settings) {
 					vm.exportSettings { intent ->
 						if (intent == null) {

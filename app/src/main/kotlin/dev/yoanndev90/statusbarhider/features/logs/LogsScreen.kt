@@ -37,7 +37,7 @@ fun LogsScreen(vm: LogsViewModel) {
 
 	SettingsScreen {
 		item {
-			SettingGroup(R.string.section_log) {
+			SettingGroup {
 				SettingAction(R.drawable.ic_content_copy, R.string.action_export_logs) {
 					val clip = ClipData.newPlainText(clipboardLabel, logs.joinToString("\n"))
 					context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
