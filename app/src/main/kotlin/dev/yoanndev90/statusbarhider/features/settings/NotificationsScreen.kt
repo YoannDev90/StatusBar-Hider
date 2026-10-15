@@ -60,7 +60,12 @@ fun NotificationsScreen(vm: StatusViewModel) {
 				SettingSlider(R.drawable.ic_filter_9_plus, R.string.slider_max_notification_icons, prefs.maxNotifs, 1, 8) {
 					vm.updatePrefs { copy(maxNotifs = it) }
 				}
-				SettingSwitch(R.drawable.ic_media, R.string.switch_now_playing, prefs.showMedia) { vm.updatePrefs { copy(showMedia = it) } }
+				SettingSwitch(
+					icon = R.drawable.ic_media,
+					label = R.string.switch_now_playing,
+					checked = prefs.showMedia,
+					subtitle = R.string.switch_now_playing_sub
+				) { vm.updatePrefs { copy(showMedia = it) } }
 			}
 		}
 		item {

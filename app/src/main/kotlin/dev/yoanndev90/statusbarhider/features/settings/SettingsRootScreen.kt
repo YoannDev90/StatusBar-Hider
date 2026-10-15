@@ -5,6 +5,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -13,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -21,11 +23,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.permission.PermissionAccess
+import dev.yoanndev90.statusbarhider.core.permission.PermissionGrants
+import dev.yoanndev90.statusbarhider.data.ShizukuState
+import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
+import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingNavRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 import dev.yoanndev90.statusbarhider.ui.shell.Routes
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** One row of the Settings list: where it points and how it reads. */
 private data class Category(
@@ -228,19 +240,73 @@ private fun resolveCategories(context: Context): List<ResolvedCategory> =
 		)
 	}
 
+/** Live one-line summaries shown under a few categories (current background, refresh rate...). */
+@Composable
+private fun rememberValueSummaries(prefs: OverlayPrefs): Map<String, String> {
+	val context = LocalContext.current
+	return remember(prefs, context) {
+		val background =
+			context.getString(
+				when (prefs.background) {
+					OverlayBackground.TRANSPARENT -> R.string.background_transparent
+					OverlayBackground.BLACK -> R.string.background_black
+					OverlayBackground.SEMI -> R.string.background_semi
+				}
+			)
+		mapOf(
+			Routes.APPEARANCE to context.getString(R.string.summary_background, background),
+			Routes.GENERAL to context.getString(R.string.summary_refresh, prefs.updateIntervalSec),
+			Routes.CLOCK to context.getString(R.string.summary_date_format, prefs.dateFormat)
+		)
+	}
+}
+
+/** Counts the blocked grants; a null value means the read has not finished yet. */
+@Composable
+private fun rememberBlockedGrantCount(shizukuReady: Boolean): Int? {
+	val context = LocalContext.current
+	// Bumped on every resume: grants are granted in other screens.
+	var resumeTick by remember { mutableStateOf(0) }
+	LifecycleResumeEffect(Unit) {
+		resumeTick++
+		onPauseOrDispose { }
+	}
+	val grants by produceState<PermissionGrants?>(null, resumeTick) {
+		value = withContext(Dispatchers.IO) { PermissionAccess.grants(context) }
+	}
+	return grants?.let { loaded ->
+		listOf(
+			shizukuReady,
+			loaded.overlay,
+			loaded.notifListener,
+			loaded.calendar,
+			loaded.postNotifs,
+			loaded.usage
+		).count { !it }
+	}
+}
+
 /**
  * Settings root: the category list, two groups - everything that shapes the
  * bar, then everything around the app. A search box at the top filters the
  * list live; matches keep their group, and sub-screens join the results even
- * though they are not listed here.
+ * though they are not listed here. The Debug row carries a count of the
+ * missing grants so the board is discoverable without opening it.
  */
 @Composable
-fun SettingsRootScreen(onNavigate: (String) -> Unit) {
+fun SettingsRootScreen(
+	vm: StatusViewModel,
+	onNavigate: (String) -> Unit
+) {
+	val shizuku by vm.shizuku.collectAsStateWithLifecycle()
+	val prefs by vm.prefs.collectAsStateWithLifecycle()
 	// saveable: the query survives a rotation and a round-trip down the stack.
 	var query by rememberSaveable { mutableStateOf("") }
 	val trimmed = query.trim()
 	// Resolved once per composition, not once per keystroke or per row.
 	val resolved = rememberResolvedCategories()
+	val blockedCount = rememberBlockedGrantCount(shizuku == ShizukuState.READY)
+	val summaries = rememberValueSummaries(prefs)
 	val matches =
 		if (trimmed.isEmpty()) {
 			resolved
@@ -251,31 +317,7 @@ fun SettingsRootScreen(onNavigate: (String) -> Unit) {
 
 	SettingsScreen {
 		item(key = "search") {
-			OutlinedTextField(
-				value = query,
-				onValueChange = { query = it },
-				label = { Text(stringResource(R.string.settings_search)) },
-				leadingIcon = {
-					Icon(
-						painter = painterResource(R.drawable.ic_search),
-						contentDescription = null,
-						tint = MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				},
-				trailingIcon = {
-					if (query.isNotEmpty()) {
-						IconButton(onClick = { query = "" }) {
-							Icon(
-								painter = painterResource(R.drawable.ic_close),
-								contentDescription = stringResource(R.string.cd_clear),
-								tint = MaterialTheme.colorScheme.onSurfaceVariant
-							)
-						}
-					}
-				},
-				singleLine = true,
-				modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-			)
+			SearchField(query, onQueryChange = { query = it })
 		}
 
 		if (trimmed.isNotEmpty() && matches.isEmpty()) {
@@ -288,17 +330,78 @@ fun SettingsRootScreen(onNavigate: (String) -> Unit) {
 				)
 			}
 		} else {
-			listOf(R.string.section_custom_bar, R.string.section_app_group).forEach { group ->
+			categoryGroups(
 				// Sub-screens can be the only match ("permissions", "keyguard
 				// layout"): fall back to them when the listed rows are empty.
-				val rows = if (listed.isEmpty() && trimmed.isNotEmpty()) matches.filter { it.group == group } else listed.filter { it.group == group }
-				if (rows.isNotEmpty()) {
-					item(key = group) {
-						SettingGroup(group) {
-							rows.forEach { category ->
-								SettingNavRow(category.icon, category.title, category.subtitle, category.route, onNavigate)
+				rows = if (listed.isEmpty() && trimmed.isNotEmpty()) matches else listed,
+				blockedCount = blockedCount,
+				summaries = summaries,
+				onNavigate = onNavigate
+			)
+		}
+	}
+}
+
+@Composable
+private fun SearchField(
+	query: String,
+	onQueryChange: (String) -> Unit
+) {
+	OutlinedTextField(
+		value = query,
+		onValueChange = onQueryChange,
+		label = { Text(stringResource(R.string.settings_search)) },
+		leadingIcon = {
+			Icon(
+				painter = painterResource(R.drawable.ic_search),
+				contentDescription = null,
+				tint = MaterialTheme.colorScheme.onSurfaceVariant
+			)
+		},
+		trailingIcon = {
+			if (query.isNotEmpty()) {
+				IconButton(onClick = { onQueryChange("") }) {
+					Icon(
+						painter = painterResource(R.drawable.ic_close),
+						contentDescription = stringResource(R.string.cd_clear),
+						tint = MaterialTheme.colorScheme.onSurfaceVariant
+					)
+				}
+			}
+		},
+		singleLine = true,
+		modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+	)
+}
+
+/** The two category groups; [rows] is already filtered down to what the view shows. */
+private fun LazyListScope.categoryGroups(
+	rows: List<ResolvedCategory>,
+	blockedCount: Int?,
+	summaries: Map<String, String>,
+	onNavigate: (String) -> Unit
+) {
+	listOf(R.string.section_custom_bar, R.string.section_app_group).forEach { group ->
+		val groupRows = rows.filter { it.group == group }
+		if (groupRows.isNotEmpty()) {
+			// Keyed: a rotating query does not recompose the whole card.
+			item(key = group) {
+				SettingGroup(group) {
+					groupRows.forEach { category ->
+						val missing = category.route == Routes.DEBUG && blockedCount != null && blockedCount > 0
+						val subtitle =
+							when {
+								missing -> stringResource(R.string.settings_missing_grants, blockedCount)
+								else -> summaries[category.route] ?: category.subtitle
 							}
-						}
+						SettingNavRow(
+							icon = category.icon,
+							title = category.title,
+							subtitle = subtitle,
+							route = category.route,
+							onNavigate = onNavigate,
+							errorSubtitle = missing
+						)
 					}
 				}
 			}

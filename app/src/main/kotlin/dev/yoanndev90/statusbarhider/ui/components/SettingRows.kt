@@ -54,6 +54,7 @@ fun SettingSwitch(
 	@DrawableRes icon: Int,
 	@StringRes label: Int,
 	checked: Boolean,
+	@StringRes subtitle: Int = 0,
 	onCheckedChange: (Boolean) -> Unit
 ) {
 	Row(
@@ -69,11 +70,19 @@ fun SettingSwitch(
 	) {
 		SettingIcon(icon)
 		Spacer(Modifier.width(12.dp))
-		Text(
-			text = stringResource(label),
-			modifier = Modifier.weight(1f),
-			style = MaterialTheme.typography.bodyLarge
-		)
+		Column(Modifier.weight(1f)) {
+			Text(
+				text = stringResource(label),
+				style = MaterialTheme.typography.bodyLarge
+			)
+			if (subtitle != 0) {
+				Text(
+					text = stringResource(subtitle),
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
+				)
+			}
+		}
 		Switch(
 			checked = checked,
 			onCheckedChange = null
@@ -82,7 +91,8 @@ fun SettingSwitch(
 }
 
 /**
- * Slider labelled "label valueUnit".
+ * Slider with the live value pinned to the right of the label, so dragging
+ * never reflows the row. [subtitle] carries the optional range or caveat.
  *
  * @param suffix optional unit resource (dp, sp, %, ...) appended to the value.
  */
@@ -94,22 +104,32 @@ fun SettingSlider(
 	min: Int,
 	max: Int,
 	@StringRes suffix: Int = 0,
+	@StringRes subtitle: Int = 0,
 	onValueChange: (Int) -> Unit
 ) {
 	Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
 		SettingIcon(icon)
 		Spacer(Modifier.width(12.dp))
 		Column(modifier = Modifier.weight(1f)) {
-			Text(
-				text =
-					stringResource(
-						R.string.slider_value,
-						stringResource(label),
-						value,
-						if (suffix != 0) stringResource(suffix) else ""
-					),
-				style = MaterialTheme.typography.bodyMedium
-			)
+			Row(modifier = Modifier.fillMaxWidth()) {
+				Text(
+					text = stringResource(label),
+					modifier = Modifier.weight(1f),
+					style = MaterialTheme.typography.bodyMedium
+				)
+				Text(
+					text = stringResource(R.string.slider_value, value, if (suffix != 0) stringResource(suffix) else ""),
+					style = MaterialTheme.typography.bodyMedium,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
+				)
+			}
+			if (subtitle != 0) {
+				Text(
+					text = stringResource(subtitle),
+					style = MaterialTheme.typography.bodySmall,
+					color = MaterialTheme.colorScheme.onSurfaceVariant
+				)
+			}
 			Slider(
 				value = value.toFloat(),
 				onValueChange = { onValueChange(it.toInt().coerceIn(min, max)) },
@@ -153,6 +173,7 @@ fun SettingAction(
  * Navigation row for the Settings list: icon, title, optional subtitle and a
  * chevron; the whole row navigates to [route] via [onNavigate]. Titles are
  * pre-resolved strings (the root screen resolves them once for search too).
+ * [errorSubtitle] paints the subtitle in the error color for attention states.
  */
 @Composable
 fun SettingNavRow(
@@ -160,7 +181,8 @@ fun SettingNavRow(
 	title: String,
 	subtitle: String,
 	route: String,
-	onNavigate: (String) -> Unit
+	onNavigate: (String) -> Unit,
+	errorSubtitle: Boolean = false
 ) {
 	Row(
 		modifier =
@@ -180,7 +202,7 @@ fun SettingNavRow(
 			Text(
 				text = subtitle,
 				style = MaterialTheme.typography.bodySmall,
-				color = MaterialTheme.colorScheme.onSurfaceVariant
+				color = if (errorSubtitle) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
 			)
 		}
 		Icon(

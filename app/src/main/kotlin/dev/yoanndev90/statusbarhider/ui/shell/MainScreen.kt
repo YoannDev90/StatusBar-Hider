@@ -172,7 +172,7 @@ private fun AppNavHost(
 		popExitTransition = { slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut() }
 	) {
 		composable(Routes.HOME) { HomeScreen(statusViewModel, navController::navigate) }
-		composable(Routes.SETTINGS) { SettingsRootScreen(navController::navigate) }
+		composable(Routes.SETTINGS) { SettingsRootScreen(statusViewModel, navController::navigate) }
 		composable(Routes.GENERAL) { GeneralScreen(statusViewModel) }
 		composable(Routes.APPEARANCE) { AppearanceScreen(statusViewModel) }
 		composable(Routes.CUTOUT) { CutoutScreen(statusViewModel) }

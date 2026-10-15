@@ -20,7 +20,12 @@ fun GeneralScreen(vm: StatusViewModel) {
 	SettingsScreen {
 		item {
 			SettingGroup {
-				SettingSwitch(R.drawable.ic_touch_app, R.string.switch_touchable_bar, prefs.interactive) {
+				SettingSwitch(
+					icon = R.drawable.ic_touch_app,
+					label = R.string.switch_touchable_bar,
+					checked = prefs.interactive,
+					subtitle = R.string.switch_touchable_bar_sub
+				) {
 					vm.updatePrefs { copy(interactive = it) }
 				}
 				SettingSwitch(R.drawable.ic_power_settings_new, R.string.switch_auto_hide_boot, prefs.autoHideBoot) {
@@ -29,10 +34,26 @@ fun GeneralScreen(vm: StatusViewModel) {
 				SettingSwitch(R.drawable.ic_play_arrow, R.string.switch_auto_start_bar, prefs.autoStartBar) {
 					vm.updatePrefs { copy(autoStartBar = it) }
 				}
-				SettingSlider(R.drawable.ic_timer, R.string.slider_update_interval, prefs.updateIntervalSec, 5, 60, R.string.suffix_seconds) {
+				SettingSlider(
+					icon = R.drawable.ic_timer,
+					label = R.string.slider_update_interval,
+					value = prefs.updateIntervalSec,
+					min = 5,
+					max = 60,
+					suffix = R.string.suffix_seconds,
+					subtitle = R.string.slider_update_interval_sub
+				) {
 					vm.updatePrefs { copy(updateIntervalSec = it) }
 				}
-				SettingSlider(R.drawable.ic_sync, R.string.slider_burn_in_shift, prefs.burnInMin, 0, 30, R.string.suffix_minutes) {
+				SettingSlider(
+					icon = R.drawable.ic_sync,
+					label = R.string.slider_burn_in_shift,
+					value = prefs.burnInMin,
+					min = 0,
+					max = 30,
+					suffix = R.string.suffix_minutes,
+					subtitle = R.string.slider_burn_in_shift_sub
+				) {
 					vm.updatePrefs { copy(burnInMin = it) }
 				}
 			}

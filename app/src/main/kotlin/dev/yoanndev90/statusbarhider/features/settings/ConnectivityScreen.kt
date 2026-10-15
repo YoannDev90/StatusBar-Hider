@@ -29,10 +29,14 @@ fun ConnectivityScreen(vm: StatusViewModel) {
 				SettingSwitch(R.drawable.ic_dnd, R.string.switch_dnd, prefs.showDnd) { vm.updatePrefs { copy(showDnd = it) } }
 				SettingSwitch(R.drawable.ic_data_saver, R.string.switch_data_saver, prefs.showDataSaver) { vm.updatePrefs { copy(showDataSaver = it) } }
 				SettingSwitch(R.drawable.ic_rotation, R.string.switch_auto_rotate, prefs.showRotate) { vm.updatePrefs { copy(showRotate = it) } }
-				SettingSwitch(R.drawable.ic_torch, R.string.switch_flashlight, prefs.showTorch) { vm.updatePrefs { copy(showTorch = it) } }
+				SettingSwitch(R.drawable.ic_torch, R.string.switch_flashlight, prefs.showTorch, R.string.switch_flashlight_sub) {
+					vm.updatePrefs { copy(showTorch = it) }
+				}
 				SettingSwitch(R.drawable.ic_vpn, R.string.switch_vpn, prefs.showVpn) { vm.updatePrefs { copy(showVpn = it) } }
 				SettingSwitch(R.drawable.ic_hotspot, R.string.switch_hotspot, prefs.showHotspot) { vm.updatePrefs { copy(showHotspot = it) } }
-				SettingSwitch(R.drawable.ic_data_usage, R.string.switch_bandwidth, prefs.showBandwidth) { vm.updatePrefs { copy(showBandwidth = it) } }
+				SettingSwitch(R.drawable.ic_data_usage, R.string.switch_bandwidth, prefs.showBandwidth, R.string.switch_bandwidth_sub) {
+					vm.updatePrefs { copy(showBandwidth = it) }
+				}
 				SettingSwitch(R.drawable.ic_swap, R.string.switch_merged_speed, prefs.bandwidthMerged) { vm.updatePrefs { copy(bandwidthMerged = it) } }
 			}
 		}

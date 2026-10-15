@@ -57,7 +57,12 @@ fun ClockScreen(vm: StatusViewModel) {
 	SettingsScreen {
 		item {
 			SettingGroup {
-				SettingSwitch(R.drawable.ic_timer, R.string.switch_show_seconds, prefs.showSeconds) { vm.updatePrefs { copy(showSeconds = it) } }
+				SettingSwitch(
+					icon = R.drawable.ic_timer,
+					label = R.string.switch_show_seconds,
+					checked = prefs.showSeconds,
+					subtitle = R.string.switch_show_seconds_sub
+				) { vm.updatePrefs { copy(showSeconds = it) } }
 				SettingSwitch(R.drawable.ic_schedule, R.string.switch_use_24h, prefs.use24h) { vm.updatePrefs { copy(use24h = it) } }
 				SettingSwitch(R.drawable.ic_event, R.string.switch_date, prefs.showDate) { vm.updatePrefs { copy(showDate = it) } }
 				Row(
@@ -94,7 +99,12 @@ fun ClockScreen(vm: StatusViewModel) {
 					}
 				}
 				SettingSwitch(R.drawable.ic_alarm, R.string.switch_next_alarm, prefs.showAlarm) { vm.updatePrefs { copy(showAlarm = it) } }
-				SettingSwitch(R.drawable.ic_calendar, R.string.switch_next_calendar_event, prefs.showCalendar) { checked ->
+				SettingSwitch(
+					icon = R.drawable.ic_calendar,
+					label = R.string.switch_next_calendar_event,
+					checked = prefs.showCalendar,
+					subtitle = R.string.switch_next_calendar_event_sub
+				) { checked ->
 					if (checked && context.checkSelfPermission(Manifest.permission.READ_CALENDAR) != PackageManager.PERMISSION_GRANTED) {
 						calendarPermission.launch(Manifest.permission.READ_CALENDAR)
 					} else {

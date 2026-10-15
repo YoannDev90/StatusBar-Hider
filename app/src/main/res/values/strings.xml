@@ -22,6 +22,10 @@
     <string name="settings_title">Settings</string>
     <string name="settings_search">Search settings</string>
     <string name="settings_no_results">No matching settings</string>
+    <string name="settings_missing_grants">%1$d grants missing</string>
+    <string name="summary_background">Background: %1$s</string>
+    <string name="summary_refresh">Refresh: every %1$ds</string>
+    <string name="summary_date_format">Date format: %1$s</string>
     <string name="cd_back">Back</string>
     <string name="cd_open_settings">Open settings</string>
     <string name="cd_clear">Clear</string>
@@ -146,7 +150,8 @@
     <string name="setup_usage">Usage access (app blacklist, optional)</string>
 
     <!-- Switches -->
-    <string name="switch_show_seconds">Show seconds (extra battery)</string>
+    <string name="switch_show_seconds">Show seconds</string>
+    <string name="switch_show_seconds_sub">Uses a bit more battery</string>
     <string name="switch_battery">Battery</string>
     <string name="switch_battery_pct">Battery %</string>
     <string name="switch_battery_icon">Battery icon</string>
@@ -158,18 +163,24 @@
     <string name="switch_airplane">Airplane mode</string>
     <string name="switch_usb">USB</string>
     <string name="switch_next_alarm">Next alarm</string>
-    <string name="switch_next_calendar_event">Next calendar event (asks calendar permission)</string>
-    <string name="switch_now_playing">Now playing (needs notification access)</string>
+    <string name="switch_next_calendar_event">Next calendar event</string>
+    <string name="switch_next_calendar_event_sub">Asks for the calendar permission</string>
+    <string name="switch_now_playing">Now playing</string>
+    <string name="switch_now_playing_sub">Needs notification access</string>
     <string name="switch_nfc">NFC indicator</string>
     <string name="switch_gps">GPS indicator</string>
     <string name="switch_dnd">Do Not Disturb</string>
     <string name="switch_data_saver">Data saver</string>
     <string name="switch_auto_rotate">Auto-rotate</string>
-    <string name="switch_flashlight">Flashlight (shown while on)</string>
-    <string name="switch_bandwidth">Bandwidth (1s polling)</string>
+    <string name="switch_flashlight">Flashlight</string>
+    <string name="switch_flashlight_sub">Shown while the torch is on</string>
+    <string name="switch_bandwidth">Bandwidth</string>
+    <string name="switch_bandwidth_sub">Polled every second</string>
     <string name="switch_merged_speed">Merged up/down speed</string>
-    <string name="switch_touchable_bar">Touchable bar (tap clock/date, may block swipe)</string>
-    <string name="switch_dark_text">Dark text (for transparent bar)</string>
+    <string name="switch_touchable_bar">Touchable bar</string>
+    <string name="switch_touchable_bar_sub">Tap clock/date; may block swipe-down</string>
+    <string name="switch_dark_text">Dark text</string>
+    <string name="switch_dark_text_sub">For a transparent bar</string>
     <string name="switch_use_24h">24-hour clock</string>
     <string name="switch_show_on_lock_screen">Show on lock screen</string>
     <string name="switch_hide_notifs_on_lock">Hide notification icons while locked</string>
@@ -196,8 +207,10 @@
     <string name="label_oem_config">Config: %1$s</string>
     <string name="hint_authorize_shizuku">Authorize Shizuku first: the hide / restore commands cannot run without it.</string>
     <string name="slider_max_notification_icons">Max notification icons</string>
-    <string name="slider_burn_in_shift">Burn-in shift: every</string>
-    <string name="slider_update_interval">Status refresh: every</string>
+    <string name="slider_burn_in_shift">Burn-in shift</string>
+    <string name="slider_burn_in_shift_sub">Moves the bar to prevent burn-in; 0 turns it off</string>
+    <string name="slider_update_interval">Status refresh</string>
+    <string name="slider_update_interval_sub">Every 5 to 60 seconds</string>
     <string name="slider_padding_start">Padding start</string>
     <string name="slider_padding_top">Padding top</string>
     <string name="slider_padding_end">Padding end</string>
@@ -211,15 +224,15 @@
     <string name="slider_camera_offset_y">Camera Y position</string>
     <string name="slider_camera_size">Camera size (0 = detect)</string>
     <string name="slider_camera_ring_stroke">Ring thickness</string>
-    <string name="slider_value">%1$s %2$s%3$s</string>
+    <string name="slider_value">%1$s%2$s</string>
 
     <!-- Units and option labels -->
     <string name="suffix_dp">dp</string>
     <string name="suffix_sp">sp</string>
     <string name="suffix_percent">%</string>
     <string name="color_auto">Text color</string>
-    <string name="suffix_seconds">" s (5 - 60)"</string>
-    <string name="suffix_minutes">" min (0 = off)"</string>
+    <string name="suffix_seconds">s</string>
+    <string name="suffix_minutes">min</string>
     <string name="background_transparent">Transparent</string>
     <string name="background_semi">Semi</string>
     <string name="background_black">Black</string>

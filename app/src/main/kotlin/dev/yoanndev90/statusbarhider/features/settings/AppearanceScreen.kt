@@ -26,7 +26,12 @@ fun AppearanceScreen(vm: StatusViewModel) {
 	SettingsScreen {
 		item {
 			SettingGroup(R.string.section_custom_bar) {
-				SettingSwitch(R.drawable.ic_contrast, R.string.switch_dark_text, prefs.darkText) { vm.updatePrefs { copy(darkText = it) } }
+				SettingSwitch(
+					icon = R.drawable.ic_contrast,
+					label = R.string.switch_dark_text,
+					checked = prefs.darkText,
+					subtitle = R.string.switch_dark_text_sub
+				) { vm.updatePrefs { copy(darkText = it) } }
 				SettingRadioRow(
 					icon = R.drawable.ic_palette,
 					options =
