@@ -3,6 +3,7 @@ package dev.yoanndev90.statusbarhider.core.backup
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -85,6 +86,16 @@ class SettingsBackupTest {
 		val raw = "not json ".repeat(SettingsBackup.MAX_BYTES / 9 + 1)
 		val e = assertThrows(SettingsBackupException::class.java) { SettingsBackup.parse(raw) }
 		assertTrue(e.message.orEmpty().contains("byte limit"))
+	}
+
+	@Test
+	fun `unknown keys in the envelope and the overlay block are ignored`() {
+		val raw =
+			"""{"schema_version":1,"oem_id":"x","future_key":1,"overlay":{"future_pref":true,"show_battery":false}}"""
+		val backup = SettingsBackup.parse(raw)
+		assertEquals("x", backup.oemId)
+		assertFalse(backup.prefs.showBattery)
+		assertTrue(backup.prefs.showWifi)
 	}
 }
 
