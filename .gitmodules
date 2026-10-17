@@ -1,3 +1,2 @@
-[submodule "tools/logstream"]
-	path = tools/logstream
+[submodule "tools"]
 	url = https://github.com/YoannDev90/android-tools
