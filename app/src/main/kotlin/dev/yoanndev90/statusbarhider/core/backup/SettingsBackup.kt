@@ -6,17 +6,15 @@ import android.util.Log
 import androidx.core.content.FileProvider
 import dev.yoanndev90.statusbarhider.core.oem.OemConfig
 import dev.yoanndev90.statusbarhider.data.OemRepository
+import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
-import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import java.io.InputStream
-import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
 
 class SettingsBackupException(
 	message: String,
@@ -156,9 +154,10 @@ object SettingsBackup {
 	}
 
 	/**
-	 * Applies a backup: prefs first (observers recompose), then the OEM pick,
-	 * then the side effects that must follow a prefs swap - the overlay service
-	 * and the widgets / tiles whose labels changed.
+	 * Applies a backup: the OEM pick first (the overlay may need the right
+	 * geometry at start), then the whole prefs swap via
+	 * [OverlayController.replaceAll], which also starts / stops the service
+	 * and refreshes the widgets and tiles.
 	 */
 	fun importSettings(
 		context: Context,
@@ -166,15 +165,8 @@ object SettingsBackup {
 	) {
 		val app = context.applicationContext
 		val backup = parse(raw)
-		OverlayPrefsRepository.getInstance(app).replace(backup.prefs)
 		if (backup.oemId.isNotEmpty()) OemConfig.saveId(app, backup.oemId)
 		OemRepository.getInstance(app).refresh()
-		if (backup.prefs.enabled) {
-			StatusBarOverlayService.start(app)
-		} else {
-			StatusBarOverlayService.stop(app)
-		}
-		HideInteractor.notifyTiles(app)
-		BarWidget.updateAll(app)
+		OverlayController.replaceAll(app, backup.prefs)
 	}
 }
