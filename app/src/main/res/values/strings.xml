@@ -53,7 +53,7 @@
     <string name="cat_lock_screen">Lock screen</string>
     <string name="cat_lock_screen_sub">Appearance and behavior when locked</string>
     <string name="cat_profiles">Profiles</string>
-    <string name="cat_profiles_sub">Coming soon</string>
+    <string name="cat_profiles_sub">Save and switch settings sets</string>
     <string name="cat_oem">Device / OEM</string>
     <string name="cat_oem_sub">Hide and restore the status bar</string>
     <string name="cat_debug">Debug</string>
@@ -75,8 +75,33 @@
     <string name="debug_sub_permissions">Permissions</string>
     <string name="debug_sub_permissions_sub">Allowed and blocked grants</string>
 
-    <!-- Profiles placeholder -->
-    <string name="hint_profiles_coming_soon">Profiles are on the way: save different settings sets and switch between them in one tap.</string>
+    <!-- Profiles -->
+    <string name="profile_active">Active profile</string>
+    <string name="profile_none">None</string>
+    <string name="profile_empty">No profiles yet. Save your current settings as the first one.</string>
+    <string name="profile_in_use">In use</string>
+    <string name="profile_saved">Saved</string>
+    <string name="hint_profile_none">Save different settings sets and switch between them in one tap.</string>
+    <string name="hint_profile_modified">Settings have been modified since this profile was saved.</string>
+    <string name="hint_profile_in_sync">The current settings match this profile.</string>
+    <string name="action_save_profile">Save current settings as profile</string>
+    <string name="action_update_profile">Save changes to this profile</string>
+    <string name="action_apply_profile">Apply</string>
+    <string name="action_delete_profile">Delete</string>
+    <string name="action_rename_profile">Rename</string>
+    <string name="dialog_profile_new_title">New profile</string>
+    <string name="dialog_profile_rename_title">Rename profile</string>
+    <string name="dialog_profile_delete_title">Delete profile?</string>
+    <string name="dialog_profile_delete_text">\"%1$s\" will be removed. The current settings stay as they are.</string>
+    <string name="dialog_profile_apply_title">Unsaved changes</string>
+    <string name="dialog_profile_apply_text">The current settings have been modified since the last save. Apply \"%1$s\" and lose those changes?</string>
+    <string name="err_profile_name_too_long">Maximum %1$d characters</string>
+    <string name="toast_profile_saved">Profile saved: %1$s</string>
+    <string name="toast_profile_applied">Profile applied: %1$s</string>
+    <string name="toast_profile_limit">Profile limit reached (%1$d). Delete one first.</string>
+    <string name="cd_active">Active</string>
+    <string name="cd_rename">Rename</string>
+    <string name="cd_delete">Delete</string>
 
     <!-- Debug: device info -->
     <string name="debug_manufacturer">Manufacturer</string>
@@ -358,6 +383,11 @@
     <string name="log_settings_exported">Settings exported to a JSON file</string>
     <string name="log_settings_imported">Settings imported</string>
     <string name="log_settings_reset">Settings reset to defaults</string>
+    <string name="log_profile_saved">Profile saved: %1$s</string>
+    <string name="log_profile_applied">Profile applied: %1$s</string>
+    <string name="log_profile_updated">Profile updated: %1$s</string>
+    <string name="log_profile_renamed">Profile renamed: %1$s</string>
+    <string name="log_profile_deleted">Profile deleted: %1$s</string>
     <string name="log_start_service_failed">Custom bar could not be started: %1$s</string>
     <string name="log_stop_service_failed">Custom bar could not be stopped: %1$s</string>
     <string name="log_start_foreground_failed">Custom bar failed to run in the foreground: %1$s</string>
