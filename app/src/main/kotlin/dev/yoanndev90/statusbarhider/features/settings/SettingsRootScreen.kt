@@ -151,7 +151,14 @@ private val categories =
 			listOf("lock keyguard visibility overlay accessibility hide notifications"),
 			listed = false
 		),
-		Category(R.drawable.ic_person, R.string.cat_profiles, R.string.cat_profiles_sub, Routes.PROFILES, R.string.section_app_group),
+		Category(
+			R.drawable.ic_person,
+			R.string.cat_profiles,
+			R.string.cat_profiles_sub,
+			Routes.PROFILES,
+			R.string.section_app_group,
+			listOf("profil preset snapshot them look day night")
+		),
 		Category(
 			R.drawable.ic_devices,
 			R.string.cat_oem,
