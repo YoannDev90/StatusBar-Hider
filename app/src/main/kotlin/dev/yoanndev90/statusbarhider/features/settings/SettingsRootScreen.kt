@@ -243,23 +243,20 @@ private fun resolveCategories(context: Context): List<ResolvedCategory> =
 
 /** Live one-line summaries shown under a few categories (current background, refresh rate...). */
 @Composable
-private fun rememberValueSummaries(prefs: OverlayPrefs): Map<String, String> {
-	val context = LocalContext.current
-	return remember(prefs, context) {
-		val background =
-			context.getString(
-				when (prefs.background) {
-					OverlayBackground.TRANSPARENT -> R.string.background_transparent
-					OverlayBackground.BLACK -> R.string.background_black
-					OverlayBackground.SEMI -> R.string.background_semi
-				}
-			)
-		mapOf(
-			Routes.APPEARANCE to context.getString(R.string.summary_background, background),
-			Routes.GENERAL to context.getString(R.string.summary_refresh, prefs.updateIntervalSec),
-			Routes.CLOCK to context.getString(R.string.summary_date_format, prefs.dateFormat)
+private fun valueSummaries(prefs: OverlayPrefs): Map<String, String> {
+	val backgroundLabel =
+		stringResource(
+			when (prefs.background) {
+				OverlayBackground.TRANSPARENT -> R.string.background_transparent
+				OverlayBackground.BLACK -> R.string.background_black
+				OverlayBackground.SEMI -> R.string.background_semi
+			}
 		)
-	}
+	return mapOf(
+		Routes.APPEARANCE to stringResource(R.string.summary_background, backgroundLabel),
+		Routes.GENERAL to stringResource(R.string.summary_refresh, prefs.updateIntervalSec),
+		Routes.CLOCK to stringResource(R.string.summary_date_format, prefs.dateFormat)
+	)
 }
 
 /** Counts the blocked grants; a null value means the read has not finished yet. */
@@ -306,7 +303,7 @@ fun SettingsRootScreen(
 	// Resolved once per composition, not once per keystroke or per row.
 	val resolved = rememberResolvedCategories()
 	val blockedCount = rememberBlockedGrantCount(shizuku == ShizukuState.READY)
-	val summaries = rememberValueSummaries(prefs)
+	val summaries = valueSummaries(prefs)
 	val matches =
 		if (trimmed.isEmpty()) {
 			resolved

@@ -131,28 +131,12 @@ fun MainScreen() {
 							currentRoute = currentRoute,
 							setupOpen = setupOpen,
 							searchOpen = settingsSearchOpen,
+							logsViewModel = logsViewModel,
 							onToggleSearch = {
 								settingsSearchOpen = !settingsSearchOpen
 								if (!settingsSearchOpen) settingsQuery = ""
 							},
-							onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-							onCopyLogs = {
-								val clip = ClipData.newPlainText(
-									context.getString(R.string.clipboard_label),
-									logsViewModel.lines.value.joinToString("\n")
-								)
-								context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
-								Toast.makeText(context, R.string.toast_logs_copied, Toast.LENGTH_SHORT).show()
-							},
-							onShareLogs = {
-								logsViewModel.shareLogs { intent ->
-									if (intent == null) {
-										Toast.makeText(context, R.string.toast_cannot_share_logs, Toast.LENGTH_SHORT).show()
-									} else {
-										context.startActivity(Intent.createChooser(intent, null))
-									}
-								}
-							}
+							onOpenSettings = { navController.navigate(Routes.SETTINGS) }
 						)
 					}
 				)
@@ -204,18 +188,20 @@ private fun SettingsSearchField(query: String, onQueryChange: (String) -> Unit) 
 /**
  * Top-bar action set: the Home gear, the Settings search toggle and the Logs
  * copy / share pair. Everything is scoped off [setupOpen] so the checklist
- * overlay never shows a stale action.
+ * overlay never shows a stale action. The copy / share handlers live here so
+ * the resource lookup stays configuration-aware inside the composable.
  */
 @Composable
 private fun TopBarActions(
 	currentRoute: String?,
 	setupOpen: Boolean,
 	searchOpen: Boolean,
+	logsViewModel: LogsViewModel,
 	onToggleSearch: () -> Unit,
-	onOpenSettings: () -> Unit,
-	onCopyLogs: () -> Unit,
-	onShareLogs: () -> Unit
+	onOpenSettings: () -> Unit
 ) {
+	val context = LocalContext.current
+	val clipboardLabel = stringResource(R.string.clipboard_label)
 	if (setupOpen) return
 	when (currentRoute) {
 		Routes.HOME -> {
@@ -235,13 +221,29 @@ private fun TopBarActions(
 			}
 		}
 		Routes.LOGS -> {
-			IconButton(onClick = onCopyLogs) {
+			IconButton(
+				onClick = {
+					val clip = ClipData.newPlainText(clipboardLabel, logsViewModel.lines.value.joinToString("\n"))
+					context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
+					Toast.makeText(context, R.string.toast_logs_copied, Toast.LENGTH_SHORT).show()
+				}
+			) {
 				Icon(
 					painter = painterResource(R.drawable.ic_content_copy),
 					contentDescription = stringResource(R.string.action_export_logs)
 				)
 			}
-			IconButton(onClick = onShareLogs) {
+			IconButton(
+				onClick = {
+					logsViewModel.shareLogs { intent ->
+						if (intent == null) {
+							Toast.makeText(context, R.string.toast_cannot_share_logs, Toast.LENGTH_SHORT).show()
+						} else {
+							context.startActivity(Intent.createChooser(intent, null))
+						}
+					}
+				}
+			) {
 				Icon(
 					painter = painterResource(R.drawable.ic_share),
 					contentDescription = stringResource(R.string.action_share_logs)
