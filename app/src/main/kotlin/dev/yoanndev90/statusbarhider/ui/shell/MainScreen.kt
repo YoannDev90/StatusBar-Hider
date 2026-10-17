@@ -1,6 +1,14 @@
 package dev.yoanndev90.statusbarhider.ui.shell
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,82 +16,92 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.AppSettings
-import dev.yoanndev90.statusbarhider.features.bar.BarScreen
+import dev.yoanndev90.statusbarhider.features.home.HomeScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsViewModel
-import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.features.status.StatusScreen
+import dev.yoanndev90.statusbarhider.features.settings.AboutScreen
+import dev.yoanndev90.statusbarhider.features.settings.AppearanceScreen
+import dev.yoanndev90.statusbarhider.features.settings.BackupScreen
+import dev.yoanndev90.statusbarhider.features.settings.BatteryScreen
+import dev.yoanndev90.statusbarhider.features.settings.ClockScreen
+import dev.yoanndev90.statusbarhider.features.settings.ConnectivityScreen
+import dev.yoanndev90.statusbarhider.features.settings.CutoutScreen
+import dev.yoanndev90.statusbarhider.features.settings.DebugHubScreen
+import dev.yoanndev90.statusbarhider.features.settings.DebugInfoScreen
+import dev.yoanndev90.statusbarhider.features.settings.DebugPermissionsScreen
+import dev.yoanndev90.statusbarhider.features.settings.GeneralScreen
+import dev.yoanndev90.statusbarhider.features.settings.HiddenAppsScreen
+import dev.yoanndev90.statusbarhider.features.settings.LockAppearanceScreen
+import dev.yoanndev90.statusbarhider.features.settings.LockBehaviorScreen
+import dev.yoanndev90.statusbarhider.features.settings.LockHubScreen
+import dev.yoanndev90.statusbarhider.features.settings.NotificationsScreen
+import dev.yoanndev90.statusbarhider.features.settings.OemScreen
+import dev.yoanndev90.statusbarhider.features.settings.ProfilesScreen
+import dev.yoanndev90.statusbarhider.features.settings.SettingsRootScreen
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
-import dev.yoanndev90.statusbarhider.features.style.StyleScreen
 import dev.yoanndev90.statusbarhider.ui.setup.SetupScreen
 
 /**
- * Shell of the app: a top bar titled after the current tab, a bottom
- * navigation bar over four destinations, and a tab host that keeps every
- * visited tab composed.
+ * App shell: a NavHost over Home and the Settings tree, a top bar titled after
+ * the current route with a back arrow on every non-root screen, and the setup
+ * checklist drawn on top when it is open.
  *
- * Navigation Compose disposed the destination it left, so each switch threw
- * the target page away and built it again: a full recomposition, a full
- * relayout - every Text of the page was measured from scratch - and a full
- * redraw, which the trace showed as an ~80 ms UI thread frame on the test
- * device. Here a tab is composed the first time it is opened and then stays
- * alive; only the selected one is drawn and hit tested, the others sit behind
- * [hiddenLayer] with their measured state intact.
+ * There is no bottom navigation: Home is the only entry point, the gear in its
+ * top bar opens Settings, and every category is a stack destination. The top
+ * bar carries the contextual actions: search on Settings, copy / share on Logs.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen() {
 	val context = LocalContext.current
-	// First launch (or "Not now" on a previous run) opens the checklist instead
-	// of the shell; later opens come from the Status tab.
 	var setupOpen by rememberSaveable { mutableStateOf(!AppSettings.isSetupDone(context)) }
 	var setupReopened by rememberSaveable { mutableStateOf(false) }
-	var current by rememberSaveable { mutableStateOf(AppDestination.START) }
-	// Bitmask of the tabs composed so far, so a restored process rebuilds the
-	// tab it was on plus nothing else.
-	var visitedMask by rememberSaveable { mutableStateOf(1 shl AppDestination.START.ordinal) }
+	val navController = rememberNavController()
 	val busy by ShellRunner.busy.collectAsStateWithLifecycle()
-	// One ViewModel per tab - the instance each screen has always owned: every
-	// screen collects the one-shot events of its own ViewModel, so tabs sharing
-	// an instance would each answer the same event.
+	// One ViewModel for the whole app: every destination is a stack entry that
+	// comes and goes, so the shared instance outlives them all and screens
+	// still own their event collector via HandlePrefsEvents.
 	val statusViewModel: StatusViewModel = viewModel()
-	val barViewModel: PrefsViewModel = viewModel(key = "bar")
-	val styleViewModel: PrefsViewModel = viewModel(key = "style")
 	val logsViewModel: LogsViewModel = viewModel()
+	// Search lives in the shell so the field is pinned in the top bar instead
+	// of scrolling away with the list.
+	var settingsQuery by rememberSaveable { mutableStateOf("") }
+	var settingsSearchOpen by rememberSaveable { mutableStateOf(false) }
 
-	// The checklist is the start destination on first launch, where back exits
-	// the app as usual; re-opened from the Status tab it goes back there.
-	BackHandler(enabled = setupReopened || (!setupOpen && current != AppDestination.START)) {
-		if (setupOpen) {
-			setupOpen = false
-			setupReopened = false
-		} else {
-			current = AppDestination.START
-		}
+	val backStackEntry by navController.currentBackStackEntryAsState()
+	val currentRoute = backStackEntry?.destination?.route
+	val isSettingsRoot = currentRoute == Routes.SETTINGS
+
+	// Closing a reopened checklist pops back to About; on first launch back
+	// exits the app because the handler is disabled.
+	BackHandler(enabled = setupOpen && setupReopened) {
+		setupOpen = false
+		setupReopened = false
 	}
 
 	Scaffold(
@@ -92,8 +110,33 @@ fun MainScreen() {
 			Column {
 				TopAppBar(
 					title = {
-						Text(
-							stringResource(if (setupOpen) R.string.setup_title else current.titleRes)
+						if (isSettingsRoot && settingsSearchOpen) {
+							SettingsSearchField(settingsQuery, onQueryChange = { settingsQuery = it })
+						} else {
+							Text(stringResource(if (setupOpen) R.string.setup_title else Routes.titleOf(currentRoute)))
+						}
+					},
+					navigationIcon = {
+						if (!setupOpen && currentRoute != Routes.HOME) {
+							IconButton(onClick = { navController.navigateUp() }) {
+								Icon(
+									painter = painterResource(R.drawable.ic_arrow_back),
+									contentDescription = stringResource(R.string.cd_back)
+								)
+							}
+						}
+					},
+					actions = {
+						TopBarActions(
+							currentRoute = currentRoute,
+							setupOpen = setupOpen,
+							searchOpen = settingsSearchOpen,
+							logsViewModel = logsViewModel,
+							onToggleSearch = {
+								settingsSearchOpen = !settingsSearchOpen
+								if (!settingsSearchOpen) settingsQuery = ""
+							},
+							onOpenSettings = { navController.navigate(Routes.SETTINGS) }
 						)
 					}
 				)
@@ -101,34 +144,14 @@ fun MainScreen() {
 					LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
 				}
 			}
-		},
-		bottomBar = {
-			if (!setupOpen) {
-				NavigationBar {
-					AppDestination.entries.forEach { destination ->
-						NavigationBarItem(
-							selected = destination == current,
-							onClick = {
-								visitedMask = visitedMask or (1 shl destination.ordinal)
-								current = destination
-							},
-							icon = { Icon(painter = painterResource(destination.iconRes), contentDescription = null) },
-							label = { Text(stringResource(destination.labelRes)) }
-						)
-					}
-				}
-			}
 		}
 	) { inner ->
 		Box(Modifier.fillMaxSize().padding(inner)) {
-			TabContent(
-				current = current,
-				visitedMask = visitedMask,
-				setupOpen = setupOpen,
+			AppNavHost(
+				navController = navController,
 				statusViewModel = statusViewModel,
-				barViewModel = barViewModel,
-				styleViewModel = styleViewModel,
 				logsViewModel = logsViewModel,
+				settingsQuery = settingsQuery,
 				onOpenSetup = {
 					setupReopened = true
 					setupOpen = true
@@ -141,7 +164,6 @@ fun MainScreen() {
 						if (completed) AppSettings.setSetupDone(context, true)
 						setupOpen = false
 						setupReopened = false
-						current = AppDestination.START
 					}
 				)
 			}
@@ -150,56 +172,127 @@ fun MainScreen() {
 }
 
 /**
- * Draws every tab the user has opened at least once: the selected one on top,
- * the rest behind [hiddenLayer] so they keep their measured state.
+ * The search field that replaces the title while the Settings search is open.
  */
 @Composable
-private fun TabContent(
-	current: AppDestination,
-	visitedMask: Int,
+private fun SettingsSearchField(query: String, onQueryChange: (String) -> Unit) {
+	OutlinedTextField(
+		value = query,
+		onValueChange = onQueryChange,
+		placeholder = { Text(stringResource(R.string.settings_search)) },
+		singleLine = true,
+		modifier = Modifier.fillMaxWidth()
+	)
+}
+
+/**
+ * Top-bar action set: the Home gear, the Settings search toggle and the Logs
+ * copy / share pair. Everything is scoped off [setupOpen] so the checklist
+ * overlay never shows a stale action. The copy / share handlers live here so
+ * the resource lookup stays configuration-aware inside the composable.
+ */
+@Composable
+private fun TopBarActions(
+	currentRoute: String?,
 	setupOpen: Boolean,
-	statusViewModel: StatusViewModel,
-	barViewModel: PrefsViewModel,
-	styleViewModel: PrefsViewModel,
+	searchOpen: Boolean,
 	logsViewModel: LogsViewModel,
-	onOpenSetup: () -> Unit
+	onToggleSearch: () -> Unit,
+	onOpenSettings: () -> Unit
 ) {
-	AppDestination.entries.forEach { destination ->
-		val visited = destination == current || (visitedMask and (1 shl destination.ordinal)) != 0
-		if (visited) {
-			key(destination) {
-				val selected = !setupOpen && destination == current
-				Box(
-					modifier =
-						Modifier
-							.fillMaxSize()
-							.zIndex(if (selected) 1f else 0f)
-							.then(if (selected) Modifier else Modifier.hiddenLayer())
-				) {
-					when (destination) {
-						AppDestination.STATUS ->
-							StatusScreen(statusViewModel, onOpenSetup = onOpenSetup)
-						AppDestination.BAR -> BarScreen(barViewModel)
-						AppDestination.STYLE -> StyleScreen(styleViewModel)
-						AppDestination.LOG -> LogsScreen(logsViewModel, selected)
+	val context = LocalContext.current
+	val clipboardLabel = stringResource(R.string.clipboard_label)
+	if (setupOpen) return
+	when (currentRoute) {
+		Routes.HOME -> {
+			IconButton(onClick = onOpenSettings) {
+				Icon(
+					painter = painterResource(R.drawable.ic_settings),
+					contentDescription = stringResource(R.string.cd_open_settings)
+				)
+			}
+		}
+		Routes.SETTINGS -> {
+			IconButton(onClick = onToggleSearch) {
+				Icon(
+					painter = painterResource(if (searchOpen) R.drawable.ic_close else R.drawable.ic_search),
+					contentDescription = stringResource(R.string.settings_search)
+				)
+			}
+		}
+		Routes.LOGS -> {
+			IconButton(
+				onClick = {
+					val clip = ClipData.newPlainText(clipboardLabel, logsViewModel.lines.value.joinToString("\n"))
+					context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
+					Toast.makeText(context, R.string.toast_logs_copied, Toast.LENGTH_SHORT).show()
+				}
+			) {
+				Icon(
+					painter = painterResource(R.drawable.ic_content_copy),
+					contentDescription = stringResource(R.string.action_export_logs)
+				)
+			}
+			IconButton(
+				onClick = {
+					logsViewModel.shareLogs { intent ->
+						if (intent == null) {
+							Toast.makeText(context, R.string.toast_cannot_share_logs, Toast.LENGTH_SHORT).show()
+						} else {
+							context.startActivity(Intent.createChooser(intent, null))
+						}
 					}
 				}
+			) {
+				Icon(
+					painter = painterResource(R.drawable.ic_share),
+					contentDescription = stringResource(R.string.action_share_logs)
+				)
 			}
 		}
 	}
 }
 
-/**
- * Keeps a tab composed and measured but out of the frame: its subtree is never
- * drawn, and taps meant for the selected tab cannot fall through to it.
- */
-private fun Modifier.hiddenLayer(): Modifier =
-	this
-		.drawWithContent { }
-		.pointerInput(Unit) {
-			awaitPointerEventScope {
-				while (true) {
-					awaitPointerEvent().changes.forEach { it.consume() }
-				}
-			}
-		}
+/** The route table: Home, the Settings list, and one destination per category. */
+@Composable
+private fun AppNavHost(
+	navController: NavHostController,
+	statusViewModel: StatusViewModel,
+	logsViewModel: LogsViewModel,
+	settingsQuery: String,
+	onOpenSetup: () -> Unit
+) {
+	// Forward pushes slide in from the right and keep the current screen in
+	// place; back pops mirror it. Material's standard stack motion.
+	NavHost(
+		navController = navController,
+		startDestination = Routes.HOME,
+		modifier = Modifier.fillMaxSize(),
+		enterTransition = { slideInHorizontally(initialOffsetX = { it / 4 }) + fadeIn() },
+		exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 8 }) + fadeOut() },
+		popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 8 }) + fadeIn() },
+		popExitTransition = { slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut() }
+	) {
+		composable(Routes.HOME) { HomeScreen(statusViewModel, navController::navigate) }
+		composable(Routes.SETTINGS) { SettingsRootScreen(statusViewModel, settingsQuery, navController::navigate) }
+		composable(Routes.GENERAL) { GeneralScreen(statusViewModel) }
+		composable(Routes.APPEARANCE) { AppearanceScreen(statusViewModel) }
+		composable(Routes.CUTOUT) { CutoutScreen(statusViewModel) }
+		composable(Routes.CLOCK) { ClockScreen(statusViewModel) }
+		composable(Routes.BATTERY) { BatteryScreen(statusViewModel) }
+		composable(Routes.NOTIFICATIONS) { NotificationsScreen(statusViewModel) }
+		composable(Routes.CONNECTIVITY) { ConnectivityScreen(statusViewModel) }
+		composable(Routes.HIDDEN_APPS) { HiddenAppsScreen(statusViewModel) }
+		composable(Routes.LOCK) { LockHubScreen(navController::navigate) }
+		composable(Routes.LOCK_APPEARANCE) { LockAppearanceScreen(statusViewModel) }
+		composable(Routes.LOCK_BEHAVIOR) { LockBehaviorScreen(statusViewModel) }
+		composable(Routes.PROFILES) { ProfilesScreen() }
+		composable(Routes.OEM) { OemScreen(statusViewModel) }
+		composable(Routes.DEBUG) { DebugHubScreen(navController::navigate) }
+		composable(Routes.DEBUG_INFO) { DebugInfoScreen(statusViewModel) }
+		composable(Routes.DEBUG_PERMISSIONS) { DebugPermissionsScreen(statusViewModel) }
+		composable(Routes.LOGS) { LogsScreen(logsViewModel) }
+		composable(Routes.BACKUP) { BackupScreen(statusViewModel) }
+		composable(Routes.ABOUT) { AboutScreen(statusViewModel, onOpenSetup) }
+	}
+}

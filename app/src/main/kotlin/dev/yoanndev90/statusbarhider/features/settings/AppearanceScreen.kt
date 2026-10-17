@@ -1,0 +1,97 @@
+package dev.yoanndev90.statusbarhider.features.settings
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
+import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
+import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingLabelRow
+import dev.yoanndev90.statusbarhider.ui.components.SettingRadioRow
+import dev.yoanndev90.statusbarhider.ui.components.SettingSlider
+import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
+import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
+
+/** Stored ids behind the weight choices; indexes map to OverlayPrefs.fontWeightName. */
+private val FONT_WEIGHT_IDS = listOf("NORMAL", "MEDIUM", "BOLD")
+
+/** Background, paddings, type, and the drag-to-reorder widget list. */
+@Composable
+fun AppearanceScreen(vm: StatusViewModel) {
+	val prefs by vm.prefs.collectAsStateWithLifecycle()
+	HandlePrefsEvents(vm)
+
+	SettingsScreen {
+		item {
+			SettingGroup {
+				SettingSwitch(
+					icon = R.drawable.ic_contrast,
+					label = R.string.switch_dark_text,
+					checked = prefs.darkText,
+					subtitle = R.string.switch_dark_text_sub
+				) { vm.updatePrefs { copy(darkText = it) } }
+				SettingRadioRow(
+					icon = R.drawable.ic_palette,
+					options =
+						listOf(
+							R.string.background_transparent,
+							R.string.background_semi,
+							R.string.background_black
+						),
+					selected = backgroundIndex(prefs.background),
+					onSelect = { index ->
+						val bg =
+							when (index) {
+								0 -> OverlayBackground.TRANSPARENT
+								2 -> OverlayBackground.BLACK
+								else -> OverlayBackground.SEMI
+							}
+						vm.updatePrefs { copy(background = bg) }
+					}
+				)
+				SettingSlider(R.drawable.ic_west, R.string.slider_padding_start, prefs.padStartDp, 0, 32, R.string.suffix_dp) {
+					vm.updatePrefs { copy(padStartDp = it) }
+				}
+				SettingSlider(R.drawable.ic_north, R.string.slider_padding_top, prefs.padTopDp, 0, 32, R.string.suffix_dp) {
+					vm.updatePrefs { copy(padTopDp = it) }
+				}
+				SettingSlider(R.drawable.ic_east, R.string.slider_padding_end, prefs.padEndDp, 0, 32, R.string.suffix_dp) {
+					vm.updatePrefs { copy(padEndDp = it) }
+				}
+				SettingSlider(R.drawable.ic_south, R.string.slider_padding_bottom, prefs.padBottomDp, 0, 32, R.string.suffix_dp) {
+					vm.updatePrefs { copy(padBottomDp = it) }
+				}
+				SettingSlider(R.drawable.ic_format_size, R.string.slider_text_size, prefs.fontSizeSp, 10, 20, R.string.suffix_sp) {
+					vm.updatePrefs { copy(fontSizeSp = it) }
+				}
+				SettingSlider(R.drawable.ic_space_bar, R.string.slider_widget_spacing, prefs.widgetSpacingDp, 0, 12, R.string.suffix_dp) {
+					vm.updatePrefs { copy(widgetSpacingDp = it) }
+				}
+				SettingLabelRow(R.string.label_text_weight)
+				SettingRadioRow(
+					icon = R.drawable.ic_format_bold,
+					options =
+						listOf(
+							R.string.font_weight_normal,
+							R.string.font_weight_medium,
+							R.string.font_weight_bold
+						),
+					selected = FONT_WEIGHT_IDS.indexOf(prefs.fontWeightName).coerceAtLeast(0),
+					onSelect = { vm.updatePrefs { copy(fontWeightName = FONT_WEIGHT_IDS[it]) } }
+				)
+			}
+		}
+		item {
+			WidgetOrderGroup(prefs.widgetOrder, vm::moveWidget)
+		}
+	}
+}
+
+private fun backgroundIndex(background: OverlayBackground): Int =
+	when (background) {
+		OverlayBackground.TRANSPARENT -> 0
+		OverlayBackground.BLACK -> 2
+		OverlayBackground.SEMI -> 1
+	}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="960"
+    android:viewportHeight="960">
+  <!-- Material Symbols "delete" (Apache-2.0), viewBox y shifted from -960..0 -->
+  <group android:translateY="960">
+    <path
+        android:pathData="M360-200q-33 0-56.5-23.5T280-280v-440h-40v-80h200v-40h240v40h200v80h-40v440q0 33-23.5 56.5T600-200H360Zm280-520H360v440h280v-440ZM240-800h80v-40h240v40h80v-80H240v80Zm160 440q17 0 28.5-11.5T440-400v-240q0-17-11.5-28.5T400-680q-17 0-28.5 11.5T360-640v240q0 17 11.5 28.5T400-360Zm160 0q17 0 28.5-11.5T600-400v-240q0-17-11.5-28.5T560-680q-17 0-28.5 11.5T520-640v240q0 17 11.5 28.5T560-360Z"
+        android:fillColor="#e3e3e3" />
+  </group>
+</vector>

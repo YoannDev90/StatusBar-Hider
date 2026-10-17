@@ -12,27 +12,121 @@
     <!-- Section titles (card headings on the settings screens) -->
     <string name="section_shizuku">Shizuku</string>
     <string name="section_status_bar">Status bar</string>
-    <string name="section_custom_bar">Custom bar</string>
-    <string name="section_widget_order">Widget order</string>
-    <string name="section_cutout">Cutout</string>
     <string name="section_test">Test</string>
-    <string name="section_app">App</string>
-    <string name="section_log">Log</string>
+    <string name="section_custom_bar">Custom bar</string>
+    <string name="section_app_group">App</string>
+    <string name="section_widget_order">Widget order</string>
 
-    <!-- Bottom navigation tabs (also used as top bar titles) -->
-    <string name="nav_status">Status</string>
-    <string name="nav_bar">Custom bar</string>
-    <string name="nav_style">Style</string>
-    <string name="nav_log">Logs</string>
+    <!-- Settings navigation -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_search">Search settings</string>
+    <string name="settings_no_results">No matching settings</string>
+    <string name="settings_missing_grants">%1$d grants missing</string>
+    <string name="summary_background">Background: %1$s</string>
+    <string name="summary_refresh">Refresh: every %1$ds</string>
+    <string name="summary_date_format">Date format: %1$s</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_open_settings">Open settings</string>
+    <string name="cd_clear">Clear</string>
 
-    <!-- Custom bar setting groups -->
-    <string name="group_clock_date">Clock &amp; date</string>
-    <string name="group_lock_screen">Lock screen</string>
-    <string name="group_battery">Battery</string>
-    <string name="group_notifications">Notifications &amp; media</string>
-    <string name="group_connectivity">Connectivity</string>
-    <string name="group_apps">Hidden apps</string>
-    <string name="group_behavior">Behavior</string>
+    <!-- Home -->
+    <string name="home_bar_visible">Custom bar: visible</string>
+    <string name="home_bar_hidden">Custom bar: hidden</string>
+
+    <!-- Settings categories (root list + top bar titles) -->
+    <string name="cat_general">General</string>
+    <string name="cat_general_sub">Refresh, boot, touch</string>
+    <string name="cat_appearance">Appearance</string>
+    <string name="cat_appearance_sub">Background, text, widget order</string>
+    <string name="cat_cutout">Cutout / Camera</string>
+    <string name="cat_cutout_sub">Notch position and progress ring</string>
+    <string name="cat_clock">Clock &amp; date</string>
+    <string name="cat_clock_sub">Time, date, alarm, calendar</string>
+    <string name="cat_battery">Battery</string>
+    <string name="cat_battery_sub">Level, percentage, icon</string>
+    <string name="cat_notifications">Notifications &amp; media</string>
+    <string name="cat_notifications_sub">Icons and now playing</string>
+    <string name="cat_connectivity">Connectivity</string>
+    <string name="cat_connectivity_sub">Radios, network, bandwidth</string>
+    <string name="cat_hidden_apps">Hidden apps</string>
+    <string name="cat_hidden_apps_sub">Keep the bar out of apps</string>
+    <string name="cat_lock_screen">Lock screen</string>
+    <string name="cat_lock_screen_sub">Appearance and behavior when locked</string>
+    <string name="cat_profiles">Profiles</string>
+    <string name="cat_profiles_sub">Save and switch settings sets</string>
+    <string name="cat_oem">Device / OEM</string>
+    <string name="cat_oem_sub">Hide and restore the status bar</string>
+    <string name="cat_debug">Debug</string>
+    <string name="cat_debug_sub">Device info and permissions</string>
+    <string name="cat_logs">Logs</string>
+    <string name="cat_logs_sub">Command output</string>
+    <string name="cat_backup">Backup</string>
+    <string name="cat_backup_sub">Export and import settings</string>
+    <string name="cat_about">About</string>
+    <string name="cat_about_sub">Version, token, setup</string>
+
+    <!-- Sub-screens -->
+    <string name="lock_sub_appearance">Layout</string>
+    <string name="lock_sub_appearance_sub">Full layout or clock only</string>
+    <string name="lock_sub_behavior">Behavior</string>
+    <string name="lock_sub_behavior_sub">Visibility, overlay, notifications</string>
+    <string name="debug_sub_info">Device info</string>
+    <string name="debug_sub_info_sub">Manufacturer, model, build</string>
+    <string name="debug_sub_permissions">Permissions</string>
+    <string name="debug_sub_permissions_sub">Allowed and blocked grants</string>
+
+    <!-- Profiles -->
+    <string name="profile_active">Active profile</string>
+    <string name="profile_none">None</string>
+    <string name="profile_empty">No profiles yet. Save your current settings as the first one.</string>
+    <string name="profile_in_use">In use</string>
+    <string name="profile_saved">Saved</string>
+    <string name="hint_profile_none">Save different settings sets and switch between them in one tap.</string>
+    <string name="hint_profile_modified">Settings have been modified since this profile was saved.</string>
+    <string name="hint_profile_in_sync">The current settings match this profile.</string>
+    <string name="action_save_profile">Save current settings as profile</string>
+    <string name="action_update_profile">Save changes to this profile</string>
+    <string name="action_apply_profile">Apply</string>
+    <string name="action_delete_profile">Delete</string>
+    <string name="action_rename_profile">Rename</string>
+    <string name="dialog_profile_new_title">New profile</string>
+    <string name="dialog_profile_rename_title">Rename profile</string>
+    <string name="dialog_profile_delete_title">Delete profile?</string>
+    <string name="dialog_profile_delete_text">\"%1$s\" will be removed. The current settings stay as they are.</string>
+    <string name="dialog_profile_apply_title">Unsaved changes</string>
+    <string name="dialog_profile_apply_text">The current settings have been modified since the last save. Apply \"%1$s\" and lose those changes?</string>
+    <string name="err_profile_name_too_long">Maximum %1$d characters</string>
+    <string name="toast_profile_saved">Profile saved: %1$s</string>
+    <string name="toast_profile_applied">Profile applied: %1$s</string>
+    <string name="toast_profile_limit">Profile limit reached (%1$d). Delete one first.</string>
+    <string name="cd_active">Active</string>
+    <string name="cd_rename">Rename</string>
+    <string name="cd_delete">Delete</string>
+
+    <!-- Debug: device info -->
+    <string name="debug_manufacturer">Manufacturer</string>
+    <string name="debug_model">Model</string>
+    <string name="debug_android">Android</string>
+    <string name="debug_sdk">SDK</string>
+    <string name="debug_build_type">Build type</string>
+    <string name="debug_app_version">App version</string>
+    <string name="debug_oem_config">OEM config</string>
+    <string name="debug_build_debug">debug</string>
+    <string name="debug_build_release">release</string>
+
+    <!-- Debug: permissions -->
+    <string name="perm_status_allowed">allowed</string>
+    <string name="perm_status_blocked">blocked</string>
+    <string name="perm_shizuku">Shizuku</string>
+    <string name="perm_overlay">Display over other apps</string>
+    <string name="perm_notif_access">Notification access</string>
+    <string name="perm_calendar">Calendar</string>
+    <string name="perm_post_notifs">Post notifications</string>
+    <string name="perm_usage">Usage access</string>
+    <string name="perm_accessibility">Accessibility (lock screen)</string>
+
+    <!-- About -->
+    <string name="about_version">Version %1$s (%2$s)</string>
 
     <!-- Buttons -->
     <string name="action_authorize_shizuku">Authorize Shizuku</string>
@@ -62,6 +156,9 @@
     <string name="action_export_settings">Export settings (JSON)</string>
     <string name="action_import_settings">Import settings</string>
     <string name="action_import_sister">Import from other build</string>
+    <string name="action_reset_settings">Reset to defaults</string>
+    <string name="dialog_reset_title">Reset all settings?</string>
+    <string name="dialog_reset_text">Every setting goes back to its default value. This cannot be undone; export a backup first if you want to keep the current setup.</string>
     <string name="dialog_import_sister_title">Import from other build</string>
     <string name="dialog_import_sister">Replace the current settings with the ones saved by %1$s?</string>
     <string name="action_copy_control_token">Copy control API token</string>
@@ -70,7 +167,7 @@
 
     <!-- Setup checklist -->
     <string name="setup_title">Setup</string>
-    <string name="setup_subtitle">Grant what the app needs. Every step can be done later from the Status tab.</string>
+    <string name="setup_subtitle">Grant what the app needs. Every step can be done later from Settings &gt; Debug &gt; Permissions.</string>
     <string name="setup_shizuku">Shizuku running and authorized</string>
     <string name="setup_group_permissions">Permissions</string>
     <string name="setup_overlay">Display over other apps</string>
@@ -80,7 +177,8 @@
     <string name="setup_usage">Usage access (app blacklist, optional)</string>
 
     <!-- Switches -->
-    <string name="switch_show_seconds">Show seconds (extra battery)</string>
+    <string name="switch_show_seconds">Show seconds</string>
+    <string name="switch_show_seconds_sub">Uses a bit more battery</string>
     <string name="switch_battery">Battery</string>
     <string name="switch_battery_pct">Battery %</string>
     <string name="switch_battery_icon">Battery icon</string>
@@ -92,18 +190,24 @@
     <string name="switch_airplane">Airplane mode</string>
     <string name="switch_usb">USB</string>
     <string name="switch_next_alarm">Next alarm</string>
-    <string name="switch_next_calendar_event">Next calendar event (asks calendar permission)</string>
-    <string name="switch_now_playing">Now playing (needs notification access)</string>
+    <string name="switch_next_calendar_event">Next calendar event</string>
+    <string name="switch_next_calendar_event_sub">Asks for the calendar permission</string>
+    <string name="switch_now_playing">Now playing</string>
+    <string name="switch_now_playing_sub">Needs notification access</string>
     <string name="switch_nfc">NFC indicator</string>
     <string name="switch_gps">GPS indicator</string>
     <string name="switch_dnd">Do Not Disturb</string>
     <string name="switch_data_saver">Data saver</string>
     <string name="switch_auto_rotate">Auto-rotate</string>
-    <string name="switch_flashlight">Flashlight (shown while on)</string>
-    <string name="switch_bandwidth">Bandwidth (1s polling)</string>
+    <string name="switch_flashlight">Flashlight</string>
+    <string name="switch_flashlight_sub">Shown while the torch is on</string>
+    <string name="switch_bandwidth">Bandwidth</string>
+    <string name="switch_bandwidth_sub">Polled every second</string>
     <string name="switch_merged_speed">Merged up/down speed</string>
-    <string name="switch_touchable_bar">Touchable bar (tap clock/date, may block swipe)</string>
-    <string name="switch_dark_text">Dark text (for transparent bar)</string>
+    <string name="switch_touchable_bar">Touchable bar</string>
+    <string name="switch_touchable_bar_sub">Tap clock/date; may block swipe-down</string>
+    <string name="switch_dark_text">Dark text</string>
+    <string name="switch_dark_text_sub">For a transparent bar</string>
     <string name="switch_use_24h">24-hour clock</string>
     <string name="switch_show_on_lock_screen">Show on lock screen</string>
     <string name="switch_hide_notifs_on_lock">Hide notification icons while locked</string>
@@ -111,13 +215,13 @@
     <string name="switch_auto_start_bar">Auto-start bar on boot</string>
     <string name="switch_camera_auto">Auto-detect cutout</string>
     <string name="switch_camera_ring">Progress ring around camera</string>
-    <string name="switch_ring_preview">Preview camera ring</string>
     <string name="switch_hide_bar_in_apps">Hide the bar in selected apps</string>
+    <string name="switch_vpn">VPN</string>
+    <string name="switch_hotspot">Hotspot</string>
 
     <!-- Hints -->
     <string name="hint_usage_access">Usage access is needed to know which app is in front. The blacklist stays inactive without it.</string>
     <string name="hint_no_apps_selected">No app selected yet.</string>
-    <string name="hint_ring_preview">Draws a full circle around the detected cutout, without waiting for a progress notification. The bar turns on automatically.</string>
     <string name="dialog_pick_apps">Hide the bar in…</string>
 
     <!-- Sliders, labels and hints -->
@@ -128,8 +232,10 @@
     <string name="label_oem_config">Config: %1$s</string>
     <string name="hint_authorize_shizuku">Authorize Shizuku first: the hide / restore commands cannot run without it.</string>
     <string name="slider_max_notification_icons">Max notification icons</string>
-    <string name="slider_burn_in_shift">Burn-in shift: every</string>
-    <string name="slider_update_interval">Status refresh: every</string>
+    <string name="slider_burn_in_shift">Burn-in shift</string>
+    <string name="slider_burn_in_shift_sub">Moves the bar to prevent burn-in; 0 turns it off</string>
+    <string name="slider_update_interval">Status refresh</string>
+    <string name="slider_update_interval_sub">Every 5 to 60 seconds</string>
     <string name="slider_padding_start">Padding start</string>
     <string name="slider_padding_top">Padding top</string>
     <string name="slider_padding_end">Padding end</string>
@@ -143,15 +249,15 @@
     <string name="slider_camera_offset_y">Camera Y position</string>
     <string name="slider_camera_size">Camera size (0 = detect)</string>
     <string name="slider_camera_ring_stroke">Ring thickness</string>
-    <string name="slider_value">%1$s %2$s%3$s</string>
+    <string name="slider_value">%1$s%2$s</string>
 
     <!-- Units and option labels -->
     <string name="suffix_dp">dp</string>
     <string name="suffix_sp">sp</string>
     <string name="suffix_percent">%</string>
     <string name="color_auto">Text color</string>
-    <string name="suffix_seconds">" s (5 - 60)"</string>
-    <string name="suffix_minutes">" min (0 = off)"</string>
+    <string name="suffix_seconds">s</string>
+    <string name="suffix_minutes">min</string>
     <string name="background_transparent">Transparent</string>
     <string name="background_semi">Semi</string>
     <string name="background_black">Black</string>
@@ -276,6 +382,12 @@
     <string name="log_overlay_permission_missing">Overlay permission missing - the custom bar was not started.</string>
     <string name="log_settings_exported">Settings exported to a JSON file</string>
     <string name="log_settings_imported">Settings imported</string>
+    <string name="log_settings_reset">Settings reset to defaults</string>
+    <string name="log_profile_saved">Profile saved: %1$s</string>
+    <string name="log_profile_applied">Profile applied: %1$s</string>
+    <string name="log_profile_updated">Profile updated: %1$s</string>
+    <string name="log_profile_renamed">Profile renamed: %1$s</string>
+    <string name="log_profile_deleted">Profile deleted: %1$s</string>
     <string name="log_start_service_failed">Custom bar could not be started: %1$s</string>
     <string name="log_stop_service_failed">Custom bar could not be stopped: %1$s</string>
     <string name="log_start_foreground_failed">Custom bar failed to run in the foreground: %1$s</string>

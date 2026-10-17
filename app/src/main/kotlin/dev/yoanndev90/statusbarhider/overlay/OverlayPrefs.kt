@@ -8,7 +8,6 @@ import dev.yoanndev90.statusbarhider.core.log.LogStore
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -241,7 +240,7 @@ data class OverlayPrefs(
 	@SerialName(KEY_SHOW_DATE)
 	val showDate: Boolean = true,
 	@SerialName(KEY_DATE_FORMAT)
-	val dateFormat: String = "EEE dd MMM",
+	val dateFormat: String = DEFAULT_DATE_FORMAT,
 	@SerialName(KEY_SHOW_BATTERY_ICON)
 	val showBatteryIcon: Boolean = true,
 	@SerialName(KEY_SHOW_NOTIFS)
@@ -311,14 +310,7 @@ data class OverlayPrefs(
 	@SerialName(KEY_CAMERA_RING_STROKE)
 	val cameraRingStrokeDp: Int = 3,
 	@SerialName(KEY_CAMERA_RING_COLOR)
-	val cameraRingColor: String = "",
-	/**
-	 * Style-page test toggle: draw a full ring around the cutout regardless of
-	 * notification progress. Deliberately transient - it must not survive a
-	 * restart, or the preview would come back with the bar and look broken.
-	 */
-	@Transient
-	val cameraRingPreview: Boolean = false
+	val cameraRingColor: String = ""
 ) {
 	/** Effective clock pattern honoring the seconds and 12 / 24-hour toggles. */
 	fun effectiveTimeFormat(): String =
@@ -358,6 +350,9 @@ data class OverlayPrefs(
 		const val DEFAULT_FORMAT_NO_SECONDS = "HH:mm"
 		const val FORMAT_12H = "h:mm a"
 		const val FORMAT_12H_WITH_SECONDS = "h:mm:ss a"
+
+		/** Default pattern of [OverlayPrefs.dateFormat]; also the fallback for a blank stored value. */
+		const val DEFAULT_DATE_FORMAT = "EEE dd MMM"
 
 		/** Accepted values of [OverlayPrefs.fontWeightName]. */
 		private val FONT_WEIGHTS = setOf("NORMAL", "MEDIUM", "BOLD")
@@ -408,7 +403,7 @@ data class OverlayPrefs(
 				padTopDp = prefs.padTopDp.coerceIn(0, 32),
 				padEndDp = prefs.padEndDp.coerceIn(0, 32),
 				padBottomDp = prefs.padBottomDp.coerceIn(0, 32),
-				dateFormat = prefs.dateFormat.ifEmpty { "EEE dd MMM" },
+				dateFormat = prefs.dateFormat.ifEmpty { DEFAULT_DATE_FORMAT },
 				maxNotifs = prefs.maxNotifs.coerceIn(1, 8),
 				burnInMin = prefs.burnInMin.coerceIn(0, 30),
 				fontSizeSp = prefs.fontSizeSp.coerceIn(10, 20),

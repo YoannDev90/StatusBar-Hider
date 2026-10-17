@@ -1,19 +1,12 @@
 package dev.yoanndev90.statusbarhider.ui.setup
 
 import android.Manifest
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,26 +27,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.core.log.LogStore
-import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
+import dev.yoanndev90.statusbarhider.core.permission.PermissionAccess
+import dev.yoanndev90.statusbarhider.core.permission.PermissionGrants
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.overlay.NotifListenerService
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingStatusRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private const val TAG = "SetupScreen"
-
-/** First-run checklist; also reachable from the Status tab. */
+/** First-run checklist; also reachable from Settings > About. */
 @Composable
 fun SetupScreen(
 	vm: PrefsViewModel,
@@ -79,8 +68,8 @@ fun SetupScreen(
 	// The permission rows are binder calls (overlay, listener, AppOps, grants):
 	// read them once per resume on IO instead of on every recomposition. Values
 	// from the previous read stay on screen while a refresh is in flight.
-	val grants by produceState<SetupGrants?>(null, resumeTick) {
-		value = withContext(Dispatchers.IO) { readGrants(context) }
+	val grants by produceState<PermissionGrants?>(null, resumeTick) {
+		value = withContext(Dispatchers.IO) { PermissionAccess.grants(context) }
 	}
 
 	Column(
@@ -98,9 +87,9 @@ fun SetupScreen(
 		)
 
 		SettingGroup(R.string.section_shizuku) {
-			SetupRow(
+			SettingStatusRow(
 				label = R.string.setup_shizuku,
-				done = shizuku == ShizukuState.READY,
+				granted = shizuku == ShizukuState.READY,
 				actionLabel = R.string.action_authorize_shizuku
 			) { vm.requestShizukuPermission() }
 		}
@@ -115,33 +104,28 @@ fun SetupScreen(
 			}
 		} else {
 			SettingGroup(R.string.setup_group_permissions) {
-				SetupRow(
+				SettingStatusRow(
 					label = R.string.setup_overlay,
-					done = loaded.overlay,
-					actionLabel = R.string.action_grant
-				) { openSpecialAccess(context, Settings.ACTION_MANAGE_OVERLAY_PERMISSION) }
-				SetupRow(
+					granted = loaded.overlay
+				) { PermissionAccess.openSpecialAccess(context, Settings.ACTION_MANAGE_OVERLAY_PERMISSION) }
+				SettingStatusRow(
 					label = R.string.setup_notif_access,
-					done = loaded.notifListener,
-					actionLabel = R.string.action_grant
-				) { openSettings(context, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
-				SetupRow(
+					granted = loaded.notifListener
+				) { PermissionAccess.openSettings(context, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
+				SettingStatusRow(
 					label = R.string.setup_calendar,
-					done = loaded.calendar,
-					actionLabel = R.string.action_grant
+					granted = loaded.calendar
 				) { calendarLauncher.launch(Manifest.permission.READ_CALENDAR) }
 				if (Build.VERSION.SDK_INT >= 33) {
-					SetupRow(
+					SettingStatusRow(
 						label = R.string.setup_post_notifs,
-						done = loaded.postNotifs,
-						actionLabel = R.string.action_grant
+						granted = loaded.postNotifs
 					) { notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
 				}
-				SetupRow(
+				SettingStatusRow(
 					label = R.string.setup_usage,
-					done = loaded.usage,
-					actionLabel = R.string.action_grant
-				) { openSettings(context, Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+					granted = loaded.usage
+				) { PermissionAccess.openSettings(context, Settings.ACTION_USAGE_ACCESS_SETTINGS) }
 			}
 		}
 
@@ -153,87 +137,5 @@ fun SetupScreen(
 		) {
 			Text(stringResource(R.string.action_setup_later))
 		}
-	}
-}
-
-/** The four system answers behind the permission rows. */
-private data class SetupGrants(
-	val overlay: Boolean,
-	val notifListener: Boolean,
-	val calendar: Boolean,
-	val postNotifs: Boolean,
-	val usage: Boolean
-)
-
-/** Reads [SetupGrants]; every line is a binder call, so never on the main thread. */
-private fun readGrants(context: Context): SetupGrants =
-	SetupGrants(
-		overlay = Settings.canDrawOverlays(context),
-		notifListener = NotifListenerService.isEnabled(context),
-		calendar = context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED,
-		postNotifs = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
-		usage = UsageAccess.granted(context)
-	)
-
-/** One checklist line: status icon, label, and a Grant button while missing. */
-@Composable
-private fun SetupRow(
-	@StringRes label: Int,
-	done: Boolean,
-	@StringRes actionLabel: Int,
-	onClick: () -> Unit
-) {
-	Row(
-		modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-		verticalAlignment = Alignment.CenterVertically
-	) {
-		Icon(
-			painter = painterResource(if (done) R.drawable.ic_check_circle else R.drawable.ic_close),
-			contentDescription = stringResource(if (done) R.string.cd_granted else R.string.cd_missing),
-			tint = if (done) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-			modifier = Modifier.size(20.dp)
-		)
-		Text(
-			text = stringResource(label),
-			style = MaterialTheme.typography.bodyLarge,
-			color = if (done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-			modifier = Modifier.weight(1f).padding(start = 12.dp)
-		)
-		if (!done) {
-			TextButton(onClick = onClick) { Text(stringResource(actionLabel)) }
-		}
-	}
-}
-
-/** Special-access screens take a package URI; the rest are plain settings pages. */
-private fun openSpecialAccess(
-	context: Context,
-	action: String
-) {
-	try {
-		context.startActivity(Intent(action, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-	} catch (e: Exception) {
-		Log.w(TAG, "openSpecialAccess", e)
-		LogStore.appendOnce(
-			context,
-			"$TAG#special#$action",
-			context.getString(R.string.log_error, "$action: ${e.message}")
-		)
-	}
-}
-
-private fun openSettings(
-	context: Context,
-	action: String
-) {
-	try {
-		context.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-	} catch (e: Exception) {
-		Log.w(TAG, "openSettings", e)
-		LogStore.appendOnce(
-			context,
-			"$TAG#settings#$action",
-			context.getString(R.string.log_error, "$action: ${e.message}")
-		)
 	}
 }

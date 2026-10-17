@@ -62,4 +62,29 @@ object OverlayController {
 			repo.update { copy(enabled = false) }
 		}
 	}
+
+	/**
+	 * Replaces the whole prefs state and aligns every consumer with the
+	 * result: the overlay service (started or stopped to match the new
+	 * enabled flag, rolled back when the start is refused), the QS tiles and
+	 * the home widgets. Shared by the backup import and the profile switch so
+	 * both paths stay in lockstep.
+	 */
+	fun replaceAll(
+		context: Context,
+		prefs: OverlayPrefs
+	) {
+		val app = context.applicationContext
+		val repo = OverlayPrefsRepository.getInstance(app)
+		repo.replace(prefs)
+		if (prefs.enabled) {
+			if (!StatusBarOverlayService.start(app)) {
+				repo.update { copy(enabled = false) }
+			}
+		} else {
+			StatusBarOverlayService.stop(app)
+		}
+		HideInteractor.notifyTiles(app)
+		BarWidget.updateAll(app)
+	}
 }
