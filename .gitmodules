@@ -1,0 +1,3 @@
+[submodule "tools/logstream"]
+	path = tools/logstream
+	url = https://github.com/YoannDev90/android-tools
