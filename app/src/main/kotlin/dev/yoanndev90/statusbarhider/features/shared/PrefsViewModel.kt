@@ -132,6 +132,12 @@ open class PrefsViewModel(
 		log(R.string.log_date_format, pattern)
 	}
 
+	/** Restores every setting to its default value; the overlay redraws from the new prefs. */
+	fun resetToDefaults() {
+		updatePrefs { OverlayPrefs() }
+		log(R.string.log_settings_reset)
+	}
+
 	/** Saves the calendar widget state; call only once the permission is granted. */
 	fun setShowCalendar(enabled: Boolean) {
 		updatePrefs { copy(showCalendar = enabled) }

@@ -1,5 +1,9 @@
 package dev.yoanndev90.statusbarhider.ui.shell
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,6 +18,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -67,7 +72,8 @@ import dev.yoanndev90.statusbarhider.ui.setup.SetupScreen
  * checklist drawn on top when it is open.
  *
  * There is no bottom navigation: Home is the only entry point, the gear in its
- * top bar opens Settings, and every category is a stack destination.
+ * top bar opens Settings, and every category is a stack destination. The top
+ * bar carries the contextual actions: search on Settings, copy / share on Logs.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,9 +88,14 @@ fun MainScreen() {
 	// still own their event collector via HandlePrefsEvents.
 	val statusViewModel: StatusViewModel = viewModel()
 	val logsViewModel: LogsViewModel = viewModel()
+	// Search lives in the shell so the field is pinned in the top bar instead
+	// of scrolling away with the list.
+	var settingsQuery by rememberSaveable { mutableStateOf("") }
+	var settingsSearchOpen by rememberSaveable { mutableStateOf(false) }
 
 	val backStackEntry by navController.currentBackStackEntryAsState()
 	val currentRoute = backStackEntry?.destination?.route
+	val isSettingsRoot = currentRoute == Routes.SETTINGS
 
 	// Closing a reopened checklist pops back to About; on first launch back
 	// exits the app because the handler is disabled.
@@ -99,7 +110,11 @@ fun MainScreen() {
 			Column {
 				TopAppBar(
 					title = {
-						Text(stringResource(if (setupOpen) R.string.setup_title else Routes.titleOf(currentRoute)))
+						if (isSettingsRoot && settingsSearchOpen) {
+							SettingsSearchField(settingsQuery, onQueryChange = { settingsQuery = it })
+						} else {
+							Text(stringResource(if (setupOpen) R.string.setup_title else Routes.titleOf(currentRoute)))
+						}
 					},
 					navigationIcon = {
 						if (!setupOpen && currentRoute != Routes.HOME) {
@@ -112,14 +127,33 @@ fun MainScreen() {
 						}
 					},
 					actions = {
-						if (!setupOpen && currentRoute == Routes.HOME) {
-							IconButton(onClick = { navController.navigate(Routes.SETTINGS) }) {
-								Icon(
-									painter = painterResource(R.drawable.ic_settings),
-									contentDescription = stringResource(R.string.cd_open_settings)
+						TopBarActions(
+							currentRoute = currentRoute,
+							setupOpen = setupOpen,
+							searchOpen = settingsSearchOpen,
+							onToggleSearch = {
+								settingsSearchOpen = !settingsSearchOpen
+								if (!settingsSearchOpen) settingsQuery = ""
+							},
+							onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+							onCopyLogs = {
+								val clip = ClipData.newPlainText(
+									context.getString(R.string.clipboard_label),
+									logsViewModel.lines.value.joinToString("\n")
 								)
+								context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(clip)
+								Toast.makeText(context, R.string.toast_logs_copied, Toast.LENGTH_SHORT).show()
+							},
+							onShareLogs = {
+								logsViewModel.shareLogs { intent ->
+									if (intent == null) {
+										Toast.makeText(context, R.string.toast_cannot_share_logs, Toast.LENGTH_SHORT).show()
+									} else {
+										context.startActivity(Intent.createChooser(intent, null))
+									}
+								}
 							}
-						}
+						)
 					}
 				)
 				if (busy) {
@@ -133,6 +167,7 @@ fun MainScreen() {
 				navController = navController,
 				statusViewModel = statusViewModel,
 				logsViewModel = logsViewModel,
+				settingsQuery = settingsQuery,
 				onOpenSetup = {
 					setupReopened = true
 					setupOpen = true
@@ -152,12 +187,77 @@ fun MainScreen() {
 	}
 }
 
+/**
+ * The search field that replaces the title while the Settings search is open.
+ */
+@Composable
+private fun SettingsSearchField(query: String, onQueryChange: (String) -> Unit) {
+	OutlinedTextField(
+		value = query,
+		onValueChange = onQueryChange,
+		placeholder = { Text(stringResource(R.string.settings_search)) },
+		singleLine = true,
+		modifier = Modifier.fillMaxWidth()
+	)
+}
+
+/**
+ * Top-bar action set: the Home gear, the Settings search toggle and the Logs
+ * copy / share pair. Everything is scoped off [setupOpen] so the checklist
+ * overlay never shows a stale action.
+ */
+@Composable
+private fun TopBarActions(
+	currentRoute: String?,
+	setupOpen: Boolean,
+	searchOpen: Boolean,
+	onToggleSearch: () -> Unit,
+	onOpenSettings: () -> Unit,
+	onCopyLogs: () -> Unit,
+	onShareLogs: () -> Unit
+) {
+	if (setupOpen) return
+	when (currentRoute) {
+		Routes.HOME -> {
+			IconButton(onClick = onOpenSettings) {
+				Icon(
+					painter = painterResource(R.drawable.ic_settings),
+					contentDescription = stringResource(R.string.cd_open_settings)
+				)
+			}
+		}
+		Routes.SETTINGS -> {
+			IconButton(onClick = onToggleSearch) {
+				Icon(
+					painter = painterResource(if (searchOpen) R.drawable.ic_close else R.drawable.ic_search),
+					contentDescription = stringResource(R.string.settings_search)
+				)
+			}
+		}
+		Routes.LOGS -> {
+			IconButton(onClick = onCopyLogs) {
+				Icon(
+					painter = painterResource(R.drawable.ic_content_copy),
+					contentDescription = stringResource(R.string.action_export_logs)
+				)
+			}
+			IconButton(onClick = onShareLogs) {
+				Icon(
+					painter = painterResource(R.drawable.ic_share),
+					contentDescription = stringResource(R.string.action_share_logs)
+				)
+			}
+		}
+	}
+}
+
 /** The route table: Home, the Settings list, and one destination per category. */
 @Composable
 private fun AppNavHost(
 	navController: NavHostController,
 	statusViewModel: StatusViewModel,
 	logsViewModel: LogsViewModel,
+	settingsQuery: String,
 	onOpenSetup: () -> Unit
 ) {
 	// Forward pushes slide in from the right and keep the current screen in
@@ -172,7 +272,7 @@ private fun AppNavHost(
 		popExitTransition = { slideOutHorizontally(targetOffsetX = { it / 4 }) + fadeOut() }
 	) {
 		composable(Routes.HOME) { HomeScreen(statusViewModel, navController::navigate) }
-		composable(Routes.SETTINGS) { SettingsRootScreen(statusViewModel, navController::navigate) }
+		composable(Routes.SETTINGS) { SettingsRootScreen(statusViewModel, settingsQuery, navController::navigate) }
 		composable(Routes.GENERAL) { GeneralScreen(statusViewModel) }
 		composable(Routes.APPEARANCE) { AppearanceScreen(statusViewModel) }
 		composable(Routes.CUTOUT) { CutoutScreen(statusViewModel) }

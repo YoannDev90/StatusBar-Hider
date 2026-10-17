@@ -3,24 +3,18 @@ package dev.yoanndev90.statusbarhider.features.settings
 import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -288,20 +282,19 @@ private fun rememberBlockedGrantCount(shizukuReady: Boolean): Int? {
 
 /**
  * Settings root: the category list, two groups - everything that shapes the
- * bar, then everything around the app. A search box at the top filters the
- * list live; matches keep their group, and sub-screens join the results even
+ * bar, then everything around the app. The search field lives in the shell's
+ * top bar; matches keep their group, and sub-screens join the results even
  * though they are not listed here. The Debug row carries a count of the
  * missing grants so the board is discoverable without opening it.
  */
 @Composable
 fun SettingsRootScreen(
 	vm: StatusViewModel,
+	query: String,
 	onNavigate: (String) -> Unit
 ) {
 	val shizuku by vm.shizuku.collectAsStateWithLifecycle()
 	val prefs by vm.prefs.collectAsStateWithLifecycle()
-	// saveable: the query survives a rotation and a round-trip down the stack.
-	var query by rememberSaveable { mutableStateOf("") }
 	val trimmed = query.trim()
 	// Resolved once per composition, not once per keystroke or per row.
 	val resolved = rememberResolvedCategories()
@@ -316,10 +309,6 @@ fun SettingsRootScreen(
 	val listed = matches.filter { it.listed }
 
 	SettingsScreen {
-		item(key = "search") {
-			SearchField(query, onQueryChange = { query = it })
-		}
-
 		if (trimmed.isNotEmpty() && matches.isEmpty()) {
 			item(key = "no-results") {
 				Text(
@@ -340,38 +329,6 @@ fun SettingsRootScreen(
 			)
 		}
 	}
-}
-
-@Composable
-private fun SearchField(
-	query: String,
-	onQueryChange: (String) -> Unit
-) {
-	OutlinedTextField(
-		value = query,
-		onValueChange = onQueryChange,
-		label = { Text(stringResource(R.string.settings_search)) },
-		leadingIcon = {
-			Icon(
-				painter = painterResource(R.drawable.ic_search),
-				contentDescription = null,
-				tint = MaterialTheme.colorScheme.onSurfaceVariant
-			)
-		},
-		trailingIcon = {
-			if (query.isNotEmpty()) {
-				IconButton(onClick = { onQueryChange("") }) {
-					Icon(
-						painter = painterResource(R.drawable.ic_close),
-						contentDescription = stringResource(R.string.cd_clear),
-						tint = MaterialTheme.colorScheme.onSurfaceVariant
-					)
-				}
-			}
-		},
-		singleLine = true,
-		modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-	)
 }
 
 /** The two category groups; [rows] is already filtered down to what the view shows. */

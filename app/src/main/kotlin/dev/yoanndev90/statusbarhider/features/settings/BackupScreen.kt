@@ -22,7 +22,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 
-/** Backup: export the settings as JSON, import a file, or pull from the sister build. */
+/** Backup: export the settings as JSON, import a file, pull from the sister build, or reset. */
 @Composable
 fun BackupScreen(vm: StatusViewModel) {
 	val context = LocalContext.current
@@ -30,6 +30,7 @@ fun BackupScreen(vm: StatusViewModel) {
 	val importOkToast = stringResource(R.string.toast_import_ok)
 	val sisterLabel by vm.sisterLabel.collectAsStateWithLifecycle()
 	var showSisterDialog by rememberSaveable { mutableStateOf(false) }
+	var showResetDialog by rememberSaveable { mutableStateOf(false) }
 	// Backup I/O (file + provider stream) runs in the ViewModel's scope: leaving
 	// the screen must not cancel a write half-way through.
 	val importLauncher =
@@ -61,6 +62,11 @@ fun BackupScreen(vm: StatusViewModel) {
 				}
 			}
 		}
+		item {
+			SettingGroup {
+				SettingAction(R.drawable.ic_restore, R.string.action_reset_settings, danger = true) { showResetDialog = true }
+			}
+		}
 	}
 
 	// Confirmation before the pull: one tap would otherwise replace every setting.
@@ -77,6 +83,25 @@ fun BackupScreen(vm: StatusViewModel) {
 				}
 			)
 		}
+	}
+
+	if (showResetDialog) {
+		AlertDialog(
+			onDismissRequest = { showResetDialog = false },
+			title = { Text(stringResource(R.string.dialog_reset_title)) },
+			text = { Text(stringResource(R.string.dialog_reset_text)) },
+			confirmButton = {
+				TextButton(
+					onClick = {
+						showResetDialog = false
+						vm.resetToDefaults()
+					}
+				) { Text(stringResource(R.string.action_reset_settings)) }
+			},
+			dismissButton = {
+				TextButton(onClick = { showResetDialog = false }) { Text(stringResource(R.string.action_cancel)) }
+			}
+		)
 	}
 }
 

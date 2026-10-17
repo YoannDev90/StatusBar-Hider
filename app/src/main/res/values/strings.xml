@@ -131,6 +131,9 @@
     <string name="action_export_settings">Export settings (JSON)</string>
     <string name="action_import_settings">Import settings</string>
     <string name="action_import_sister">Import from other build</string>
+    <string name="action_reset_settings">Reset to defaults</string>
+    <string name="dialog_reset_title">Reset all settings?</string>
+    <string name="dialog_reset_text">Every setting goes back to its default value. This cannot be undone; export a backup first if you want to keep the current setup.</string>
     <string name="dialog_import_sister_title">Import from other build</string>
     <string name="dialog_import_sister">Replace the current settings with the ones saved by %1$s?</string>
     <string name="action_copy_control_token">Copy control API token</string>
@@ -354,6 +357,7 @@
     <string name="log_overlay_permission_missing">Overlay permission missing - the custom bar was not started.</string>
     <string name="log_settings_exported">Settings exported to a JSON file</string>
     <string name="log_settings_imported">Settings imported</string>
+    <string name="log_settings_reset">Settings reset to defaults</string>
     <string name="log_start_service_failed">Custom bar could not be started: %1$s</string>
     <string name="log_stop_service_failed">Custom bar could not be stopped: %1$s</string>
     <string name="log_start_foreground_failed">Custom bar failed to run in the foreground: %1$s</string>
