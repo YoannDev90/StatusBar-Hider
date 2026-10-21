@@ -19,6 +19,15 @@ data class OverlayProgress(
 )
 
 /**
+ * One throughput figure split for display: [value] over its scale
+ * ([unit], e.g. "M"), so the bar can stack the unit under the digits.
+ */
+data class OverlaySpeed(
+	val value: String,
+	val unit: String
+)
+
+/**
  * Runtime state of the overlay bar, written by the service receivers and
  * read by [OverlayBar]. Preferences ([OverlayPrefs]) arrive separately.
  * The clock and date tick locally inside their widgets, never here, so a
@@ -33,7 +42,10 @@ data class OverlayBarState(
 	val locked: Boolean = false,
 	val notifsEnabled: Boolean = false,
 	val notifs: List<OverlayNotifIcon> = emptyList(),
-	val bandwidthText: String = "",
+	/** Download figure (merged mode: combined rx+tx); null until first sample. */
+	val bandwidthRx: OverlaySpeed? = null,
+	/** Upload figure in split mode; null in merged mode or before first sample. */
+	val bandwidthTx: OverlaySpeed? = null,
 	val alarmText: String? = null,
 	val calendarText: String? = null,
 	val mediaText: String? = null,

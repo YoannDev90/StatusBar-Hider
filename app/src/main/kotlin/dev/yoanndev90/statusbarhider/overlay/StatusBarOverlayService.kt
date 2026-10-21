@@ -688,13 +688,19 @@ class StatusBarOverlayService : Service() {
 		if (comparable) {
 			val dRx = rx - lastRx
 			val dTx = if (lastTx >= 0 && tx >= 0) tx - lastTx else 0L
-			val text =
-				if (prefs.bandwidthMerged) {
-					"${OverlayPrefs.formatSpeed(dRx + dTx)}/s"
-				} else {
-					"${OverlayPrefs.formatSpeed(dRx)}/s ${OverlayPrefs.formatSpeed(dTx)}/s"
-				}
-			barState = barState.copy(bandwidthText = text)
+			if (prefs.bandwidthMerged) {
+				barState =
+					barState.copy(
+						bandwidthRx = OverlayPrefs.speedParts(dRx + dTx),
+						bandwidthTx = null
+					)
+			} else {
+				barState =
+					barState.copy(
+						bandwidthRx = OverlayPrefs.speedParts(dRx),
+						bandwidthTx = OverlayPrefs.speedParts(dTx)
+					)
+			}
 		}
 		lastRx = rx
 		lastTx = tx

@@ -463,12 +463,19 @@ data class OverlayPrefs(
 		}
 
 		/** Human-readable throughput, e.g. 512B, 12K, 3.4M (per second). */
-		fun formatSpeed(bytesPerSecond: Long): String =
+		fun formatSpeed(bytesPerSecond: Long): String {
+			val parts = speedParts(bytesPerSecond)
+			return parts.value + parts.unit
+		}
+
+		/** Same figure split as value + scale unit, for the stacked bar layout. */
+		fun speedParts(bytesPerSecond: Long): OverlaySpeed =
 			when {
 				bytesPerSecond >= 1_048_576L ->
-					String.format(Locale.ROOT, "%.1fM", bytesPerSecond / 1_048_576.0)
-				bytesPerSecond >= 1_024L -> String.format(Locale.ROOT, "%.0fK", bytesPerSecond / 1_024.0)
-				else -> "${bytesPerSecond.coerceAtLeast(0)}B"
+					OverlaySpeed(String.format(Locale.ROOT, "%.1f", bytesPerSecond / 1_048_576.0), "M")
+				bytesPerSecond >= 1_024L ->
+					OverlaySpeed(String.format(Locale.ROOT, "%.0f", bytesPerSecond / 1_024.0), "K")
+				else -> OverlaySpeed(bytesPerSecond.coerceAtLeast(0).toString(), "B")
 			}
 
 		/** Battery % from a sticky ACTION_BATTERY_CHANGED extras pair. */
