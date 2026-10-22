@@ -406,7 +406,7 @@ internal suspend fun SystemIndicators.readConnectivity(p: OverlayPrefs): Connect
 			mobileType = status.type,
 			signalLevel = status.level,
 			bluetooth = bluetooth,
-			btDevices = if (bluetooth) connectedBluetoothIcons() else emptyList(),
+			btDevices = if (bluetooth) connectedBluetoothIcons(p) else emptyList(),
 			vpn = radio(p.showVpn) { isVpn() },
 			hotspot = radio(p.showHotspot) { isHotspotOn() },
 			nfc = radio(p.showNfc) { isNfcOn() },

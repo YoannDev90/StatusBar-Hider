@@ -1,8 +1,11 @@
 package dev.yoanndev90.statusbarhider.overlay
 
+import android.Manifest
 import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import kotlinx.coroutines.CancellationException
@@ -19,6 +22,9 @@ internal enum class BtDeviceKind {
 	WATCH,
 	GAMEPAD,
 	PHONE,
+	CAR,
+	TABLET,
+	COMPUTER,
 	UNKNOWN;
 
 	/** Drawable plus content description for the overlay bar. */
@@ -32,13 +38,43 @@ internal enum class BtDeviceKind {
 			WATCH -> BtDeviceIcon(R.drawable.ic_bt_watch, R.string.cd_bluetooth_watch)
 			GAMEPAD -> BtDeviceIcon(R.drawable.ic_bt_gamepad, R.string.cd_bluetooth_gamepad)
 			PHONE -> BtDeviceIcon(R.drawable.ic_bt_phone, R.string.cd_bluetooth_phone)
+			CAR -> BtDeviceIcon(R.drawable.ic_bt_car, R.string.cd_bluetooth_car)
+			TABLET -> BtDeviceIcon(R.drawable.ic_bt_tablet, R.string.cd_bluetooth_tablet)
+			COMPUTER -> BtDeviceIcon(R.drawable.ic_bt_computer, R.string.cd_bluetooth_computer)
 			UNKNOWN -> BtDeviceIcon(R.drawable.ic_bt, R.string.cd_bluetooth)
+		}
+
+	/**
+	 * Label for the override picker: short, no "Bluetooth" prefix, the menu
+	 * lives inside the Bluetooth settings and the prefix reads as noise there.
+	 */
+	fun menuLabel(): Int =
+		when (this) {
+			EARBUDS -> R.string.bt_kind_earbuds
+			HEADSET -> R.string.bt_kind_headset
+			SPEAKER -> R.string.bt_kind_speaker
+			KEYBOARD -> R.string.bt_kind_keyboard
+			MOUSE -> R.string.bt_kind_mouse
+			WATCH -> R.string.bt_kind_watch
+			GAMEPAD -> R.string.bt_kind_gamepad
+			PHONE -> R.string.bt_kind_phone
+			CAR -> R.string.bt_kind_car
+			TABLET -> R.string.bt_kind_tablet
+			COMPUTER -> R.string.bt_kind_computer
+			UNKNOWN -> R.string.bt_override_generic
 		}
 }
 
+/**
+ * Class-of-device field width: format type (2 bits) + minor (6) + major (5).
+ * The stack may hand back the raw 24-bit CoD (0x7C010C for a laptop) with
+ * the service-class bits above, which no SDK constant carries, so mask first.
+ */
+private const val DEVICE_CLASS_MASK = 0x1FFF
+
 /** What the device declares through its Bluetooth class (self-declared, often uncategorized). */
 internal fun kindFromClass(deviceClass: Int?): BtDeviceKind =
-	when (deviceClass) {
+	when (deviceClass?.and(DEVICE_CLASS_MASK)) {
 		BluetoothClass.Device.AUDIO_VIDEO_WEARABLE_HEADSET,
 		BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES -> BtDeviceKind.EARBUDS
 		BluetoothClass.Device.AUDIO_VIDEO_HANDSFREE,
@@ -46,13 +82,23 @@ internal fun kindFromClass(deviceClass: Int?): BtDeviceKind =
 		BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER,
 		BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO,
 		BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO -> BtDeviceKind.SPEAKER
+		BluetoothClass.Device.AUDIO_VIDEO_CAR_AUDIO -> BtDeviceKind.CAR
 		BluetoothClass.Device.PERIPHERAL_KEYBOARD,
 		BluetoothClass.Device.PERIPHERAL_KEYBOARD_POINTING -> BtDeviceKind.KEYBOARD
 		BluetoothClass.Device.PERIPHERAL_POINTING -> BtDeviceKind.MOUSE
 		BluetoothClass.Device.WEARABLE_WRIST_WATCH -> BtDeviceKind.WATCH
 		BluetoothClass.Device.TOY_GAME,
 		BluetoothClass.Device.TOY_CONTROLLER -> BtDeviceKind.GAMEPAD
-		BluetoothClass.Device.PHONE_SMART -> BtDeviceKind.PHONE
+		BluetoothClass.Device.PHONE_SMART,
+		BluetoothClass.Device.PHONE_CELLULAR,
+		BluetoothClass.Device.PHONE_CORDLESS -> BtDeviceKind.PHONE
+		BluetoothClass.Device.COMPUTER_UNCATEGORIZED,
+		BluetoothClass.Device.COMPUTER_DESKTOP,
+		BluetoothClass.Device.COMPUTER_SERVER,
+		BluetoothClass.Device.COMPUTER_LAPTOP,
+		BluetoothClass.Device.COMPUTER_HANDHELD_PC_PDA,
+		BluetoothClass.Device.COMPUTER_PALM_SIZE_PC_PDA,
+		BluetoothClass.Device.COMPUTER_WEARABLE -> BtDeviceKind.COMPUTER
 		else -> BtDeviceKind.UNKNOWN
 	}
 
@@ -71,46 +117,44 @@ internal fun kindFromTypeName(type: String): BtDeviceKind? {
 	}
 }
 
-/**
- * Conservative keyword table for devices no provider described: speaker
- * words come first so a "JBL Charge" stays a speaker while a
- * "JBL Endurance" resolves as earbuds.
- */
-private val NAME_KINDS =
-	listOf(
-		"watch" to BtDeviceKind.WATCH,
-		"montre" to BtDeviceKind.WATCH,
-		"speaker" to BtDeviceKind.SPEAKER,
-		"enceinte" to BtDeviceKind.SPEAKER,
-		"boom" to BtDeviceKind.SPEAKER,
-		"flip" to BtDeviceKind.SPEAKER,
-		"xtreme" to BtDeviceKind.SPEAKER,
-		"partybox" to BtDeviceKind.SPEAKER,
-		"charge" to BtDeviceKind.SPEAKER,
-		"buds" to BtDeviceKind.EARBUDS,
-		"earbud" to BtDeviceKind.EARBUDS,
-		"headphone" to BtDeviceKind.EARBUDS,
-		"headset" to BtDeviceKind.EARBUDS,
-		"airpods" to BtDeviceKind.EARBUDS,
-		"freebuds" to BtDeviceKind.EARBUDS,
-		"enco" to BtDeviceKind.EARBUDS,
-		"jbl" to BtDeviceKind.EARBUDS,
-		"soundcore" to BtDeviceKind.EARBUDS,
-		"wh-" to BtDeviceKind.EARBUDS,
-		"qc" to BtDeviceKind.EARBUDS,
-		"keyboard" to BtDeviceKind.KEYBOARD,
-		"clavier" to BtDeviceKind.KEYBOARD,
-		"mouse" to BtDeviceKind.MOUSE,
-		"souris" to BtDeviceKind.MOUSE,
-		"controller" to BtDeviceKind.GAMEPAD,
-		"manette" to BtDeviceKind.GAMEPAD,
-		"gamepad" to BtDeviceKind.GAMEPAD
-	)
+/** Which signal named a device kind. */
+internal enum class BtSource {
+	OVERRIDE,
+	FAST_PAIR,
+	CLASS
+}
 
-/** Device name to kind, last resort before the declared class. */
-internal fun kindFromName(name: String): BtDeviceKind? {
-	val n = name.lowercase(Locale.ROOT)
-	return NAME_KINDS.firstNotNullOfOrNull { (keyword, kind) -> if (n.contains(keyword)) kind else null }
+/** One resolved device: the kind to draw plus the signal that picked it. */
+internal data class BtDeviceType(
+	val kind: BtDeviceKind,
+	val source: BtSource
+)
+
+/** One connected device as the settings preview shows it. */
+internal data class BtDevicePreview(
+	val mac: String,
+	val name: String,
+	val kind: BtDeviceKind,
+	val source: BtSource
+)
+
+/** Stored override ("SPEAKER"...) to kind; unknown or blank names mean no override. */
+internal fun kindFromOverrideName(name: String?): BtDeviceKind? = BtDeviceKind.entries.firstOrNull { it.name == name }
+
+/**
+ * The full resolution chain for one device: the user override wins, then
+ * whatever the stack knew (Fast Pair metadata), then the declared class.
+ */
+internal fun resolveKind(
+	mac: String?,
+	overrides: Map<String, String>,
+	precise: BtDeviceType?,
+	deviceClass: Int?
+): BtDeviceType {
+	val override = mac?.uppercase(Locale.ROOT)?.let { kindFromOverrideName(overrides[it]) }
+	if (override != null) return BtDeviceType(override, BtSource.OVERRIDE)
+	precise?.let { return it }
+	return BtDeviceType(kindFromClass(deviceClass), BtSource.CLASS)
 }
 
 /** `AA:BB:..[ DUAL ][ 0xXXXXXX ] Some Name` lines of the bonded list (section-indented, OEMs may append the last octets to the name). */
@@ -187,7 +231,7 @@ internal class BluetoothTypes(
 		private const val REFRESH_ALL_MS = 10 * 60_000L
 	}
 
-	private val kinds = ConcurrentHashMap<String, BtDeviceKind>()
+	private val types = ConcurrentHashMap<String, BtDeviceType>()
 
 	/** MACs one dump has already covered, match or no match. */
 	private val settled = ConcurrentHashMap.newKeySet<String>()
@@ -195,8 +239,8 @@ internal class BluetoothTypes(
 	@Volatile
 	private var lastReadAt = 0L
 
-	/** Precise kinds for [devices], keyed by uppercased MAC; missing entries mean "use the declared class". */
-	suspend fun kindFor(devices: List<BluetoothDevice>): Map<String, BtDeviceKind> {
+	/** Precise types for [devices], keyed by uppercased MAC; missing entries mean "use the declared class". */
+	suspend fun typesFor(devices: List<BluetoothDevice>): Map<String, BtDeviceType> {
 		if (devices.isEmpty() || !ShellRunner.granted()) return emptyMap()
 		val unseen =
 			devices.any { device ->
@@ -209,8 +253,29 @@ internal class BluetoothTypes(
 		return buildMap {
 			for (device in devices) {
 				val mac = device.address?.uppercase(Locale.ROOT) ?: continue
-				kinds[mac]?.let { put(mac, it) }
+				types[mac]?.let { put(mac, it) }
 			}
+		}
+	}
+
+	/**
+	 * Full preview of [devices]: name, kind and source through the whole
+	 * override chain. Empty without BLUETOOTH_CONNECT, like the bar read.
+	 */
+	suspend fun resolve(
+		devices: List<BluetoothDevice>,
+		overrides: Map<String, String>
+	): List<BtDevicePreview> {
+		if (Build.VERSION.SDK_INT >= 31 &&
+			context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
+		) {
+			return emptyList()
+		}
+		val precise = typesFor(devices)
+		return devices.map { device ->
+			val mac = device.address?.uppercase(Locale.ROOT)
+			val type = resolveKind(mac, overrides, precise[mac], device.bluetoothClass?.deviceClass)
+			BtDevicePreview(mac = mac.orEmpty(), name = device.name ?: mac.orEmpty(), kind = type.kind, source = type.source)
 		}
 	}
 
@@ -227,10 +292,12 @@ internal class BluetoothTypes(
 				return
 			}
 		if (res.exit != 0) return
-		val types = parseFastPairDeviceTypes(res.out)
+		val fastPair = parseFastPairDeviceTypes(res.out)
 		for ((mac, name) in parseBondedNames(res.out)) {
-			val kind = types[name.lowercase(Locale.ROOT)]?.let { kindFromTypeName(it) } ?: kindFromName(name)
-			if (kind != null) kinds[mac] = kind
+			val kind = fastPair[name.lowercase(Locale.ROOT)]?.let { kindFromTypeName(it) }
+			if (kind != null) {
+				types[mac] = BtDeviceType(kind, BtSource.FAST_PAIR)
+			}
 			settled.add(mac)
 		}
 	}

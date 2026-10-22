@@ -39,6 +39,18 @@ class OverlayPrefsTest {
 	}
 
 	@Test
+	fun `per-device bluetooth icons default to on`() {
+		assertTrue(OverlayPrefs().showBtIcons)
+		assertTrue(OverlayPrefs.fromJson("{}")!!.showBtIcons)
+	}
+
+	@Test
+	fun `bt icon overrides survive the round trip`() {
+		val prefs = OverlayPrefs().copy(showBtIcons = false, btIconOverrides = mapOf("AA:BB:CC:DD:EE:FF" to "SPEAKER"))
+		assertEquals(prefs, OverlayPrefs.fromJson(prefs.toJson()))
+	}
+
+	@Test
 	fun `malformed blob returns null so the caller can keep the raw copy`() {
 		assertNull(OverlayPrefs.fromJson("not json"))
 		assertNull(OverlayPrefs.fromJson("{"))

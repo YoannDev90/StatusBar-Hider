@@ -156,13 +156,14 @@ internal class BluetoothProfiles(
 
 /**
  * One icon per connected device, read fresh on every poll through
- * [SystemIndicators.btTypes]. The precise kind (Fast Pair metadata, then
- * the device name) wins over the declared class, which most TWS leave
- * uncategorized. Empty without BLUETOOTH_CONNECT (Android 12+, denied at
- * runtime): the bar then keeps the plain Bluetooth glyph, same as before
- * this feature existed.
+ * [SystemIndicators.btTypes]. The user override wins, then the precise
+ * kind (Fast Pair metadata), then the declared class, which most TWS
+ * leave uncategorized. Empty with the per-device toggle off or without
+ * BLUETOOTH_CONNECT (Android 12+, denied at runtime): the bar then
+ * keeps the plain Bluetooth glyph.
  */
-internal suspend fun SystemIndicators.connectedBluetoothIcons(): List<BtDeviceIcon> {
+internal suspend fun SystemIndicators.connectedBluetoothIcons(prefs: OverlayPrefs): List<BtDeviceIcon> {
+	if (!prefs.showBtIcons) return emptyList()
 	if (Build.VERSION.SDK_INT >= 31 &&
 		context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
 	) {
@@ -170,13 +171,13 @@ internal suspend fun SystemIndicators.connectedBluetoothIcons(): List<BtDeviceIc
 	}
 	return try {
 		val devices = btProfiles.connectedDevices()
-		val precise = btTypes.kindFor(devices)
+		val precise = btTypes.typesFor(devices)
 		// LinkedHashSet: stable order across polls, one entry per device class.
 		val icons = LinkedHashSet<BtDeviceIcon>()
 		for (device in devices) {
 			val mac = device.address?.uppercase(Locale.ROOT)
-			val kind = precise[mac] ?: kindFromClass(device.bluetoothClass?.deviceClass)
-			icons.add(kind.icon())
+			val type = resolveKind(mac, prefs.btIconOverrides, precise[mac], device.bluetoothClass?.deviceClass)
+			icons.add(type.kind.icon())
 		}
 		icons.toList()
 	} catch (e: Exception) {
@@ -184,3 +185,7 @@ internal suspend fun SystemIndicators.connectedBluetoothIcons(): List<BtDeviceIc
 		emptyList()
 	}
 }
+
+/** Preview of every connected device for the settings screen (name, kind, source). */
+internal suspend fun SystemIndicators.connectedBluetoothPreviews(overrides: Map<String, String>): List<BtDevicePreview> =
+	btTypes.resolve(btProfiles.connectedDevices(), overrides)

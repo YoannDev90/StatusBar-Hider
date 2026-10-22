@@ -1,5 +1,7 @@
 package dev.yoanndev90.statusbarhider.overlay
 
+import android.bluetooth.BluetoothClass
+import dev.yoanndev90.statusbarhider.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -48,14 +50,27 @@ class BluetoothTypesTest {
 	}
 
 	@Test
-	fun deviceNamesMapToKindsAsLastResort() {
-		assertEquals(BtDeviceKind.WATCH, kindFromName("Xiaomi Watch S3"))
-		assertEquals(BtDeviceKind.EARBUDS, kindFromName("JBL Endurance Peak 4"))
-		// Speaker words win over the JBL brand, which covers both families.
-		assertEquals(BtDeviceKind.SPEAKER, kindFromName("JBL Charge 5"))
-		assertEquals(BtDeviceKind.EARBUDS, kindFromName("Sony WH-1000XM5"))
-		assertNull(kindFromName("Oglo# Loops 4"))
-		assertNull(kindFromName("victus"))
+	fun declaredClassesForCarsPhonesAndComputersMapToKinds() {
+		assertEquals(BtDeviceKind.CAR, kindFromClass(BluetoothClass.Device.AUDIO_VIDEO_CAR_AUDIO))
+		assertEquals(BtDeviceKind.PHONE, kindFromClass(BluetoothClass.Device.PHONE_CELLULAR))
+		assertEquals(BtDeviceKind.COMPUTER, kindFromClass(BluetoothClass.Device.COMPUTER_LAPTOP))
+		assertEquals(BtDeviceKind.COMPUTER, kindFromClass(BluetoothClass.Device.COMPUTER_DESKTOP))
+		// A tablet declares no class of its own; keep the uncategorized computer generic.
+		assertEquals(BtDeviceKind.UNKNOWN, kindFromClass(BluetoothClass.Device.TOY_UNCATEGORIZED))
+	}
+
+	@Test
+	fun serviceBitsInTheCoDDoNotHideTheDeclaredClass() {
+		// 0x7C010C = service-class bits + COMPUTER_LAPTOP, exactly what the victus declares.
+		assertEquals(BtDeviceKind.COMPUTER, kindFromClass(0x7C010C))
+	}
+
+	@Test
+	fun menuLabelsDropTheBluetoothPrefix() {
+		BtDeviceKind.entries.filter { it != BtDeviceKind.UNKNOWN }.forEach { kind ->
+			assertNotEquals(0, kind.menuLabel())
+		}
+		assertEquals(R.string.bt_override_generic, BtDeviceKind.UNKNOWN.menuLabel())
 	}
 
 	@Test
@@ -64,5 +79,31 @@ class BluetoothTypesTest {
 			assertNotEquals(0, kind.icon().icon)
 			assertNotEquals(0, kind.icon().label)
 		}
+	}
+
+	@Test
+	fun userOverrideWinsOverEveryAutomaticSignal() {
+		val overrides = mapOf("AA:BB:CC:DD:EE:FF" to "SPEAKER")
+		val precise = BtDeviceType(BtDeviceKind.WATCH, BtSource.FAST_PAIR)
+		val resolved = resolveKind("aa:bb:cc:dd:ee:ff", overrides, precise, BluetoothClass.Device.AUDIO_VIDEO_HEADPHONES)
+		assertEquals(BtDeviceKind.SPEAKER, resolved.kind)
+		assertEquals(BtSource.OVERRIDE, resolved.source)
+	}
+
+	@Test
+	fun automaticChainFallsBackFromPreciseToDeclaredClass() {
+		val precise = BtDeviceType(BtDeviceKind.EARBUDS, BtSource.FAST_PAIR)
+		assertEquals(BtSource.FAST_PAIR, resolveKind(null, emptyMap(), precise, null).source)
+		val fromClass = resolveKind(null, emptyMap(), null, BluetoothClass.Device.WEARABLE_WRIST_WATCH)
+		assertEquals(BtDeviceKind.WATCH, fromClass.kind)
+		assertEquals(BtSource.CLASS, fromClass.source)
+	}
+
+	@Test
+	fun unknownOverrideNamesAreIgnored() {
+		assertNull(kindFromOverrideName(null))
+		assertNull(kindFromOverrideName(""))
+		assertNull(kindFromOverrideName("SPKR"))
+		assertEquals(BtDeviceKind.UNKNOWN, kindFromOverrideName("UNKNOWN"))
 	}
 }

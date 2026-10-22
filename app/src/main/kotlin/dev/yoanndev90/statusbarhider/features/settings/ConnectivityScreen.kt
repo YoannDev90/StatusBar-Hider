@@ -40,5 +40,17 @@ fun ConnectivityScreen(vm: StatusViewModel) {
 				SettingSwitch(R.drawable.ic_swap, R.string.switch_merged_speed, prefs.bandwidthMerged) { vm.updatePrefs { copy(bandwidthMerged = it) } }
 			}
 		}
+		item {
+			SettingGroup {
+				SettingSwitch(R.drawable.ic_bt, R.string.switch_bt_icons, prefs.showBtIcons, R.string.switch_bt_icons_sub) {
+					vm.updatePrefs { copy(showBtIcons = it) }
+				}
+				BtDevicesSection(overrides = prefs.btIconOverrides) { mac, kindName ->
+					vm.updatePrefs {
+						copy(btIconOverrides = if (kindName == null) btIconOverrides - mac else btIconOverrides + (mac to kindName))
+					}
+				}
+			}
+		}
 	}
 }

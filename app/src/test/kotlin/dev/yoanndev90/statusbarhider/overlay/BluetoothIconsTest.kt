@@ -36,6 +36,16 @@ class BluetoothIconsTest {
 	}
 
 	@Test
+	fun carsPhonesAndComputersMapToTheirOwnIcons() {
+		assertEquals(R.drawable.ic_bt_car, btDeviceIcon(BluetoothClass.Device.AUDIO_VIDEO_CAR_AUDIO).icon)
+		assertEquals(R.drawable.ic_bt_phone, btDeviceIcon(BluetoothClass.Device.PHONE_CELLULAR).icon)
+		assertEquals(R.drawable.ic_bt_computer, btDeviceIcon(BluetoothClass.Device.COMPUTER_LAPTOP).icon)
+		assertEquals(R.drawable.ic_bt_computer, btDeviceIcon(BluetoothClass.Device.COMPUTER_DESKTOP).icon)
+		// The service-class bits of a raw CoD must not push a laptop back to the generic glyph.
+		assertEquals(R.drawable.ic_bt_computer, btDeviceIcon(0x7C010C).icon)
+	}
+
+	@Test
 	fun unknownFallsBackToGenericGlyph() {
 		// null = no BluetoothClass at all, 0 = uncategorized: both must stay generic.
 		assertEquals(R.drawable.ic_bt, btDeviceIcon(null).icon)
@@ -54,12 +64,14 @@ class BluetoothIconsTest {
 				BluetoothClass.Device.AUDIO_VIDEO_LOUDSPEAKER,
 				BluetoothClass.Device.AUDIO_VIDEO_PORTABLE_AUDIO,
 				BluetoothClass.Device.AUDIO_VIDEO_HIFI_AUDIO,
+				BluetoothClass.Device.AUDIO_VIDEO_CAR_AUDIO,
 				BluetoothClass.Device.PERIPHERAL_KEYBOARD,
 				BluetoothClass.Device.PERIPHERAL_POINTING,
 				BluetoothClass.Device.WEARABLE_WRIST_WATCH,
 				BluetoothClass.Device.TOY_GAME,
 				BluetoothClass.Device.TOY_CONTROLLER,
 				BluetoothClass.Device.PHONE_SMART,
+				BluetoothClass.Device.COMPUTER_LAPTOP,
 				null
 			)
 		classes.forEach { assertNotEquals(0, btDeviceIcon(it).label) }
