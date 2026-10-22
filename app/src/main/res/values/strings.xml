@@ -329,6 +329,14 @@
     <string name="cd_mobile_data">Mobile data</string>
     <string name="cd_signal_level">Mobile data signal, %1$d of 4 bars</string>
     <string name="cd_bluetooth">Bluetooth</string>
+    <string name="cd_bluetooth_earbuds">Bluetooth earbuds</string>
+    <string name="cd_bluetooth_headset">Bluetooth headset</string>
+    <string name="cd_bluetooth_speaker">Bluetooth speaker</string>
+    <string name="cd_bluetooth_keyboard">Bluetooth keyboard</string>
+    <string name="cd_bluetooth_mouse">Bluetooth mouse</string>
+    <string name="cd_bluetooth_watch">Bluetooth watch</string>
+    <string name="cd_bluetooth_gamepad">Bluetooth gamepad</string>
+    <string name="cd_bluetooth_phone">Bluetooth phone</string>
     <string name="cd_vpn">VPN</string>
     <string name="cd_hotspot">Hotspot</string>
     <string name="cd_usb">USB</string>

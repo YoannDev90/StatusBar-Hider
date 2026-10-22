@@ -25,6 +25,13 @@ class MainActivity : ComponentActivity() {
 			if (!granted) Log.d(TAG, "POST_NOTIFICATIONS denied - FGS notification suppressed")
 		}
 
+	private val bluetoothPermission =
+		registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+			// Same contract as notifications: a denial keeps the generic
+			// Bluetooth glyph, the grant enables per-device icons.
+			if (!granted) Log.d(TAG, "BLUETOOTH_CONNECT denied - generic Bluetooth icon kept")
+		}
+
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
 		enableEdgeToEdge()
@@ -37,6 +44,7 @@ class MainActivity : ComponentActivity() {
 			}
 		}
 		requestNotificationPermissionIfNeeded()
+		requestBluetoothPermissionIfNeeded()
 	}
 
 	override fun onDestroy() {
@@ -59,5 +67,16 @@ class MainActivity : ComponentActivity() {
 		if (Build.VERSION.SDK_INT < 33) return
 		if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
 		notificationsPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+	}
+
+	/**
+	 * Per-device Bluetooth icons need the connected device list, which
+	 * Android 12 gates behind BLUETOOTH_CONNECT. A denial is harmless: the
+	 * overlay keeps the generic Bluetooth glyph.
+	 */
+	private fun requestBluetoothPermissionIfNeeded() {
+		if (Build.VERSION.SDK_INT < 31) return
+		if (checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) return
+		bluetoothPermission.launch(android.Manifest.permission.BLUETOOTH_CONNECT)
 	}
 }

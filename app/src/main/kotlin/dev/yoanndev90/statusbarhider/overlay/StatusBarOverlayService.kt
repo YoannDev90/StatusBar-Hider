@@ -268,6 +268,7 @@ class StatusBarOverlayService : Service() {
 		serviceScope.cancel()
 		handler.removeCallbacksAndMessages(null)
 		mediaSessions.dispose()
+		indicators.release()
 		SystemUiWatcher.stop(this)
 		window.detach()
 		// The overlay is gone: let SystemUI re-read the "Custom bar" tile state.
@@ -660,6 +661,7 @@ class StatusBarOverlayService : Service() {
 				mobileType = c.mobileType,
 				signalLevel = c.signalLevel,
 				bluetooth = c.bluetooth,
+				btDevices = c.btDevices,
 				vpn = c.vpn,
 				hotspot = c.hotspot,
 				nfc = c.nfc,

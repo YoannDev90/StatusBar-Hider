@@ -36,8 +36,17 @@ import java.util.Locale
  * in-app log (once per query, see [warn]) instead of vanishing.
  */
 internal class SystemIndicators(
-	private val context: Context
+	internal val context: Context
 ) {
+	/** Bluetooth devices, read through profile proxies (see [BluetoothProfiles]). */
+	internal val btProfiles = BluetoothProfiles(context, this::warn)
+
+	/** Precise device kinds from the stack's Fast Pair store (see [BluetoothTypes]). */
+	internal val btTypes = BluetoothTypes(context, this::warn)
+
+	/** Frees the Bluetooth profile proxies; the overlay service shuts them down. */
+	fun release() = btProfiles.release()
+
 	/** True while the keyguard is up - the screen the notifications would show over. */
 	fun isKeyguardUp(): Boolean =
 		try {
@@ -287,7 +296,7 @@ internal class SystemIndicators(
 	 * in-app log only the first (the poll would otherwise rewrite its whole
 	 * file once per refresh cycle).
 	 */
-	private fun warn(where: String, e: Exception) {
+	internal fun warn(where: String, e: Exception) {
 		Log.w(TAG, where, e)
 		LogStore.appendOnce(
 			context,
@@ -361,6 +370,8 @@ internal data class Connectivity(
 	val mobileType: String,
 	val signalLevel: Int,
 	val bluetooth: Boolean,
+	/** One entry per connected Bluetooth device; empty = generic glyph. */
+	val btDevices: List<BtDeviceIcon> = emptyList(),
 	val vpn: Boolean,
 	val hotspot: Boolean,
 	val nfc: Boolean,
@@ -387,13 +398,15 @@ internal suspend fun SystemIndicators.readConnectivity(p: OverlayPrefs): Connect
 
 		val mobile = radio(p.showMobileData) { hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
 		val status = mobileStatus(mobile)
+		val bluetooth = radio(p.showBluetooth) { isBluetoothOn() }
 		Connectivity(
 			airplane = airplane,
 			wifi = radio(p.showWifi) { hasTransport(NetworkCapabilities.TRANSPORT_WIFI) },
 			mobile = status.active,
 			mobileType = status.type,
 			signalLevel = status.level,
-			bluetooth = radio(p.showBluetooth) { isBluetoothOn() },
+			bluetooth = bluetooth,
+			btDevices = if (bluetooth) connectedBluetoothIcons() else emptyList(),
 			vpn = radio(p.showVpn) { isVpn() },
 			hotspot = radio(p.showHotspot) { isHotspotOn() },
 			nfc = radio(p.showNfc) { isNfcOn() },

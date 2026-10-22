@@ -56,6 +56,8 @@ data class OverlayBarState(
 	/** Cellular signal level 0..4 (-1 = unknown, drawn with the static icon). */
 	val signalLevel: Int = -1,
 	val bluetooth: Boolean = false,
+	/** One icon per connected Bluetooth device; empty = generic glyph. */
+	val btDevices: List<BtDeviceIcon> = emptyList(),
 	val vpn: Boolean = false,
 	val hotspot: Boolean = false,
 	val nfc: Boolean = false,

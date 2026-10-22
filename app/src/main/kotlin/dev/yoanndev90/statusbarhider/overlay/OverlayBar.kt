@@ -593,7 +593,7 @@ private fun BandwidthWidget(
 		)
 	val unitStyle =
 		TextStyle(
-			fontSize = prefs.textSp(-4),
+			fontSize = prefs.textSp(-6),
 			fontWeight = prefs.fontWeightValue,
 			fontFeatureSettings = "tnum"
 		)
@@ -696,12 +696,19 @@ private data class Indicator(
 }
 
 /** Every icon the connectivity widget can draw, in bar order. */
-private fun connectivityIndicators(prefs: OverlayPrefs, state: OverlayBarState): List<Indicator> =
-	listOf(
+private fun connectivityIndicators(prefs: OverlayPrefs, state: OverlayBarState): List<Indicator> {
+	// Known connected devices replace the generic glyph, one icon each.
+	val bluetooth =
+		if (state.bluetooth && state.btDevices.isNotEmpty()) {
+			state.btDevices.map { Indicator(it.icon, it.label, prefs.showBluetooth, true, radio = true) }
+		} else {
+			listOf(Indicator(R.drawable.ic_bt, R.string.cd_bluetooth, prefs.showBluetooth, state.bluetooth, radio = true))
+		}
+	return listOf(
 		Indicator(R.drawable.ic_plane, R.string.cd_airplane_mode, prefs.showAirplane, state.airplane),
 		Indicator(R.drawable.ic_wifi, R.string.cd_wifi, prefs.showWifi, state.wifi, radio = true),
-		Indicator(R.drawable.ic_signal, R.string.cd_mobile_data, prefs.showMobileData, state.mobile, radio = true, typeLabel = true),
-		Indicator(R.drawable.ic_bt, R.string.cd_bluetooth, prefs.showBluetooth, state.bluetooth, radio = true),
+		Indicator(R.drawable.ic_signal, R.string.cd_mobile_data, prefs.showMobileData, state.mobile, radio = true, typeLabel = true)
+	) + bluetooth + listOf(
 		Indicator(R.drawable.ic_vpn, R.string.cd_vpn, prefs.showVpn, state.vpn, radio = true),
 		Indicator(R.drawable.ic_hotspot, R.string.cd_hotspot, prefs.showHotspot, state.hotspot, radio = true),
 		Indicator(R.drawable.ic_usb, R.string.cd_usb, prefs.showUsb, state.usbConnected),
@@ -714,6 +721,7 @@ private fun connectivityIndicators(prefs: OverlayPrefs, state: OverlayBarState):
 		Indicator(R.drawable.ic_rotation, R.string.cd_auto_rotate, prefs.showRotate, state.autoRotate),
 		Indicator(R.drawable.ic_torch, R.string.cd_flashlight, prefs.showTorch, state.torch)
 	)
+}
 
 @Composable
 private fun ConnectivityWidget(
