@@ -441,7 +441,7 @@ private fun ClockWidget(
 	fg: Color,
 	onClick: () -> Unit
 ) {
-	val tick = rememberTick(if (prefs.hasSeconds()) 1000L else 60_000L, screenOn)
+	val tick = rememberTick(if (prefs.showSeconds) 1000L else 60_000L, screenOn)
 	WidgetText(
 		prefs = prefs,
 		text = formattedText(tick, prefs.effectiveTimeFormat(), "time"),

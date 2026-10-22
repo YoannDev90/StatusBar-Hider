@@ -321,7 +321,7 @@ class StatusBarOverlayService : Service() {
 		val sticky = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
 		if (sticky != null) {
 			batteryPct =
-				OverlayPrefs.batteryPct(
+				IndicatorFormats.batteryPct(
 					sticky.getIntExtra(BatteryManager.EXTRA_LEVEL, -1),
 					sticky.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
 				)
@@ -380,7 +380,7 @@ class StatusBarOverlayService : Service() {
 	private fun onBattery(intent: Intent) {
 		val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
 		val scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-		val pct = OverlayPrefs.batteryPct(level, scale)
+		val pct = IndicatorFormats.batteryPct(level, scale)
 		val status = intent.getIntExtra(BatteryManager.EXTRA_STATUS, -1)
 		batteryCharging =
 			status == BatteryManager.BATTERY_STATUS_CHARGING ||
@@ -693,14 +693,14 @@ class StatusBarOverlayService : Service() {
 			if (prefs.bandwidthMerged) {
 				barState =
 					barState.copy(
-						bandwidthRx = OverlayPrefs.speedParts(dRx + dTx),
+						bandwidthRx = IndicatorFormats.speedParts(dRx + dTx),
 						bandwidthTx = null
 					)
 			} else {
 				barState =
 					barState.copy(
-						bandwidthRx = OverlayPrefs.speedParts(dRx),
-						bandwidthTx = OverlayPrefs.speedParts(dTx)
+						bandwidthRx = IndicatorFormats.speedParts(dRx),
+						bandwidthTx = IndicatorFormats.speedParts(dTx)
 					)
 			}
 		}

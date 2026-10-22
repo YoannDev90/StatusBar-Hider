@@ -3,29 +3,18 @@ package dev.yoanndev90.statusbarhider.overlay
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
-import kotlinx.serialization.KSerializer
+import dev.yoanndev90.statusbarhider.core.settings.CsvListSerializer
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefsCodec
+import dev.yoanndev90.statusbarhider.core.settings.WidgetOrderSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
-import java.util.Locale
+import kotlinx.serialization.json.JsonElement
 
 internal const val PREFS = "overlay_prefs"
 
 /** Current blob slot. */
 private const val KEY_PREFS_V1 = "prefs_v1"
-
-/** Pre-v1 slot: the JSON blob lived under the boolean-looking "enabled". */
-private const val KEY_LEGACY_ENABLED = "enabled"
 
 /** Preserved copy of an unparsable blob, so the defaults fallback stays recoverable. */
 private const val KEY_CORRUPT = "prefs_corrupt"
@@ -34,6 +23,7 @@ private const val KEY_CORRUPT = "prefs_corrupt"
 private const val KEY_ENABLED = "enabled"
 private const val KEY_SHOW_SECONDS = "show_seconds"
 private const val KEY_USE_24H = "use_24h"
+
 private const val KEY_SHOW_ON_LOCK_SCREEN = "show_on_lock_screen"
 private const val KEY_LOCK_SCREEN_MODE = "lock_screen_mode"
 private const val KEY_HIDE_NOTIFS_ON_LOCK = "hide_notifs_on_lock"
@@ -55,7 +45,6 @@ private const val KEY_SHOW_ALARM = "show_alarm"
 private const val KEY_SHOW_BANDWIDTH = "show_bandwidth"
 private const val KEY_BANDWIDTH_MERGED = "bandwidth_merged"
 private const val KEY_UPDATE_INTERVAL_SEC = "update_interval_sec"
-private const val KEY_TIME_FORMAT = "time_format"
 private const val KEY_BACKGROUND = "background"
 private const val KEY_DARK_TEXT = "dark_text"
 private const val KEY_SHOW_USB = "show_usb"
@@ -93,45 +82,6 @@ private const val KEY_CAMERA_RING = "camera_ring"
 private const val KEY_CAMERA_RING_STROKE = "camera_ring_stroke_dp"
 private const val KEY_CAMERA_RING_COLOR = "camera_ring_color"
 
-/** Stable widget ids used for ordering. */
-object WidgetId {
-	const val CLOCK = "clock"
-	const val DATE = "date"
-	const val CALENDAR = "calendar"
-	const val NOTIFS = "notifs"
-	const val MEDIA = "media"
-	const val SPACER = "spacer"
-	const val CONNECTIVITY = "connectivity"
-	const val BATTERY = "battery"
-	const val ALARM = "alarm"
-	const val BANDWIDTH = "bandwidth"
-	val ALL = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
-	val DEFAULT_ORDER = listOf(CLOCK, DATE, CALENDAR, NOTIFS, MEDIA, SPACER, CONNECTIVITY, BATTERY, ALARM, BANDWIDTH)
-
-	/** String resource for the display label of [id]; unknown ids fall back to a generic label. */
-	fun labelRes(id: String): Int =
-		when (id) {
-			CLOCK -> R.string.widget_clock
-			DATE -> R.string.widget_date
-			CALENDAR -> R.string.widget_calendar
-			NOTIFS -> R.string.widget_notifications
-			MEDIA -> R.string.widget_media
-			SPACER -> R.string.widget_spacer
-			CONNECTIVITY -> R.string.widget_connectivity
-			BATTERY -> R.string.widget_battery
-			ALARM -> R.string.widget_alarm
-			BANDWIDTH -> R.string.widget_bandwidth
-			else -> R.string.widget_unknown
-		}
-
-	/** Parses a stored order, dropping unknown ids and appending missing ones. */
-	fun parseOrder(raw: String?): List<String> {
-		val ids = raw?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() } ?: emptyList()
-		val known = ids.filter { it in ALL }.distinct()
-		return known + (ALL - known.toSet())
-	}
-}
-
 @Serializable
 enum class OverlayBackground {
 	TRANSPARENT,
@@ -150,48 +100,11 @@ enum class LockScreenMode {
 }
 
 /**
- * Keeps [OverlayPrefs.widgetOrder] stored as the legacy comma-separated string
- * instead of a JSON array, so older builds can still read it.
- */
-private object WidgetOrderSerializer : KSerializer<List<String>> {
-	override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("widgetOrder", PrimitiveKind.STRING)
-
-	override fun serialize(
-		encoder: Encoder,
-		value: List<String>
-	) {
-		encoder.encodeString(value.joinToString(","))
-	}
-
-	override fun deserialize(decoder: Decoder): List<String> = WidgetId.parseOrder(decoder.decodeString())
-}
-
-/**
- * Same storage choice as [WidgetOrderSerializer] for the app blacklist:
- * package names never contain a comma, and the CSV form stays readable.
- */
-private object CsvListSerializer : KSerializer<List<String>> {
-	override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("csvList", PrimitiveKind.STRING)
-
-	override fun serialize(
-		encoder: Encoder,
-		value: List<String>
-	) {
-		encoder.encodeString(value.joinToString(","))
-	}
-
-	override fun deserialize(decoder: Decoder): List<String> =
-		decoder
-			.decodeString()
-			.split(",")
-			.map { it.trim() }
-			.filter { it.isNotEmpty() }
-			.distinct()
-}
-
-/**
- * Persisted config for the overlay bar. Backed by SharedPreferences so
- * BootReceiver can re-apply it without UI.
+ * Persisted config for the overlay bar. The JSON shape and the clamping of
+ * free-form values all live in [OverlayPrefsCodec]; this class is the model,
+ * its defaults and the SharedPreferences I/O
+ * [dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository] drives, so
+ * BootReceiver can re-apply the config without any UI.
  */
 @Serializable
 data class OverlayPrefs(
@@ -328,8 +241,6 @@ data class OverlayPrefs(
 			else -> FORMAT_12H
 		}
 
-	fun hasSeconds(): Boolean = showSeconds
-
 	/** ARGB background for the overlay root. */
 	fun backgroundColor(): Int =
 		when (background) {
@@ -341,12 +252,8 @@ data class OverlayPrefs(
 	/** Text color honoring the dark-text toggle (for transparent bar over light apps). */
 	fun textColor(): Int = if (darkText) android.graphics.Color.BLACK else android.graphics.Color.WHITE
 
-	fun toJson(): String {
-		val encoded = json.encodeToJsonElement(OverlayPrefs.serializer(), this).jsonObject
-		// Legacy key kept for downgrade compatibility; mirrors the effective pattern.
-		val withLegacy = JsonObject(encoded + (KEY_TIME_FORMAT to JsonPrimitive(effectiveTimeFormat())))
-		return json.encodeToString(JsonObject.serializer(), withLegacy)
-	}
+	/** Stored shape of this value; see [OverlayPrefsCodec.toJson]. */
+	fun toJson(): String = OverlayPrefsCodec.toJson(this)
 
 	companion object {
 		private const val TAG = "OverlayPrefs"
@@ -361,89 +268,16 @@ data class OverlayPrefs(
 		/** Default pattern of [OverlayPrefs.dateFormat]; also the fallback for a blank stored value. */
 		const val DEFAULT_DATE_FORMAT = "EEE dd MMM"
 
-		/** Accepted values of [OverlayPrefs.fontWeightName]. */
-		private val FONT_WEIGHTS = setOf("NORMAL", "MEDIUM", "BOLD")
-
-		/** Stored ring colors are plain `#RRGGBB`; anything else falls back to the text color. */
-		private val RING_COLOR = Regex("^#[0-9A-Fa-f]{6}$")
-
-		/** Shared reader / writer for the stored blob. */
-		private val json = Json {
-			ignoreUnknownKeys = true
-			coerceInputValues = true
-			encodeDefaults = true
-		}
-
 		/**
-		 * Parses the stored blob. Returns null on malformed input so the caller
-		 * can report it and keep the raw copy instead of silently losing settings.
-		 */
-		fun fromJson(raw: String): OverlayPrefs? =
-			try {
-				val root = json.parseToJsonElement(raw)
-				// Builds older than the 12 / 24-hour toggle stored a raw pattern
-				// under KEY_TIME_FORMAT; "h:mm ..." means the user had a 12h clock.
-				val input =
-					if (root is JsonObject && KEY_USE_24H !in root) {
-						val legacyFormat = (root[KEY_TIME_FORMAT] as? JsonPrimitive)?.content.orEmpty()
-						JsonObject(root + (KEY_USE_24H to JsonPrimitive(!legacyFormat.contains("h:mm"))))
-					} else {
-						root
-					}
-				normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), input))
-			} catch (_: Exception) {
-				null
-			}
-
-		/**
-		 * Strict parse for backups: throws on malformed input instead of
-		 * silently falling back to the defaults, but normalizes like [fromJson].
-		 */
-		fun decodeStrict(element: kotlinx.serialization.json.JsonElement): OverlayPrefs =
-			normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), element))
-
-		/** Clamps free-form fields the way the old per-key opt* parser did. */
-		private fun normalize(prefs: OverlayPrefs): OverlayPrefs =
-			prefs.copy(
-				updateIntervalSec = prefs.updateIntervalSec.coerceIn(5, 60),
-				padStartDp = prefs.padStartDp.coerceIn(0, 32),
-				padTopDp = prefs.padTopDp.coerceIn(0, 32),
-				padEndDp = prefs.padEndDp.coerceIn(0, 32),
-				padBottomDp = prefs.padBottomDp.coerceIn(0, 32),
-				dateFormat = prefs.dateFormat.ifEmpty { DEFAULT_DATE_FORMAT },
-				maxNotifs = prefs.maxNotifs.coerceIn(1, 8),
-				burnInMin = prefs.burnInMin.coerceIn(0, 30),
-				fontSizeSp = prefs.fontSizeSp.coerceIn(10, 20),
-				fontWeightName = prefs.fontWeightName.takeIf { it in FONT_WEIGHTS } ?: "NORMAL",
-				widgetSpacingDp = prefs.widgetSpacingDp.coerceIn(0, 12),
-				cameraGapDp = prefs.cameraGapDp.coerceIn(0, 16),
-				cameraNudgeXDp = prefs.cameraNudgeXDp.coerceIn(-48, 48),
-				cameraNudgeYDp = prefs.cameraNudgeYDp.coerceIn(-48, 48),
-				cameraOffsetXPct = prefs.cameraOffsetXPct.coerceIn(0, 100),
-				cameraOffsetYDp = prefs.cameraOffsetYDp.coerceIn(0, 60),
-				cameraSizeDp = prefs.cameraSizeDp.coerceIn(0, 40),
-				cameraRingStrokeDp = prefs.cameraRingStrokeDp.coerceIn(1, 8),
-				cameraRingColor = prefs.cameraRingColor.takeIf { RING_COLOR.matches(it) } ?: ""
-			)
-
-		/**
-		 * Reads the blob, migrating the legacy "enabled" slot on first read.
-		 * An unparsable blob is preserved under [KEY_CORRUPT] and reported to
-		 * logcat + the app log: the defaults are returned, nothing is lost.
+		 * Reads the blob through [OverlayPrefsCodec]. An unparsable blob is
+		 * preserved under [KEY_CORRUPT] and reported to logcat + the app log:
+		 * the defaults are returned, nothing is lost.
 		 */
 		fun load(context: Context): OverlayPrefs {
 			val app = context.applicationContext
 			val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-			val raw = prefs.getString(KEY_PREFS_V1, null)
-			if (raw != null) return fromJson(raw) ?: corrupt(app, prefs, raw)
-			val legacy = prefs.getString(KEY_LEGACY_ENABLED, null) ?: return OverlayPrefs()
-			// One-time migration: read the legacy slot, write it under the new key.
-			prefs
-				.edit()
-				.putString(KEY_PREFS_V1, legacy)
-				.remove(KEY_LEGACY_ENABLED)
-				.apply()
-			return fromJson(legacy) ?: corrupt(app, prefs, legacy)
+			val raw = prefs.getString(KEY_PREFS_V1, null) ?: return OverlayPrefs()
+			return OverlayPrefsCodec.fromJson(raw) ?: corrupt(app, prefs, raw)
 		}
 
 		private fun corrupt(
@@ -469,26 +303,10 @@ data class OverlayPrefs(
 				.apply()
 		}
 
-		/** Human-readable throughput, e.g. 512B, 12K, 3.4M (per second). */
-		fun formatSpeed(bytesPerSecond: Long): String {
-			val parts = speedParts(bytesPerSecond)
-			return parts.value + parts.unit
-		}
-
-		/** Same figure split as value + scale unit, for the stacked bar layout. */
-		fun speedParts(bytesPerSecond: Long): OverlaySpeed =
-			when {
-				bytesPerSecond >= 1_048_576L ->
-					OverlaySpeed(String.format(Locale.ROOT, "%.1f", bytesPerSecond / 1_048_576.0), "M")
-				bytesPerSecond >= 1_024L ->
-					OverlaySpeed(String.format(Locale.ROOT, "%.0f", bytesPerSecond / 1_024.0), "K")
-				else -> OverlaySpeed(bytesPerSecond.coerceAtLeast(0).toString(), "B")
-			}
-
-		/** Battery % from a sticky ACTION_BATTERY_CHANGED extras pair. */
-		fun batteryPct(
-			level: Int,
-			scale: Int
-		): Int = if (level >= 0 && scale > 0) (level * 100) / scale else -1
+		/**
+		 * Strict parse for backups and profile snapshots; throws on malformed
+		 * input instead of silently falling back to the defaults.
+		 */
+		fun decodeStrict(element: JsonElement): OverlayPrefs = OverlayPrefsCodec.decodeStrict(element)
 	}
 }
