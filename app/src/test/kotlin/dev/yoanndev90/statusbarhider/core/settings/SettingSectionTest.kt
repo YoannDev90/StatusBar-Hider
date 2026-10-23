@@ -7,6 +7,8 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
+import dev.yoanndev90.statusbarhider.core.settings.sections.LockAppearanceSection
+import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import org.junit.Assert.assertEquals
@@ -28,7 +30,9 @@ class SettingSectionTest {
 			ClockSection,
 			AppearanceSection,
 			NotificationSection,
-			CutoutSection
+			CutoutSection,
+			LockAppearanceSection,
+			LockBehaviorSection
 		)
 
 	@Test
@@ -147,6 +151,22 @@ class SettingSectionTest {
 		val manual = CutoutSection.visibleRows(OverlayPrefs().copy(cameraAutoDetect = false)).keys()
 		assertTrue("offset sliders missing in manual mode", "camera_offset_x_pct" in manual && "camera_offset_y_dp" in manual)
 		assertTrue("nudge sliders shown in manual mode", "camera_nudge_x_dp" !in manual && "camera_nudge_y_dp" !in manual)
+	}
+
+	@Test
+	fun `lock behavior keeps both overlay actions between the switches`() {
+		val shape =
+			LockBehaviorSection.rows.map { row ->
+				when (row) {
+					is SettingRow.OfSpec -> row.spec.key
+					is SettingRow.Group -> "group"
+					is SettingRow.Custom -> "custom"
+				}
+			}
+		assertEquals(
+			listOf("show_on_lock_screen", "custom", "custom", "hide_notifs_on_lock"),
+			shape
+		)
 	}
 
 	@Test

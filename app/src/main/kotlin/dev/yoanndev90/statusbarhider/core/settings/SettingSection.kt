@@ -23,7 +23,8 @@ abstract class SettingSection<S : Any>(
 	val id: String,
 	@DrawableRes val icon: Int,
 	@StringRes val title: Int,
-	@StringRes val subtitle: Int,
+	/** Subtitle of the root listing; 0 when the section has none (sub-screens). */
+	@StringRes val subtitle: Int = 0,
 	val group: SectionGroup,
 	/** Extra search terms merged into the index built from the row labels. */
 	val keywords: List<String>,
