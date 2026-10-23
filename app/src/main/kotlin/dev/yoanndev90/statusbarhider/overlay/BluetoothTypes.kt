@@ -102,6 +102,9 @@ internal fun kindFromClass(deviceClass: Int?): BtDeviceKind =
 		else -> BtDeviceKind.UNKNOWN
 	}
 
+/** Fast Pair `device_type` synonyms that all mean an in-ear headset. */
+private val EARBUD_SYNONYMS = listOf("headset", "headphone", "earbud", "earphone", "untethered")
+
 /** Fast Pair `device_type` value to kind ("Untethered Headset", "Smart Watch"...). */
 internal fun kindFromTypeName(type: String): BtDeviceKind? {
 	val t = type.lowercase(Locale.ROOT)
@@ -111,7 +114,7 @@ internal fun kindFromTypeName(type: String): BtDeviceKind? {
 		"controller" in t || "gamepad" in t -> BtDeviceKind.GAMEPAD
 		"keyboard" in t -> BtDeviceKind.KEYBOARD
 		"mouse" in t || "pointing" in t -> BtDeviceKind.MOUSE
-		"headset" in t || "headphone" in t || "earbud" in t || "earphone" in t || "untethered" in t -> BtDeviceKind.EARBUDS
+		EARBUD_SYNONYMS.any { it in t } -> BtDeviceKind.EARBUDS
 		"phone" in t -> BtDeviceKind.PHONE
 		else -> null
 	}
