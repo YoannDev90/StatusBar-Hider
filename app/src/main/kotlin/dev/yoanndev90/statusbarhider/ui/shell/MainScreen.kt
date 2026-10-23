@@ -40,6 +40,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
+import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
+import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
+import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
 import dev.yoanndev90.statusbarhider.data.AppSettings
 import dev.yoanndev90.statusbarhider.features.home.HomeScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
@@ -47,14 +50,11 @@ import dev.yoanndev90.statusbarhider.features.logs.LogsViewModel
 import dev.yoanndev90.statusbarhider.features.settings.AboutScreen
 import dev.yoanndev90.statusbarhider.features.settings.AppearanceScreen
 import dev.yoanndev90.statusbarhider.features.settings.BackupScreen
-import dev.yoanndev90.statusbarhider.features.settings.BatteryScreen
 import dev.yoanndev90.statusbarhider.features.settings.ClockScreen
-import dev.yoanndev90.statusbarhider.features.settings.ConnectivityScreen
 import dev.yoanndev90.statusbarhider.features.settings.CutoutScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugHubScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugInfoScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugPermissionsScreen
-import dev.yoanndev90.statusbarhider.features.settings.GeneralScreen
 import dev.yoanndev90.statusbarhider.features.settings.HiddenAppsScreen
 import dev.yoanndev90.statusbarhider.features.settings.LockAppearanceScreen
 import dev.yoanndev90.statusbarhider.features.settings.LockBehaviorScreen
@@ -64,6 +64,7 @@ import dev.yoanndev90.statusbarhider.features.settings.OemScreen
 import dev.yoanndev90.statusbarhider.features.settings.ProfilesScreen
 import dev.yoanndev90.statusbarhider.features.settings.SettingsRootScreen
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.ui.components.SettingSectionScreen
 import dev.yoanndev90.statusbarhider.ui.setup.SetupScreen
 
 /**
@@ -275,13 +276,13 @@ private fun AppNavHost(
 	) {
 		composable(Routes.HOME) { HomeScreen(statusViewModel, navController::navigate) }
 		composable(Routes.SETTINGS) { SettingsRootScreen(statusViewModel, settingsQuery, navController::navigate) }
-		composable(Routes.GENERAL) { GeneralScreen(statusViewModel) }
+		composable(Routes.GENERAL) { SettingSectionScreen(statusViewModel, GeneralSection) }
 		composable(Routes.APPEARANCE) { AppearanceScreen(statusViewModel) }
 		composable(Routes.CUTOUT) { CutoutScreen(statusViewModel) }
 		composable(Routes.CLOCK) { ClockScreen(statusViewModel) }
-		composable(Routes.BATTERY) { BatteryScreen(statusViewModel) }
+		composable(Routes.BATTERY) { SettingSectionScreen(statusViewModel, BatterySection) }
 		composable(Routes.NOTIFICATIONS) { NotificationsScreen(statusViewModel) }
-		composable(Routes.CONNECTIVITY) { ConnectivityScreen(statusViewModel) }
+		composable(Routes.CONNECTIVITY) { SettingSectionScreen(statusViewModel, ConnectivitySection) }
 		composable(Routes.HIDDEN_APPS) { HiddenAppsScreen(statusViewModel) }
 		composable(Routes.LOCK) { LockHubScreen(navController::navigate) }
 		composable(Routes.LOCK_APPEARANCE) { LockAppearanceScreen(statusViewModel) }
