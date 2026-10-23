@@ -66,4 +66,14 @@ object SettingsRegistry {
 	/** The section whose screen lives at [route], or null for the shell's own routes. */
 	fun sectionByRoute(route: String?): SettingSection<OverlayPrefs>? =
 		route?.let { r -> sections.firstOrNull { it.route == r } }
+
+	/**
+	 * Puts every setting of [store] back to its default. The caller re-applies
+	 * the file afterwards (service, tiles, widgets) so the overlay stack stays
+	 * the one place that knows how to restart itself.
+	 */
+	@Suppress("UNCHECKED_CAST")
+	fun resetStore(store: SettingStore<*>) {
+		(store as SettingStore<Any>).replace(store.default)
+	}
 }

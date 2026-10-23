@@ -336,9 +336,18 @@ fun SettingInfoRow(
 	@StringRes label: Int,
 	value: String
 ) {
+	SettingInfoRow(stringResource(label), value)
+}
+
+/** Same, for labels that only exist at runtime (a spec key on the debug screen). */
+@Composable
+fun SettingInfoRow(
+	label: String,
+	value: String
+) {
 	Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
 		Text(
-			text = stringResource(label),
+			text = label,
 			style = MaterialTheme.typography.bodyMedium,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
 			modifier = Modifier.weight(1f).padding(end = 12.dp)

@@ -29,6 +29,12 @@ sealed class SettingSpec<T, S : Any>(
 ) {
 	/** Puts [value] back inside its accepted shape; runs on every load and import. */
 	open fun coerce(value: T): T = value
+
+	/** Puts this setting back to its default inside [current]. */
+	fun resetIn(current: S): S = set(current, default)
+
+	/** True when [current] differs from the default of this setting. */
+	fun isModifiedIn(current: S): Boolean = get(current) != default
 }
 
 /** On / off toggle. */

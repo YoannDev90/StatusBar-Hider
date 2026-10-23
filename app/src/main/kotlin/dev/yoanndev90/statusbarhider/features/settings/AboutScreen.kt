@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.data.AppSettings
+import dev.yoanndev90.statusbarhider.data.AppFlagsStore
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
@@ -57,6 +57,6 @@ fun AboutScreen(
 /** Copies the control API token so it can be pasted into an adb or Tasker intent. */
 private fun copyControlToken(context: Context) {
 	val clipboard = context.getSystemService(ClipboardManager::class.java)
-	clipboard?.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), AppSettings.controlToken(context)))
+	clipboard?.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.app_name), AppFlagsStore.getInstance(context).controlToken()))
 	Toast.makeText(context, R.string.toast_token_copied, Toast.LENGTH_SHORT).show()
 }

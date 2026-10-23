@@ -5,7 +5,9 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.content.FileProvider
 import dev.yoanndev90.statusbarhider.core.oem.OemConfig
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefsCodec
 import dev.yoanndev90.statusbarhider.data.OemRepository
+import dev.yoanndev90.statusbarhider.data.OemStore
 import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -61,13 +63,15 @@ object SettingsBackup {
 	fun export(context: Context): String {
 		val app = context.applicationContext
 		val overlay = OverlayPrefsRepository.getInstance(app).state.value
-		val oemId = OemConfig.getSavedId(app) ?: OemConfig.detect(app)
+		// The envelope stays the contract with the sister build; its content
+		// is what the stores' specs mark exportable.
+		val oemId = OemStore.getInstance(app).currentId().ifEmpty { OemConfig.detect(app) }
 		val root =
 			JsonObject(
 				mapOf(
 					KEY_SCHEMA to JsonPrimitive(CURRENT_SCHEMA),
 					KEY_OEM to JsonPrimitive(oemId),
-					KEY_OVERLAY to json.parseToJsonElement(overlay.toJson())
+					KEY_OVERLAY to OverlayPrefsCodec.exportJson(overlay)
 				)
 			)
 		return json.encodeToString(JsonObject.serializer(), root)
@@ -165,8 +169,11 @@ object SettingsBackup {
 	) {
 		val app = context.applicationContext
 		val backup = parse(raw)
-		if (backup.oemId.isNotEmpty()) OemConfig.saveId(app, backup.oemId)
-		OemRepository.getInstance(app).refresh()
+		if (backup.oemId.isNotEmpty()) {
+			OemStore.getInstance(app).write(backup.oemId)
+		} else {
+			OemRepository.getInstance(app).refresh()
+		}
 		OverlayController.replaceAll(app, backup.prefs)
 	}
 }

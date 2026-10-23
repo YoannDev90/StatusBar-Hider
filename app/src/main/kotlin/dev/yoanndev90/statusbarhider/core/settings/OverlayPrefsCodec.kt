@@ -11,6 +11,8 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 
 /**
  * Pure codec of the stored overlay blob: string <-> [OverlayPrefs].
@@ -57,6 +59,24 @@ object OverlayPrefsCodec {
 	 */
 	fun decodeStrict(element: JsonElement): OverlayPrefs =
 		OverlaySpecs.normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), element))
+
+	/**
+	 * The subset of [prefs] described by [specs], minus the ones marked
+	 * non-exportable. The wire form of each value stays the model's own
+	 * serializer (the registry test pins spec keys to its field names), so
+	 * the export shape only ever changes when a spec does.
+	 */
+	fun exportOf(
+		prefs: OverlayPrefs,
+		specs: List<SettingSpec<*, OverlayPrefs>>
+	): JsonObject {
+		val all = json.parseToJsonElement(toJson(prefs)).jsonObject
+		val exportable = specs.filter { it.exportable }.map { it.key }.toSet()
+		return JsonObject(all.filterKeys { it in exportable })
+	}
+
+	/** What a backup carries for the overlay file: every exportable spec. */
+	fun exportJson(prefs: OverlayPrefs): JsonObject = exportOf(prefs, OverlaySpecs.all)
 }
 
 /**

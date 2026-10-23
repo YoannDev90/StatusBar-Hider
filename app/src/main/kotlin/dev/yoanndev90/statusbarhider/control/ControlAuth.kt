@@ -3,7 +3,7 @@ package dev.yoanndev90.statusbarhider.control
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import dev.yoanndev90.statusbarhider.data.AppSettings
+import dev.yoanndev90.statusbarhider.data.AppFlagsStore
 import java.security.MessageDigest
 
 /**
@@ -40,7 +40,7 @@ object ControlAuth {
 		context: Context,
 		intent: Intent
 	): Boolean {
-		val ok = matches(AppSettings.controlToken(context), intent.getStringExtra(EXTRA_TOKEN))
+		val ok = matches(AppFlagsStore.getInstance(context).controlToken(), intent.getStringExtra(EXTRA_TOKEN))
 		if (!ok) Log.w(TAG, "Rejecting control broadcast: missing or invalid token")
 		return ok
 	}

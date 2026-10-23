@@ -16,8 +16,8 @@ import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
  * [SettingRow.Group] under its own card, title 0 keeping it untitled.
  *
  * Typed to [PrefsViewModel] because that is where overlay state and writes
- * live; a second state source can generalise it once AppSettings sections
- * exist.
+ * live; the app flags and the OEM pick are described as specs but draw no
+ * rows, so nothing else needs a state source here.
  */
 @Composable
 fun SettingSectionScreen(vm: PrefsViewModel, section: SettingSection<OverlayPrefs>) {

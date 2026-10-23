@@ -66,6 +66,12 @@ abstract class SettingSection<S : Any>(
 	 * what a test asserts here is what the user sees.
 	 */
 	fun visibleRows(prefs: S): List<SettingRow<S>> = rows.visible(prefs)
+
+	/**
+	 * Puts every setting described by [rows] back to its default inside
+	 * [prefs]; custom lines and the rest of the file are left alone.
+	 */
+	fun resetIn(prefs: S): S = rows.specs().fold(prefs) { current, spec -> spec.resetIn(current) }
 }
 
 private fun <S : Any> List<SettingRow<S>>.visible(prefs: S): List<SettingRow<S>> =

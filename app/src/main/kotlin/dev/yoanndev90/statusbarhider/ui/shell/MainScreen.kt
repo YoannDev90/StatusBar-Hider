@@ -50,7 +50,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.HiddenAppsSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockAppearanceSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
-import dev.yoanndev90.statusbarhider.data.AppSettings
+import dev.yoanndev90.statusbarhider.data.AppFlagsStore
 import dev.yoanndev90.statusbarhider.features.home.HomeScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsViewModel
@@ -80,7 +80,7 @@ import dev.yoanndev90.statusbarhider.ui.setup.SetupScreen
 @Composable
 fun MainScreen() {
 	val context = LocalContext.current
-	var setupOpen by rememberSaveable { mutableStateOf(!AppSettings.isSetupDone(context)) }
+	var setupOpen by rememberSaveable { mutableStateOf(!AppFlagsStore.getInstance(context).isSetupDone()) }
 	var setupReopened by rememberSaveable { mutableStateOf(false) }
 	val navController = rememberNavController()
 	val busy by ShellRunner.busy.collectAsStateWithLifecycle()
@@ -162,7 +162,7 @@ fun MainScreen() {
 				SetupScreen(
 					viewModel(),
 					onClose = { completed ->
-						if (completed) AppSettings.setSetupDone(context, true)
+						if (completed) AppFlagsStore.getInstance(context).setSetupDone(true)
 						setupOpen = false
 						setupReopened = false
 					}

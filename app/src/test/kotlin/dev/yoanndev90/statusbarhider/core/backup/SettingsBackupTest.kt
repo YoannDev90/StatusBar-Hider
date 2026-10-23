@@ -1,5 +1,7 @@
 package dev.yoanndev90.statusbarhider.core.backup
 
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefsCodec
+import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -96,6 +98,40 @@ class SettingsBackupTest {
 		assertEquals("x", backup.oemId)
 		assertFalse(backup.prefs.showBattery)
 		assertTrue(backup.prefs.showWifi)
+	}
+
+	@Test
+	fun `a frozen v1 fixture still imports`() {
+		// Written by hand before the registry drove the export keys: the wire format must not move.
+		val order = "clock,battery,date,calendar,notifs,media,spacer,connectivity,alarm,bandwidth"
+		val overlay =
+			"""{"show_battery":false,"font_size_sp":16,"update_interval_sec":15,""" +
+				""""widget_order":"$order","show_wifi":true}"""
+		val fixture = """{"schema_version":1,"oem_id":"hyperos","overlay":$overlay}"""
+		val backup = SettingsBackup.parse(fixture)
+		assertEquals("hyperos", backup.oemId)
+		assertFalse(backup.prefs.showBattery)
+		assertTrue(backup.prefs.showWifi)
+		assertEquals(16, backup.prefs.fontSizeSp)
+		assertEquals(15, backup.prefs.updateIntervalSec)
+		assertEquals(order.split(","), backup.prefs.widgetOrder)
+	}
+
+	@Test
+	fun `the export carries every spec key and no app flag`() {
+		val exported = OverlayPrefsCodec.exportJson(OverlayPrefs())
+		assertEquals(OverlaySpecs.all.map { it.key }.toSet(), exported.keys)
+		assertFalse("setup_done" in exported.keys)
+		assertFalse("control_token" in exported.keys)
+	}
+
+	@Test
+	fun `a non-exportable spec drops its key and defaults back on import`() {
+		// show_bandwidth defaults to off: dropping the key must bring that default back.
+		val minusBandwidth = OverlaySpecs.all.filter { it.key != "show_bandwidth" }
+		val exported = OverlayPrefsCodec.exportOf(OverlayPrefs().copy(showBandwidth = true), minusBandwidth)
+		assertFalse("show_bandwidth" in exported.keys)
+		assertFalse(OverlayPrefsCodec.decodeStrict(exported).showBandwidth)
 	}
 }
 

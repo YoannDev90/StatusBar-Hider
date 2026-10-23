@@ -27,4 +27,7 @@ abstract class SettingStore<S : Any> {
 
 	/** Clamps every field through its own spec; the app's one normalizer. */
 	fun normalize(value: S): S = specs.fold(value) { p, spec -> spec.set(p, spec.coerce(spec.get(p))) }
+
+	/** The settings of [value] that differ from their default (the debug screen's list). */
+	fun modifiedIn(value: S): List<SettingSpec<*, S>> = specs.filter { it.isModifiedIn(value) }
 }

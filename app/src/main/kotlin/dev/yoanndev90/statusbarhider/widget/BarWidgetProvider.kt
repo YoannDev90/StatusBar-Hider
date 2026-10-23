@@ -10,7 +10,7 @@ import android.widget.RemoteViews
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.control.ControlActions
 import dev.yoanndev90.statusbarhider.control.ControlAuth
-import dev.yoanndev90.statusbarhider.data.AppSettings
+import dev.yoanndev90.statusbarhider.data.AppFlagsStore
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
 
@@ -67,7 +67,7 @@ class BarWidgetProvider : AppWidgetProvider() {
 				requestCode,
 				Intent(app, BarWidgetProvider::class.java)
 					.setAction(action)
-					.putExtra(ControlAuth.EXTRA_TOKEN, AppSettings.controlToken(app)),
+					.putExtra(ControlAuth.EXTRA_TOKEN, AppFlagsStore.getInstance(app).controlToken()),
 				PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
 			)
 	}

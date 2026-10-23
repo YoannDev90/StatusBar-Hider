@@ -8,8 +8,12 @@ import androidx.lifecycle.AndroidViewModel
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
+import dev.yoanndev90.statusbarhider.core.settings.SettingsRegistry
 import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
+import dev.yoanndev90.statusbarhider.data.OverlayPrefsStore
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.overlay.LockScreenOverlayService
@@ -35,6 +39,9 @@ open class PrefsViewModel(
 
 	/** Live overlay prefs; every screen observes this instead of copying state. */
 	val prefs: StateFlow<OverlayPrefs> = prefsRepo.state
+
+	/** Registry view of the overlay file: specs, defaults, modified settings. */
+	val overlayStore = OverlayPrefsStore(prefsRepo)
 
 	/** Live Shizuku authorization; can change under an open screen (permission dialog). */
 	val shizuku: StateFlow<ShizukuState> = shizukuRepo.state
@@ -132,10 +139,26 @@ open class PrefsViewModel(
 		log(R.string.log_date_format, pattern)
 	}
 
-	/** Restores every setting to its default value; the overlay redraws from the new prefs. */
+	/**
+	 * Restores every setting to its default value through the registry, then
+	 * re-applies the file: [OverlayController.replaceAll] is the one path that
+	 * starts or stops the service and refreshes the tiles and widgets.
+	 */
 	fun resetToDefaults() {
-		updatePrefs { OverlayPrefs() }
+		val app = getApplication<Application>()
+		SettingsRegistry.resetStore(overlayStore)
+		OverlayController.replaceAll(app, overlayStore.default)
 		log(R.string.log_settings_reset)
+	}
+
+	/** Puts one overlay setting back to its default; the bar redraws from the new prefs. */
+	fun resetSpec(spec: SettingSpec<*, OverlayPrefs>) {
+		updatePrefs { spec.resetIn(this) }
+	}
+
+	/** Puts a section's settings back to their defaults; the rest of the file is kept. */
+	fun resetSection(section: SettingSection<OverlayPrefs>) {
+		updatePrefs { section.resetIn(this) }
 	}
 
 	/** Saves the calendar widget state; call only once the permission is granted. */

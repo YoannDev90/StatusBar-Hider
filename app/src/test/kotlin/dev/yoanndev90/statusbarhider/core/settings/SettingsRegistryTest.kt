@@ -1,10 +1,13 @@
 package dev.yoanndev90.statusbarhider.core.settings
 
+import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.descriptors.elementNames
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -126,5 +129,66 @@ class SettingsRegistryTest {
 		for ((name, input, expected) in cases) {
 			assertEquals(name, expected, OverlaySpecs.normalize(input))
 		}
+	}
+
+	@Test
+	fun `resetting a section restores only its own settings`() {
+		val customized =
+			OverlayPrefs()
+				.copy(
+					enabled = true,
+					showSeconds = true,
+					showBattery = false,
+					showWifi = false,
+					fontSizeSp = 16,
+					updateIntervalSec = 15
+				)
+		val reset = ConnectivitySection.resetIn(customized)
+		// Every connectivity setting is back to its default...
+		ConnectivitySection.rows.specs().forEach { spec ->
+			assertFalse("${spec.key} should be at its default", spec.isModifiedIn(reset))
+		}
+		// ...and nothing outside the section moved.
+		assertTrue(reset.enabled)
+		assertTrue(reset.showSeconds)
+		assertFalse(reset.showBattery)
+		assertEquals(16, reset.fontSizeSp)
+		assertEquals(15, reset.updateIntervalSec)
+	}
+
+	@Test
+	fun `modifiedIn lists only the settings away from their default`() {
+		val store = FakeOverlayStore()
+		// Self-relative values: the assertion does not depend on any default.
+		val customized = OverlayPrefs().copy(updateIntervalSec = OverlayPrefs().updateIntervalSec + 7, showBattery = false)
+		store.replace(customized)
+		assertEquals(
+			listOf("show_battery", "update_interval_sec"),
+			store.modifiedIn(store.state.value).map { it.key }.sorted()
+		)
+	}
+
+	@Test
+	fun `resetStore puts every setting back to its default`() {
+		val store = FakeOverlayStore()
+		store.replace(OverlayPrefs().copy(updateIntervalSec = OverlayPrefs().updateIntervalSec + 7))
+		SettingsRegistry.resetStore(store)
+		assertEquals(OverlayPrefs(), store.state.value)
+	}
+}
+
+/** In-memory [SettingStore] over the overlay file, for the registry's generic operations. */
+private class FakeOverlayStore(
+	override val specs: List<SettingSpec<*, OverlayPrefs>> = OverlaySpecs.all
+) : SettingStore<OverlayPrefs>() {
+	override val state = MutableStateFlow(OverlayPrefs())
+	override val default = OverlayPrefs()
+
+	override fun update(transform: OverlayPrefs.() -> OverlayPrefs) {
+		state.value = state.value.transform()
+	}
+
+	override fun replace(value: OverlayPrefs) {
+		state.value = value
 	}
 }
