@@ -60,7 +60,7 @@ run = "adb devices"
 
 [tasks.logs]
 description = "Live log stream for StatusBarHider (logstream TUI)"
-run = "cargo run --quiet --manifest-path tools/logstream/Cargo.toml -- --package dev.yoanndev90.statusbarhider"
+run = "cargo run --quiet --manifest-path android-tools/logstream/Cargo.toml -- --package dev.yoanndev90.statusbarhider"
 
 [tasks.uninstall]
 description = "Uninstall the app from device"
