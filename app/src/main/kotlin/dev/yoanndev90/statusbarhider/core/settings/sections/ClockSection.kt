@@ -28,6 +28,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.ClockSpecs
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -47,7 +48,10 @@ object ClockSection :
 		id = "clock",
 		icon = R.drawable.ic_schedule,
 		title = R.string.cat_clock,
-		subtitle = R.string.cat_clock_sub,
+		subtitle =
+			Subtitle.Live { prefs ->
+				stringResource(R.string.summary_date_format, prefs.dateFormat)
+			},
 		group = SectionGroup.CUSTOM_BAR,
 		keywords = listOf("time", "seconds", "24h", "date", "format", "alarm", "calendar"),
 		rows =

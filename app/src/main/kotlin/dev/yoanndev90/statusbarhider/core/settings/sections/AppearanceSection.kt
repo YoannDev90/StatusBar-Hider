@@ -1,11 +1,14 @@
 package dev.yoanndev90.statusbarhider.core.settings.sections
 
+import androidx.compose.ui.res.stringResource
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.AppearanceSpecs
 import dev.yoanndev90.statusbarhider.features.settings.WidgetOrderGroup
+import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /** Background, paddings, type, and the drag-to-reorder widget list. */
@@ -14,7 +17,19 @@ object AppearanceSection :
 		id = "appearance",
 		icon = R.drawable.ic_palette,
 		title = R.string.cat_appearance,
-		subtitle = R.string.cat_appearance_sub,
+		subtitle =
+			Subtitle.Live { prefs ->
+				stringResource(
+					R.string.summary_background,
+					stringResource(
+						when (prefs.background) {
+							OverlayBackground.TRANSPARENT -> R.string.background_transparent
+							OverlayBackground.BLACK -> R.string.background_black
+							OverlayBackground.SEMI -> R.string.background_semi
+						}
+					)
+				)
+			},
 		group = SectionGroup.CUSTOM_BAR,
 		keywords = listOf("background", "transparent", "semi", "black", "text", "size", "padding", "weight", "widget", "order"),
 		rows =

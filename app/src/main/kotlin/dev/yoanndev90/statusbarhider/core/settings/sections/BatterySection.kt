@@ -3,6 +3,7 @@ package dev.yoanndev90.statusbarhider.core.settings.sections
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.settingRows
 import dev.yoanndev90.statusbarhider.core.settings.specs.BatterySpecs
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -13,7 +14,7 @@ object BatterySection :
 		id = "battery",
 		icon = R.drawable.ic_battery_std,
 		title = R.string.cat_battery,
-		subtitle = R.string.cat_battery_sub,
+		subtitle = Subtitle.Res(R.string.cat_battery_sub),
 		group = SectionGroup.CUSTOM_BAR,
 		keywords = listOf("level", "percent", "icon"),
 		rows =

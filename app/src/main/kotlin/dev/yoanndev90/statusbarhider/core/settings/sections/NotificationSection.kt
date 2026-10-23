@@ -17,6 +17,7 @@ import dev.yoanndev90.statusbarhider.core.notif.TestNotifier
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.NotificationSpecs
 import dev.yoanndev90.statusbarhider.overlay.NotifListenerService
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -32,7 +33,7 @@ object NotificationSection :
 		id = "notifications",
 		icon = R.drawable.ic_notifications,
 		title = R.string.cat_notifications,
-		subtitle = R.string.cat_notifications_sub,
+		subtitle = Subtitle.Res(R.string.cat_notifications_sub),
 		group = SectionGroup.CUSTOM_BAR,
 		keywords = listOf("icons", "media", "now", "playing", "test"),
 		rows =

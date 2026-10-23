@@ -7,6 +7,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.CutoutSpecs
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.ColorSwatch
@@ -24,7 +25,7 @@ object CutoutSection :
 		id = "cutout",
 		icon = R.drawable.ic_crop_free,
 		title = R.string.cat_cutout,
-		subtitle = R.string.cat_cutout_sub,
+		subtitle = Subtitle.Res(R.string.cat_cutout_sub),
 		group = SectionGroup.CUSTOM_BAR,
 		keywords = listOf("notch", "camera", "ring", "color", "position"),
 		rows =

@@ -42,3 +42,13 @@ fun <S : Any> settingRows(vararg specs: SettingSpec<*, S>): List<SettingRow<S>> 
 
 /** Same, for lists already shaped as rows (mixed specs, groups and custom lines). */
 fun <S : Any> settingRows(vararg rows: SettingRow<S>): List<SettingRow<S>> = rows.toList()
+
+/** Every spec reachable from these rows, groups opened, in order. */
+fun <S : Any> List<SettingRow<S>>.specs(): List<SettingSpec<*, S>> =
+	flatMap { row ->
+		when (row) {
+			is SettingRow.OfSpec -> listOf(row.spec)
+			is SettingRow.Group -> row.rows.specs()
+			is SettingRow.Custom -> emptyList()
+		}
+	}

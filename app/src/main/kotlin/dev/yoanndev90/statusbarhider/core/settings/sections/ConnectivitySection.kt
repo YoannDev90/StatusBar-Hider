@@ -4,6 +4,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.settingRows
 import dev.yoanndev90.statusbarhider.core.settings.specs.ConnectivitySpecs
 import dev.yoanndev90.statusbarhider.features.settings.BtDevicesSection
@@ -19,7 +20,7 @@ object ConnectivitySection :
 		id = "connectivity",
 		icon = R.drawable.ic_wifi,
 		title = R.string.cat_connectivity,
-		subtitle = R.string.cat_connectivity_sub,
+		subtitle = Subtitle.Res(R.string.cat_connectivity_sub),
 		group = SectionGroup.CUSTOM_BAR,
 		keywords = listOf("wifi", "bluetooth", "airplane", "vpn", "hotspot", "bandwidth", "nfc", "gps", "dnd"),
 		rows =

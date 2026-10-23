@@ -7,8 +7,6 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
-import dev.yoanndev90.statusbarhider.core.settings.sections.HiddenAppsSection
-import dev.yoanndev90.statusbarhider.core.settings.sections.LockAppearanceSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -24,19 +22,8 @@ import org.junit.Test
  * all (icon, label, and a spec type the renderer knows).
  */
 class SettingSectionTest {
-	private val sections =
-		listOf(
-			ConnectivitySection,
-			GeneralSection,
-			BatterySection,
-			ClockSection,
-			AppearanceSection,
-			NotificationSection,
-			CutoutSection,
-			LockAppearanceSection,
-			LockBehaviorSection,
-			HiddenAppsSection
-		)
+	/** Every registered section; navigation-only ones simply have no rows. */
+	private val sections = SettingsRegistry.sections
 
 	@Test
 	fun `connectivity lists its toggles in screen order`() {

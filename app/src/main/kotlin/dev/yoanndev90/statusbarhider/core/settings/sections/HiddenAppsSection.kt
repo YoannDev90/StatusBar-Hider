@@ -43,6 +43,7 @@ import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.BarSpecs
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
@@ -66,7 +67,7 @@ object HiddenAppsSection :
 		id = "hidden_apps",
 		icon = R.drawable.ic_apps,
 		title = R.string.cat_hidden_apps,
-		subtitle = R.string.cat_hidden_apps_sub,
+		subtitle = Subtitle.Res(R.string.cat_hidden_apps_sub),
 		group = SectionGroup.CUSTOM_BAR,
 		keywords = listOf("blacklist", "exclude", "apps", "usage"),
 		rows =

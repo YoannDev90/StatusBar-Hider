@@ -4,6 +4,7 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.LockSpecs
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
@@ -14,11 +15,12 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingAction
  */
 object LockBehaviorSection :
 	SettingSection<OverlayPrefs>(
-		id = "lock_behavior",
+		id = "lock/behavior",
 		icon = R.drawable.ic_settings,
 		title = R.string.lock_sub_behavior,
+		subtitle = Subtitle.Res(R.string.lock_sub_behavior_sub),
 		group = SectionGroup.CUSTOM_BAR,
-		keywords = emptyList(),
+		keywords = listOf("lock", "keyguard", "visibility", "overlay", "accessibility", "hide", "notifications"),
 		listed = false,
 		rows =
 			listOf(
