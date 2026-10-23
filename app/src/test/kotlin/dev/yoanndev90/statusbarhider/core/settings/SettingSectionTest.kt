@@ -5,6 +5,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.AppearanceSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
+import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -26,7 +27,8 @@ class SettingSectionTest {
 			BatterySection,
 			ClockSection,
 			AppearanceSection,
-			NotificationSection
+			NotificationSection,
+			CutoutSection
 		)
 
 	@Test
@@ -135,6 +137,16 @@ class SettingSectionTest {
 				}
 			}
 		assertEquals(listOf("show_notifs", "custom", "max_notifs", "show_media", "group"), shape)
+	}
+
+	@Test
+	fun `cutout swaps the nudge pair for the offset pair through shownWhen`() {
+		val auto = CutoutSection.visibleRows(OverlayPrefs()).keys()
+		assertTrue("nudge sliders missing in auto mode", "camera_nudge_x_dp" in auto && "camera_nudge_y_dp" in auto)
+		assertTrue("offset sliders shown in auto mode", "camera_offset_x_pct" !in auto && "camera_offset_y_dp" !in auto)
+		val manual = CutoutSection.visibleRows(OverlayPrefs().copy(cameraAutoDetect = false)).keys()
+		assertTrue("offset sliders missing in manual mode", "camera_offset_x_pct" in manual && "camera_offset_y_dp" in manual)
+		assertTrue("nudge sliders shown in manual mode", "camera_nudge_x_dp" !in manual && "camera_nudge_y_dp" !in manual)
 	}
 
 	@Test

@@ -44,6 +44,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.AppearanceSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
+import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.data.AppSettings
@@ -52,7 +53,6 @@ import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsViewModel
 import dev.yoanndev90.statusbarhider.features.settings.AboutScreen
 import dev.yoanndev90.statusbarhider.features.settings.BackupScreen
-import dev.yoanndev90.statusbarhider.features.settings.CutoutScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugHubScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugInfoScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugPermissionsScreen
@@ -278,7 +278,7 @@ private fun AppNavHost(
 		composable(Routes.SETTINGS) { SettingsRootScreen(statusViewModel, settingsQuery, navController::navigate) }
 		composable(Routes.GENERAL) { SettingSectionScreen(statusViewModel, GeneralSection) }
 		composable(Routes.APPEARANCE) { SettingSectionScreen(statusViewModel, AppearanceSection) }
-		composable(Routes.CUTOUT) { CutoutScreen(statusViewModel) }
+		composable(Routes.CUTOUT) { SettingSectionScreen(statusViewModel, CutoutSection) }
 		composable(Routes.CLOCK) { SettingSectionScreen(statusViewModel, ClockSection) }
 		composable(Routes.BATTERY) { SettingSectionScreen(statusViewModel, BatterySection) }
 		composable(Routes.NOTIFICATIONS) { SettingSectionScreen(statusViewModel, NotificationSection) }
