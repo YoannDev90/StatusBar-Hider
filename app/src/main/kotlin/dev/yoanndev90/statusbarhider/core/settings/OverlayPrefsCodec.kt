@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider.core.settings
 
+import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import kotlinx.serialization.KSerializer
@@ -38,13 +39,13 @@ object OverlayPrefsCodec {
 	fun toJson(prefs: OverlayPrefs): String = json.encodeToString(OverlayPrefs.serializer(), prefs)
 
 	/**
-	 * Parses the stored blob, then clamps it. Returns null on malformed input
-	 * so the caller can report it and keep the raw copy instead of silently
-	 * losing settings.
+	 * Parses the stored blob, then clamps it through [OverlaySpecs.normalize].
+	 * Returns null on malformed input so the caller can report it and keep
+	 * the raw copy instead of silently losing settings.
 	 */
 	fun fromJson(raw: String): OverlayPrefs? =
 		try {
-			normalize(json.decodeFromString(OverlayPrefs.serializer(), raw))
+			OverlaySpecs.normalize(json.decodeFromString(OverlayPrefs.serializer(), raw))
 		} catch (_: Exception) {
 			null
 		}
@@ -54,37 +55,8 @@ object OverlayPrefsCodec {
 	 * input instead of silently falling back to the defaults, but clamps
 	 * exactly like [fromJson].
 	 */
-	fun decodeStrict(element: JsonElement): OverlayPrefs = normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), element))
-
-	/** Clamps free-form fields the way the old per-key opt* parser did. */
-	fun normalize(prefs: OverlayPrefs): OverlayPrefs =
-		prefs.copy(
-			updateIntervalSec = prefs.updateIntervalSec.coerceIn(5, 60),
-			padStartDp = prefs.padStartDp.coerceIn(0, 32),
-			padTopDp = prefs.padTopDp.coerceIn(0, 32),
-			padEndDp = prefs.padEndDp.coerceIn(0, 32),
-			padBottomDp = prefs.padBottomDp.coerceIn(0, 32),
-			dateFormat = prefs.dateFormat.ifEmpty { OverlayPrefs.DEFAULT_DATE_FORMAT },
-			maxNotifs = prefs.maxNotifs.coerceIn(1, 8),
-			burnInMin = prefs.burnInMin.coerceIn(0, 30),
-			fontSizeSp = prefs.fontSizeSp.coerceIn(10, 20),
-			fontWeightName = prefs.fontWeightName.takeIf { it in FONT_WEIGHTS } ?: "NORMAL",
-			widgetSpacingDp = prefs.widgetSpacingDp.coerceIn(0, 12),
-			cameraGapDp = prefs.cameraGapDp.coerceIn(0, 16),
-			cameraNudgeXDp = prefs.cameraNudgeXDp.coerceIn(-48, 48),
-			cameraNudgeYDp = prefs.cameraNudgeYDp.coerceIn(-48, 48),
-			cameraOffsetXPct = prefs.cameraOffsetXPct.coerceIn(0, 100),
-			cameraOffsetYDp = prefs.cameraOffsetYDp.coerceIn(0, 60),
-			cameraSizeDp = prefs.cameraSizeDp.coerceIn(0, 40),
-			cameraRingStrokeDp = prefs.cameraRingStrokeDp.coerceIn(1, 8),
-			cameraRingColor = prefs.cameraRingColor.takeIf { RING_COLOR.matches(it) } ?: ""
-		)
-
-	/** Accepted values of [OverlayPrefs.fontWeightName]. */
-	private val FONT_WEIGHTS = setOf("NORMAL", "MEDIUM", "BOLD")
-
-	/** Stored ring colors are plain `#RRGGBB`; anything else falls back to the text color. */
-	private val RING_COLOR = Regex("^#[0-9A-Fa-f]{6}$")
+	fun decodeStrict(element: JsonElement): OverlayPrefs =
+		OverlaySpecs.normalize(json.decodeFromJsonElement(OverlayPrefs.serializer(), element))
 }
 
 /**

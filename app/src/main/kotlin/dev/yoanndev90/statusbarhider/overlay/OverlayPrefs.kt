@@ -100,9 +100,10 @@ enum class LockScreenMode {
 }
 
 /**
- * Persisted config for the overlay bar. The JSON shape and the clamping of
- * free-form values all live in [OverlayPrefsCodec]; this class is the model,
- * its defaults and the SharedPreferences I/O
+ * Persisted config for the overlay bar. The JSON shape lives in
+ * [OverlayPrefsCodec], the accepted range of each field in
+ * [dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs]; this class
+ * is the model, its defaults and the SharedPreferences I/O
  * [dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository] drives, so
  * BootReceiver can re-apply the config without any UI.
  */
