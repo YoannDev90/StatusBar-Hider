@@ -1,5 +1,7 @@
 package dev.yoanndev90.statusbarhider.core.settings
 
+import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.sections.AppearanceSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
@@ -16,7 +18,8 @@ import org.junit.Test
  * all (icon, label, and a spec type the renderer knows).
  */
 class SettingSectionTest {
-	private val sections = listOf(ConnectivitySection, GeneralSection, BatterySection, ClockSection)
+	private val sections =
+		listOf(ConnectivitySection, GeneralSection, BatterySection, ClockSection, AppearanceSection)
 
 	@Test
 	fun `connectivity lists its toggles in screen order`() {
@@ -84,12 +87,46 @@ class SettingSectionTest {
 	}
 
 	@Test
+	fun `appearance keeps the widget order as its own titled group`() {
+		val shape =
+			AppearanceSection.rows.map { row ->
+				when (row) {
+					is SettingRow.OfSpec -> row.spec.key
+					is SettingRow.Group -> "group"
+					is SettingRow.Custom -> "custom"
+				}
+			}
+		assertEquals(
+			listOf(
+				"dark_text",
+				"background",
+				"pad_start_dp",
+				"pad_top_dp",
+				"pad_end_dp",
+				"pad_bottom_dp",
+				"font_size_sp",
+				"widget_spacing_dp",
+				"font_weight",
+				"group"
+			),
+			shape
+		)
+		val group = AppearanceSection.rows.filterIsInstance<SettingRow.Group<OverlayPrefs>>().single()
+		assertEquals(R.string.section_widget_order, group.title)
+		assertTrue(group.rows.single() is SettingRow.Custom<*>)
+	}
+
+	@Test
 	fun `every rendered row is iconified, labelled and known to the renderer`() {
 		sections.forEach { section ->
 			section.rows.ofSpecs().forEach { row ->
 				val spec = row.spec
 				assertNotNull("'${spec.key}' rendered without an icon", spec.icon)
-				assertNotNull("'${spec.key}' rendered without a label", spec.label)
+				// Radio options carry their own labels: only the row-shaped
+				// renderers require a label of their own.
+				if (spec !is EnumSpec<*, *>) {
+					assertNotNull("'${spec.key}' rendered without a label", spec.label)
+				}
 				assertTrue(
 					"'${spec.key}' has no generic renderer",
 					spec is BoolSpec<*> || spec is IntSpec<*> || spec is EnumSpec<*, *> || spec is TextSpec<*>

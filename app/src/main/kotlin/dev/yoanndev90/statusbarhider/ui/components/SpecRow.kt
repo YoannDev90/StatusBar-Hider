@@ -61,13 +61,18 @@ fun <T, S : Any> SpecRow(spec: SettingSpec<T, S>, prefs: S, update: ((S) -> S) -
 				suffix = spec.suffix ?: 0,
 				subtitle = spec.subtitle ?: 0
 			) { value -> update { spec.set(it, value) } }
-		is EnumSpec ->
+		is EnumSpec -> {
+			// SettingRadioRow has no label slot: a spec that carries one shows
+			// it as the caption above the choices (font weight), one without
+			// stays captionless (background).
+			spec.label?.let { SettingLabelRow(it) }
 			SettingRadioRow(
 				icon = requireNotNull(spec.icon) { "'${spec.key}' rendered without an icon" },
 				options = spec.entries.map { it.second },
-				selected = spec.entries.indexOfFirst { it.first == spec.get(prefs) },
+				selected = spec.entries.indexOfFirst { it.first == spec.get(prefs) }.coerceAtLeast(0),
 				onSelect = { index -> update { spec.set(it, spec.entries[index].first) } }
 			)
+		}
 		is TextSpec -> TextSpecRow(spec, prefs, update)
 		// Lists and free shapes have no generic control: the section carries
 		// them inside a Custom row (section tests forbid them as OfSpec).

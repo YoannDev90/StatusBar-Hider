@@ -31,7 +31,6 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
-import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingHint
 import sh.calvin.reorderable.ReorderableColumn
 import sh.calvin.reorderable.ReorderableItem
@@ -44,78 +43,76 @@ fun WidgetOrderGroup(
 ) {
 	val haptic = LocalHapticFeedback.current
 
-	SettingGroup(R.string.section_widget_order) {
-		SettingHint(R.string.label_widget_order_hint, Modifier.padding(bottom = 6.dp))
+	SettingHint(R.string.label_widget_order_hint, Modifier.padding(bottom = 6.dp))
 
-		// Mini bar: the widgets as chips, in the order the bar draws them.
-		OrderPreview(order, Modifier.padding(bottom = 8.dp))
+	// Mini bar: the widgets as chips, in the order the bar draws them.
+	OrderPreview(order, Modifier.padding(bottom = 8.dp))
 
-		ReorderableColumn(
-			list = order,
-			onSettle = { fromIndex, toIndex -> onMove(fromIndex, toIndex) },
-			onMove = { haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick) },
-			verticalArrangement = Arrangement.spacedBy(0.dp)
-		) { index, id, isDragging ->
-			key(id) {
-				ReorderableItem {
-					val elevation by animateDpAsState(if (isDragging) 6.dp else 0.dp)
-					val spacer = id == WidgetId.SPACER
-					Column {
-						if (index > 0 && !isDragging) {
-							HorizontalDivider(
-								thickness = 1.dp,
-								color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
-							)
-						}
-						Surface(
-							color =
-								if (isDragging) {
-									MaterialTheme.colorScheme.surfaceContainerHigh
-								} else {
-									Color.Transparent
-								},
-							shadowElevation = elevation,
-							shape = RoundedCornerShape(if (isDragging) 10.dp else 0.dp)
-						) {
-							Row(
-								modifier =
-									Modifier
-										.fillMaxWidth()
-										.height(48.dp)
-										.padding(horizontal = 4.dp)
-										// The whole row is the handle: long press, then drag.
-										.longPressDraggableHandle(
-											onDragStarted = {
-												haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-											},
-											onDragStopped = { haptic.performHapticFeedback(HapticFeedbackType.GestureEnd) }
-										),
-								verticalAlignment = Alignment.CenterVertically
-							) {
-								Text(
-									text = "${index + 1}",
-									style = MaterialTheme.typography.labelMedium,
-									color = MaterialTheme.colorScheme.onSurfaceVariant,
-									modifier = Modifier.width(26.dp)
-								)
-								Text(
-									text = stringResource(WidgetId.labelRes(id)),
-									style = MaterialTheme.typography.bodyLarge,
-									color =
-										if (spacer) {
-											MaterialTheme.colorScheme.onSurfaceVariant
-										} else {
-											MaterialTheme.colorScheme.onSurface
+	ReorderableColumn(
+		list = order,
+		onSettle = { fromIndex, toIndex -> onMove(fromIndex, toIndex) },
+		onMove = { haptic.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick) },
+		verticalArrangement = Arrangement.spacedBy(0.dp)
+	) { index, id, isDragging ->
+		key(id) {
+			ReorderableItem {
+				val elevation by animateDpAsState(if (isDragging) 6.dp else 0.dp)
+				val spacer = id == WidgetId.SPACER
+				Column {
+					if (index > 0 && !isDragging) {
+						HorizontalDivider(
+							thickness = 1.dp,
+							color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f)
+						)
+					}
+					Surface(
+						color =
+							if (isDragging) {
+								MaterialTheme.colorScheme.surfaceContainerHigh
+							} else {
+								Color.Transparent
+							},
+						shadowElevation = elevation,
+						shape = RoundedCornerShape(if (isDragging) 10.dp else 0.dp)
+					) {
+						Row(
+							modifier =
+								Modifier
+									.fillMaxWidth()
+									.height(48.dp)
+									.padding(horizontal = 4.dp)
+									// The whole row is the handle: long press, then drag.
+									.longPressDraggableHandle(
+										onDragStarted = {
+											haptic.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
 										},
-									fontStyle = if (spacer) FontStyle.Italic else null,
-									modifier = Modifier.weight(1f)
-								)
-								Icon(
-									painter = painterResource(R.drawable.ic_drag_handle),
-									contentDescription = stringResource(R.string.cd_reorder),
-									tint = MaterialTheme.colorScheme.onSurfaceVariant
-								)
-							}
+										onDragStopped = { haptic.performHapticFeedback(HapticFeedbackType.GestureEnd) }
+									),
+							verticalAlignment = Alignment.CenterVertically
+						) {
+							Text(
+								text = "${index + 1}",
+								style = MaterialTheme.typography.labelMedium,
+								color = MaterialTheme.colorScheme.onSurfaceVariant,
+								modifier = Modifier.width(26.dp)
+							)
+							Text(
+								text = stringResource(WidgetId.labelRes(id)),
+								style = MaterialTheme.typography.bodyLarge,
+								color =
+									if (spacer) {
+										MaterialTheme.colorScheme.onSurfaceVariant
+									} else {
+										MaterialTheme.colorScheme.onSurface
+									},
+								fontStyle = if (spacer) FontStyle.Italic else null,
+								modifier = Modifier.weight(1f)
+							)
+							Icon(
+								painter = painterResource(R.drawable.ic_drag_handle),
+								contentDescription = stringResource(R.string.cd_reorder),
+								tint = MaterialTheme.colorScheme.onSurfaceVariant
+							)
 						}
 					}
 				}
