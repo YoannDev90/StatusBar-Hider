@@ -12,6 +12,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.LockAppearanceSectio
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.ui.components.cardsOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -169,6 +170,28 @@ class SettingSectionTest {
 			listOf("show_on_lock_screen", "custom", "custom", "hide_notifs_on_lock"),
 			shape
 		)
+	}
+
+	@Test
+	fun `cards are built eagerly so no loose run can compose empty`() {
+		// Regression: the item lambda used to capture the mutable runner, so
+		// every loose run before a group composed with its emptied final value
+		// — connectivity lost its 15 toggles on device. Defaults hide the
+		// merged-speed row (show_bandwidth off), hence 14 of the 15 specs.
+		val cards = cardsOf(ConnectivitySection.visibleRows(OverlayPrefs()))
+		assertEquals(2, cards.size)
+		assertEquals(0, cards[0].title)
+		assertEquals(14, cards[0].rows.size)
+		assertEquals(2, cards[1].rows.size)
+	}
+
+	@Test
+	fun `flattening every section's cards yields its visible rows back`() {
+		sections.forEach { section ->
+			val visible = section.visibleRows(OverlayPrefs())
+			val opened = visible.flatMap { row -> if (row is SettingRow.Group) row.rows else listOf(row) }
+			assertEquals(opened, cardsOf(visible).flatMap { it.rows })
+		}
 	}
 
 	@Test
