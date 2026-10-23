@@ -6,6 +6,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
+import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -19,7 +20,14 @@ import org.junit.Test
  */
 class SettingSectionTest {
 	private val sections =
-		listOf(ConnectivitySection, GeneralSection, BatterySection, ClockSection, AppearanceSection)
+		listOf(
+			ConnectivitySection,
+			GeneralSection,
+			BatterySection,
+			ClockSection,
+			AppearanceSection,
+			NotificationSection
+		)
 
 	@Test
 	fun `connectivity lists its toggles in screen order`() {
@@ -114,6 +122,19 @@ class SettingSectionTest {
 		val group = AppearanceSection.rows.filterIsInstance<SettingRow.Group<OverlayPrefs>>().single()
 		assertEquals(R.string.section_widget_order, group.title)
 		assertTrue(group.rows.single() is SettingRow.Custom<*>)
+	}
+
+	@Test
+	fun `notifications keeps the test action alone under its titled card`() {
+		val shape =
+			NotificationSection.rows.map { row ->
+				when (row) {
+					is SettingRow.OfSpec -> row.spec.key
+					is SettingRow.Group -> "group"
+					is SettingRow.Custom -> "custom"
+				}
+			}
+		assertEquals(listOf("show_notifs", "custom", "max_notifs", "show_media", "group"), shape)
 	}
 
 	@Test
