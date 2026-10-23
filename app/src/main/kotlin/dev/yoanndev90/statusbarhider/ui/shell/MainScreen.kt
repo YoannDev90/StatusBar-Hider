@@ -46,6 +46,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
+import dev.yoanndev90.statusbarhider.core.settings.sections.HiddenAppsSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockAppearanceSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
@@ -58,7 +59,6 @@ import dev.yoanndev90.statusbarhider.features.settings.BackupScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugHubScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugInfoScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugPermissionsScreen
-import dev.yoanndev90.statusbarhider.features.settings.HiddenAppsScreen
 import dev.yoanndev90.statusbarhider.features.settings.LockHubScreen
 import dev.yoanndev90.statusbarhider.features.settings.OemScreen
 import dev.yoanndev90.statusbarhider.features.settings.ProfilesScreen
@@ -283,7 +283,7 @@ private fun AppNavHost(
 		composable(Routes.BATTERY) { SettingSectionScreen(statusViewModel, BatterySection) }
 		composable(Routes.NOTIFICATIONS) { SettingSectionScreen(statusViewModel, NotificationSection) }
 		composable(Routes.CONNECTIVITY) { SettingSectionScreen(statusViewModel, ConnectivitySection) }
-		composable(Routes.HIDDEN_APPS) { HiddenAppsScreen(statusViewModel) }
+		composable(Routes.HIDDEN_APPS) { SettingSectionScreen(statusViewModel, HiddenAppsSection) }
 		composable(Routes.LOCK) { LockHubScreen(navController::navigate) }
 		composable(Routes.LOCK_APPEARANCE) { SettingSectionScreen(statusViewModel, LockAppearanceSection) }
 		composable(Routes.LOCK_BEHAVIOR) { SettingSectionScreen(statusViewModel, LockBehaviorSection) }

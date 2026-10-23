@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.features.settings
+package dev.yoanndev90.statusbarhider.core.settings.sections
 
 import android.content.Context
 import android.content.Intent
@@ -38,21 +38,43 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
+import dev.yoanndev90.statusbarhider.core.settings.SettingRow
+import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.specs.BarSpecs
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
-import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
-import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
+import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
-import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingHint
-import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
-import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/** Historic log tag: kept verbatim so the LogStore appendOnce keys do not change. */
 private const val TAG = "HiddenAppsScreen"
+
+/**
+ * Apps the custom bar must stay out of: camera viewfinders, video players,
+ * games... The switch comes from its spec; the usage-access gate, the picker
+ * and the selection hint share state, so they live in one Custom row that
+ * owns it (list load, dialog open, grant re-read on resume).
+ */
+object HiddenAppsSection :
+	SettingSection<OverlayPrefs>(
+		id = "hidden_apps",
+		icon = R.drawable.ic_apps,
+		title = R.string.cat_hidden_apps,
+		subtitle = R.string.cat_hidden_apps_sub,
+		group = SectionGroup.CUSTOM_BAR,
+		keywords = listOf("blacklist", "exclude", "apps", "usage"),
+		rows =
+			listOf(
+				SettingRow.OfSpec(BarSpecs.hideBarInApps),
+				SettingRow.Custom { prefs, vm -> HiddenAppsRows(prefs, vm) }
+			)
+	)
 
 /** One launchable app shown in the picker (own package excluded). */
 private data class AppEntry(
@@ -60,11 +82,12 @@ private data class AppEntry(
 	val label: String
 )
 
-/** Apps the custom bar must stay out of: camera viewfinders, video players, games... */
 @Composable
-fun HiddenAppsScreen(vm: StatusViewModel) {
+private fun HiddenAppsRows(
+	prefs: OverlayPrefs,
+	vm: PrefsViewModel
+) {
 	val context = LocalContext.current
-	val prefs by vm.prefs.collectAsStateWithLifecycle()
 	val errorFormat = stringResource(R.string.log_error)
 	// Querying and labelling every installed app is a few hundred binder calls:
 	// run once per process, off the main thread, and never per screen visit.
@@ -81,42 +104,32 @@ fun HiddenAppsScreen(vm: StatusViewModel) {
 		usageGranted = UsageAccess.granted(context)
 		onPauseOrDispose { }
 	}
-	HandlePrefsEvents(vm)
 
-	SettingsScreen {
-		item {
-			SettingGroup {
-				SettingSwitch(R.drawable.ic_app_blocking, R.string.switch_hide_bar_in_apps, prefs.hideBarInApps) {
-					vm.updatePrefs { copy(hideBarInApps = it) }
-				}
-				if (!usageGranted) {
-					SettingHint(R.string.hint_usage_access, Modifier.padding(bottom = 4.dp))
-					SettingAction(R.drawable.ic_query_stats, R.string.action_grant_usage_access) {
-						try {
-							context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-						} catch (e: Exception) {
-							Log.w(TAG, "usage settings", e)
-							LogStore.appendOnce(
-								context,
-								"$TAG#usageSettings",
-								String.format(errorFormat, "usage settings: ${e.message}")
-							)
-						}
-					}
-				}
-				SettingAction(R.drawable.ic_apps, R.string.action_choose_apps) { pickerOpen = true }
-				SettingHint(
-					text =
-						if (prefs.hiddenApps.isEmpty()) {
-							stringResource(R.string.hint_no_apps_selected)
-						} else {
-							prefs.hiddenApps.joinToString(", ") { pkg -> apps?.firstOrNull { it.pkg == pkg }?.label ?: pkg }
-						},
-					modifier = Modifier.padding(top = 4.dp)
+	if (!usageGranted) {
+		SettingHint(R.string.hint_usage_access, Modifier.padding(bottom = 4.dp))
+		SettingAction(R.drawable.ic_query_stats, R.string.action_grant_usage_access) {
+			try {
+				context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+			} catch (e: Exception) {
+				Log.w(TAG, "usage settings", e)
+				LogStore.appendOnce(
+					context,
+					"$TAG#usageSettings",
+					String.format(errorFormat, "usage settings: ${e.message}")
 				)
 			}
 		}
 	}
+	SettingAction(R.drawable.ic_apps, R.string.action_choose_apps) { pickerOpen = true }
+	SettingHint(
+		text =
+			if (prefs.hiddenApps.isEmpty()) {
+				stringResource(R.string.hint_no_apps_selected)
+			} else {
+				prefs.hiddenApps.joinToString(", ") { pkg -> apps?.firstOrNull { it.pkg == pkg }?.label ?: pkg }
+			},
+		modifier = Modifier.padding(top = 4.dp)
+	)
 
 	if (pickerOpen) {
 		AppPickerDialog(

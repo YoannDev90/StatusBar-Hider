@@ -7,6 +7,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
+import dev.yoanndev90.statusbarhider.core.settings.sections.HiddenAppsSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockAppearanceSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
@@ -32,7 +33,8 @@ class SettingSectionTest {
 			NotificationSection,
 			CutoutSection,
 			LockAppearanceSection,
-			LockBehaviorSection
+			LockBehaviorSection,
+			HiddenAppsSection
 		)
 
 	@Test
