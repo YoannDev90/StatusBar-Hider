@@ -13,5 +13,7 @@ keystore.properties
 # Local dump of the Shizuku classes for reading the API offline
 shz/
 
-# Rust tooling
-tools/logstream/target/
+# Rust tooling (tools live in the android-tools/ submodule, with its own .gitignore)
+
+# Local agent notes
+AGENTS.md
