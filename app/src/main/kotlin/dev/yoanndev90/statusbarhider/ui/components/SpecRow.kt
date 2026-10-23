@@ -76,9 +76,10 @@ fun <T, S : Any> SpecRow(spec: SettingSpec<T, S>, prefs: S, update: ((S) -> S) -
 }
 
 /**
- * Text field with a local draft and a Set button, after the ClockScreen
- * template: the draft is saveable and keyed on the stored value, so it
- * survives a rotation but resets when the value changes elsewhere.
+ * Text field with a local draft and a Set button: the draft is saveable and
+ * keyed on the stored value, so it survives a rotation but resets when the
+ * value changes elsewhere. Screens needing live feedback (toasts, format
+ * probes) keep their own hand-written row instead.
  */
 @Composable
 private fun <S : Any> TextSpecRow(spec: TextSpec<S>, prefs: S, update: ((S) -> S) -> Unit) {

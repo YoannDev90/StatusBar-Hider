@@ -1,6 +1,7 @@
 package dev.yoanndev90.statusbarhider.core.settings
 
 import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
+import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -15,7 +16,7 @@ import org.junit.Test
  * all (icon, label, and a spec type the renderer knows).
  */
 class SettingSectionTest {
-	private val sections = listOf(ConnectivitySection, GeneralSection, BatterySection)
+	private val sections = listOf(ConnectivitySection, GeneralSection, BatterySection, ClockSection)
 
 	@Test
 	fun `connectivity lists its toggles in screen order`() {
@@ -64,6 +65,22 @@ class SettingSectionTest {
 	fun `general and battery show every row unconditionally`() {
 		assertEquals(5, GeneralSection.visibleRows(OverlayPrefs()).size)
 		assertEquals(3, BatterySection.visibleRows(OverlayPrefs()).size)
+	}
+
+	@Test
+	fun `clock interleaves its custom rows in screen order`() {
+		val shape =
+			ClockSection.rows.map { row ->
+				when (row) {
+					is SettingRow.OfSpec -> row.spec.key
+					is SettingRow.Group -> "group"
+					is SettingRow.Custom -> "custom"
+				}
+			}
+		assertEquals(
+			listOf("show_seconds", "use_24h", "show_date", "custom", "show_alarm", "custom"),
+			shape
+		)
 	}
 
 	@Test
