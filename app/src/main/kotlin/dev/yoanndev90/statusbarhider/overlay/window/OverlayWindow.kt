@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.window
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build

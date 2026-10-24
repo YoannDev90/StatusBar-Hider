@@ -10,6 +10,8 @@ import androidx.compose.runtime.snapshotFlow
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.overlay.system.runSafely
+import dev.yoanndev90.statusbarhider.overlay.window.OverlayWindow
+import dev.yoanndev90.statusbarhider.overlay.window.SharedBar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
