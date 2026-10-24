@@ -14,8 +14,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Single source of truth for [OverlayPrefs]: the only entry point that reads
- * or writes the overlay blob (parse, legacy-slot migration and corrupt-blob
- * preservation all live in [OverlayPrefs.load] / [OverlayPrefs.save]).
+ * or writes the overlay blob (parse and corrupt-blob preservation all live
+ * in [OverlayPrefs.load] / [OverlayPrefs.save]).
  *
  * The Activity, the overlay Service and BootReceiver all observe the same
  * [StateFlow], so a settings change recomposes the UI and re-applies the
