@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import android.content.res.Configuration
 import android.location.LocationManager
 import android.net.ConnectivityManager
-import android.net.TrafficStats
 import android.net.Uri
 import android.nfc.NfcAdapter
 import android.os.BatteryManager
@@ -38,9 +37,8 @@ import dev.yoanndev90.statusbarhider.overlay.poll.PollHost
 import dev.yoanndev90.statusbarhider.overlay.system.MediaSessions
 import dev.yoanndev90.statusbarhider.overlay.system.NotifIcons
 import dev.yoanndev90.statusbarhider.overlay.system.SystemIndicators
+import dev.yoanndev90.statusbarhider.overlay.system.SystemStatusReader
 import dev.yoanndev90.statusbarhider.overlay.system.networkFlow
-import dev.yoanndev90.statusbarhider.overlay.system.readConnectivity
-import dev.yoanndev90.statusbarhider.overlay.system.readMobile
 import dev.yoanndev90.statusbarhider.overlay.system.receiverFlow
 import dev.yoanndev90.statusbarhider.overlay.system.runSafely
 import dev.yoanndev90.statusbarhider.overlay.system.systemSettingsFlow
@@ -74,13 +72,6 @@ class StatusBarOverlayService :
 	companion object {
 		private const val TAG = "CustomBar"
 		private const val REFRESH_DEBOUNCE_MS = 100L
-
-		/**
-		 * Largest gap still taken as "the previous sample": the sampler stops
-		 * with the screen, so a restart after a long sleep must re-baseline
-		 * instead of reporting the whole gap as traffic.
-		 */
-		private const val BANDWIDTH_MAX_GAP_MS = 5_000L
 
 		private const val USB_STATE_ACTION = "android.hardware.usb.action.USB_STATE"
 		private const val REAPPLY_AFTER_UNLOCK_MS = 0L
@@ -148,9 +139,6 @@ class StatusBarOverlayService :
 	private var batteryPct = -1
 	private var batteryCharging = false
 	private var usbConnected = false
-	private var lastRx = -1L
-	private var lastTx = -1L
-	private var lastSampleAt = 0L
 
 	/** Camera ids with the torch currently on (filled by the torch flow). */
 	private val torchIds = ConcurrentHashMap.newKeySet<String>()
@@ -189,6 +177,20 @@ class StatusBarOverlayService :
 	/** Owns every poll loop. The service is the [PollHost] those loops call into. */
 	private val poller = OverlayPoller(serviceScope, this)
 
+	/**
+	 * Turns the device's status into [OverlayBarState] fields. Each lambda
+	 * re-reads a live field at the very point the original code did, so a
+	 * value changed while a probe suspends is seen exactly as before.
+	 */
+	private val reader =
+		SystemStatusReader(
+			indicators,
+			{ prefs },
+			{ barState = it(barState) },
+			{ usbConnected },
+			{ torchIds }
+		)
+
 	// --- PollHost: the live state the loops read, and their tick actions ----
 
 	override val currentPrefs: OverlayPrefs
@@ -200,9 +202,9 @@ class StatusBarOverlayService :
 	override val usageAccessGranted: Boolean
 		get() = UsageAccess.granted(this)
 
-	override suspend fun sampleBandwidth() = updateBandwidth()
+	override suspend fun sampleBandwidth() = reader.updateBandwidth()
 
-	override suspend fun refreshMobile() = updateMobile()
+	override suspend fun refreshMobile() = reader.updateMobile()
 
 	override suspend fun refreshSuppressed() = updateSuppressed()
 
@@ -383,18 +385,18 @@ class StatusBarOverlayService :
 			filter.addAction("android.location.GPS_ENABLED_CHANGE")
 			filter.addAction(ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED)
 			receiverFlow(filter).collect {
-				if (barState.screenOn) updateConnectivity()
+				if (barState.screenOn) reader.updateConnectivity()
 			}
 		}
 		serviceScope.launch {
 			networkFlow().collect {
-				if (barState.screenOn) updateConnectivity()
+				if (barState.screenOn) reader.updateConnectivity()
 			}
 		}
 		serviceScope.launch {
 			// DND / auto-rotate changes land here so the icons react immediately.
 			systemSettingsFlow(handler).collect {
-				if (barState.screenOn) updateConnectivity()
+				if (barState.screenOn) reader.updateConnectivity()
 			}
 		}
 		serviceScope.launch {
@@ -404,7 +406,7 @@ class StatusBarOverlayService :
 				} else {
 					torchIds.remove(cameraId)
 				}
-				if (barState.screenOn) updateConnectivity()
+				if (barState.screenOn) reader.updateConnectivity()
 			}
 		}
 	}
@@ -419,7 +421,7 @@ class StatusBarOverlayService :
 			status == BatteryManager.BATTERY_STATUS_FULL
 		if (pct >= 0) {
 			batteryPct = pct
-			updateBattery()
+			reader.updateBattery(batteryPct, batteryCharging)
 		}
 	}
 
@@ -459,29 +461,23 @@ class StatusBarOverlayService :
 
 	private suspend fun onUsb(intent: Intent) {
 		usbConnected = intent.extras?.getBoolean("connected") == true
-		if (barState.screenOn) updateConnectivity()
+		if (barState.screenOn) reader.updateConnectivity()
 	}
 
 	private suspend fun refreshAll() {
 		window.updateCamera()
-		updateBattery()
+		reader.updateBattery(batteryPct, batteryCharging)
 		updateNotifs()
-		updateCalendar()
+		reader.updateCalendar()
 		updateMedia()
-		updateConnectivity()
-		updateAlarm()
+		reader.updateConnectivity()
+		reader.updateAlarm()
 	}
 
 	override suspend fun refreshPolled() {
-		updateAlarm()
-		updateCalendar()
-		updateConnectivity()
-	}
-
-	/** Refreshes only the cellular indicator, on the faster loop's own cadence. */
-	private suspend fun updateMobile() {
-		val m = indicators.readMobile(prefs)
-		barState = barState.copy(mobile = m.active, mobileType = m.type, signalLevel = m.level)
+		reader.updateAlarm()
+		reader.updateCalendar()
+		reader.updateConnectivity()
 	}
 
 	/** Recomputes the suppression state from the app currently in front. */
@@ -509,14 +505,6 @@ class StatusBarOverlayService :
 		if (suppressed == value) return
 		suppressed = value
 		syncWindowAttachment()
-	}
-
-	private fun updateBattery() {
-		barState =
-			barState.copy(
-				batteryPct = batteryPct,
-				batteryCharging = batteryCharging
-			)
 	}
 
 	private suspend fun updateNotifs() {
@@ -553,13 +541,6 @@ class StatusBarOverlayService :
 		barState = barState.copy(notifsEnabled = enabled, notifs = icons, progress = progress)
 	}
 
-	private suspend fun updateCalendar() {
-		val show = prefs.showCalendar
-		val use24h = prefs.use24h
-		val text = withContext(Dispatchers.IO) { indicators.queryCalendar(show, use24h) }
-		barState = barState.copy(calendarText = text)
-	}
-
 	/** Now playing from media sessions; hidden when notification access is off. */
 	private suspend fun updateMedia() {
 		// The notification-access check is a Settings read: off the main thread.
@@ -572,65 +553,5 @@ class StatusBarOverlayService :
 		}
 		mediaSessions.ensure(notifListenerComponent())
 		barState = barState.copy(mediaText = mediaSessions.nowPlaying.value)
-	}
-
-	private suspend fun updateConnectivity() {
-		val p = prefs
-		val c = indicators.readConnectivity(p)
-		barState =
-			barState.copy(
-				usbConnected = usbConnected,
-				airplane = c.airplane,
-				wifi = c.wifi,
-				mobile = c.mobile,
-				mobileType = c.mobileType,
-				signalLevel = c.signalLevel,
-				bluetooth = c.bluetooth,
-				btDevices = c.btDevices,
-				vpn = c.vpn,
-				hotspot = c.hotspot,
-				nfc = c.nfc,
-				gps = c.gps,
-				dnd = c.dnd,
-				dataSaver = c.dataSaver,
-				autoRotate = c.autoRotate,
-				torch = p.showTorch && torchIds.isNotEmpty()
-			)
-	}
-
-	private suspend fun updateAlarm() {
-		val show = prefs.showAlarm
-		val use24h = prefs.use24h
-		val text = withContext(Dispatchers.IO) { indicators.queryAlarm(show, use24h) }
-		barState = barState.copy(alarmText = text)
-	}
-
-	private fun updateBandwidth() {
-		val rx = TrafficStats.getTotalRxBytes()
-		val tx = TrafficStats.getTotalTxBytes()
-		val now = System.currentTimeMillis()
-		// The loop dies with the screen: a delta against the last pre-sleep
-		// sample would report the whole sleep as ".../s".
-		val comparable = lastRx >= 0 && rx >= 0 && now - lastSampleAt <= BANDWIDTH_MAX_GAP_MS
-		if (comparable) {
-			val dRx = rx - lastRx
-			val dTx = if (lastTx >= 0 && tx >= 0) tx - lastTx else 0L
-			if (prefs.bandwidthMerged) {
-				barState =
-					barState.copy(
-						bandwidthRx = IndicatorFormats.speedParts(dRx + dTx),
-						bandwidthTx = null
-					)
-			} else {
-				barState =
-					barState.copy(
-						bandwidthRx = IndicatorFormats.speedParts(dRx),
-						bandwidthTx = IndicatorFormats.speedParts(dTx)
-					)
-			}
-		}
-		lastRx = rx
-		lastTx = tx
-		lastSampleAt = now
 	}
 }
