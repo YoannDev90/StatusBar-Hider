@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
+import dev.yoanndev90.statusbarhider.overlay.model.OverlayBarState
 
 @Composable
 internal fun NotifWidget(

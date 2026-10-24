@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
+import dev.yoanndev90.statusbarhider.overlay.model.CameraGeometry
+import dev.yoanndev90.statusbarhider.overlay.model.OverlayProgress
 import kotlin.math.roundToInt
 
 /**

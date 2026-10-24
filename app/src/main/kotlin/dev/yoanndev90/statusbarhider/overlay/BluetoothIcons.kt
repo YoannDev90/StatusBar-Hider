@@ -8,17 +8,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
+import dev.yoanndev90.statusbarhider.overlay.model.BtDeviceIcon
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-
-/** One connected Bluetooth device, ready to draw: icon plus content description. */
-data class BtDeviceIcon(
-	val icon: Int,
-	val label: Int
-)
 
 /** The declared class mapped through [kindFromClass]; kept as the thin fallback entry point. */
 internal fun btDeviceIcon(deviceClass: Int?): BtDeviceIcon = kindFromClass(deviceClass).icon()

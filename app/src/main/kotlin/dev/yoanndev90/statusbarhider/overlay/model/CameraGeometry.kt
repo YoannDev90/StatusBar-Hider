@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.model
 
 /** Which screen edge the cutout hugs; `Center` means a top punch-hole / island. */
 enum class CameraAnchor {

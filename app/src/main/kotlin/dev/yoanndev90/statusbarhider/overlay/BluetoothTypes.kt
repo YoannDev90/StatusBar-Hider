@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
+import dev.yoanndev90.statusbarhider.overlay.model.BtDeviceIcon
 import kotlinx.coroutines.CancellationException
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap

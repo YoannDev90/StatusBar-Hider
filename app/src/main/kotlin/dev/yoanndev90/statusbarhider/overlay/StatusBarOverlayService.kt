@@ -30,6 +30,9 @@ import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.core.watcher.SystemUiWatcher
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
+import dev.yoanndev90.statusbarhider.overlay.model.IndicatorFormats
+import dev.yoanndev90.statusbarhider.overlay.model.OverlayNotifIcon
+import dev.yoanndev90.statusbarhider.overlay.model.OverlayProgress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

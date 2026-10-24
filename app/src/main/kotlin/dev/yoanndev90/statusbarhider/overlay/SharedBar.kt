@@ -2,6 +2,7 @@ package dev.yoanndev90.statusbarhider.overlay
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import dev.yoanndev90.statusbarhider.overlay.model.OverlayBarState
 
 /**
  * State shared inside the app process between [StatusBarOverlayService]

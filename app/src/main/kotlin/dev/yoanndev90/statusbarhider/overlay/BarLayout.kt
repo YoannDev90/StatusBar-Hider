@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.WidgetId
+import dev.yoanndev90.statusbarhider.overlay.model.CameraAnchor
+import dev.yoanndev90.statusbarhider.overlay.model.CameraGeometry
 
 /**
  * Places the widget row: alone under the lock screen's clock-only mode, split

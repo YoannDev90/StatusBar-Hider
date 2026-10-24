@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.model
 
 import java.util.Locale
 

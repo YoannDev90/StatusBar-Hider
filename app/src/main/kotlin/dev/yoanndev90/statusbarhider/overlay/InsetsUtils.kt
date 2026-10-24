@@ -6,6 +6,8 @@ import android.os.Build
 import android.view.View
 import android.view.WindowManager
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
+import dev.yoanndev90.statusbarhider.overlay.model.CameraAnchor
+import dev.yoanndev90.statusbarhider.overlay.model.CameraGeometry
 
 /**
  * Notch (display cutout) helpers for the overlay bar.

@@ -19,6 +19,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
+import dev.yoanndev90.statusbarhider.overlay.model.OverlayBarState
+import dev.yoanndev90.statusbarhider.overlay.model.OverlaySpeed
 
 @Composable
 internal fun BandwidthWidget(
