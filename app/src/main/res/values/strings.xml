@@ -160,7 +160,6 @@
     <string name="action_import_settings">Import settings</string>
     <string name="action_import_sister">Import from other build</string>
     <string name="action_reset_settings">Reset to defaults</string>
-    <string name="action_reset">Reset</string>
     <string name="dialog_reset_title">Reset all settings?</string>
     <string name="dialog_reset_text">Every setting goes back to its default value. This cannot be undone; export a backup first if you want to keep the current setup.</string>
     <string name="dialog_import_sister_title">Import from other build</string>

@@ -49,12 +49,36 @@ private fun SettingIcon(
 	)
 }
 
+/** The "away from its default" marker green, readable on both card tones. */
+internal val ModifiedGreen = Color(0xFF2E7D32)
+
+/**
+ * The "away from default" marker: a small green dot in a reserved slot at
+ * the row's left margin. The slot is always laid out — empty when the
+ * setting sits on its default — so a setting gaining or losing the marker
+ * never reflows the row around it.
+ */
+@Composable
+internal fun SettingModifiedDot(modified: Boolean) {
+	Box(
+		modifier =
+			Modifier
+				.padding(end = 4.dp)
+				.size(8.dp)
+				.background(
+					color = if (modified) ModifiedGreen else Color.Transparent,
+					shape = CircleShape
+				)
+	)
+}
+
 @Composable
 fun SettingSwitch(
 	@DrawableRes icon: Int,
 	@StringRes label: Int,
 	checked: Boolean,
 	@StringRes subtitle: Int = 0,
+	modified: Boolean = false,
 	onCheckedChange: (Boolean) -> Unit
 ) {
 	Row(
@@ -68,6 +92,7 @@ fun SettingSwitch(
 				).padding(vertical = 4.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
+		SettingModifiedDot(modified)
 		SettingIcon(icon)
 		Spacer(Modifier.width(12.dp))
 		Column(Modifier.weight(1f)) {
@@ -105,9 +130,11 @@ fun SettingSlider(
 	max: Int,
 	@StringRes suffix: Int = 0,
 	@StringRes subtitle: Int = 0,
+	modified: Boolean = false,
 	onValueChange: (Int) -> Unit
 ) {
 	Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+		SettingModifiedDot(modified)
 		SettingIcon(icon)
 		Spacer(Modifier.width(12.dp))
 		Column(modifier = Modifier.weight(1f)) {
@@ -365,9 +392,11 @@ fun SettingRadioRow(
 	@DrawableRes icon: Int,
 	@StringRes options: List<Int>,
 	selected: Int,
+	modified: Boolean = false,
 	onSelect: (Int) -> Unit
 ) {
 	Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+		SettingModifiedDot(modified)
 		SettingIcon(icon)
 		Spacer(Modifier.width(12.dp))
 		options.forEachIndexed { index, option ->

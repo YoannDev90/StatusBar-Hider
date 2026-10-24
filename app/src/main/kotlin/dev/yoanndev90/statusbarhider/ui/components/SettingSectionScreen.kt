@@ -1,10 +1,15 @@
 package dev.yoanndev90.statusbarhider.ui.components
 
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.yoanndev90.statusbarhider.core.settings.PendingFocus
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
+import dev.yoanndev90.statusbarhider.core.settings.specs
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
@@ -25,8 +30,15 @@ fun SettingSectionScreen(vm: PrefsViewModel, section: SettingSection<OverlayPref
 	HandlePrefsEvents(vm)
 	val update: ((OverlayPrefs) -> OverlayPrefs) -> Unit = { transform -> vm.updatePrefs { transform(this) } }
 	val cards = cardsOf(section.visibleRows(prefs))
+	// The Debug index drops the user on the card holding the wanted setting.
+	val listState = rememberLazyListState()
+	val focusKey = remember { PendingFocus.consume() }
+	LaunchedEffect(focusKey) {
+		val cardIndex = focusKey?.let { key -> cardIndexForKey(cards, key) } ?: -1
+		if (cardIndex >= 0) listState.scrollToItem(cardIndex)
+	}
 
-	SettingsScreen {
+	SettingsScreen(listState) {
 		// Cards are immutable values computed before the lazy block: an item
 		// lambda capturing a mutable runner would compose with its final,
 		// emptied value — and draw an empty card.
@@ -64,6 +76,14 @@ internal fun cardsOf(rows: List<SettingRow<OverlayPrefs>>): List<SettingRow.Grou
 		}
 		if (loose.isNotEmpty()) add(SettingRow.Group(rows = loose))
 	}
+
+/**
+ * Index of the card drawing the spec named [key], -1 when no card holds it
+ * (unknown key, or a setting hidden in the current state). Pure, so the
+ * Debug index's deep link is unit-testable without a composition.
+ */
+internal fun cardIndexForKey(cards: List<SettingRow.Group<OverlayPrefs>>, key: String): Int =
+	cards.indexOfFirst { card -> card.rows.specs().any { it.key == key } }
 
 @Composable
 private fun RenderRows(

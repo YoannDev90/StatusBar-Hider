@@ -43,13 +43,16 @@ import dev.yoanndev90.statusbarhider.core.settings.ValueSpec
 @Composable
 fun <T, S : Any> SpecRow(spec: SettingSpec<T, S>, prefs: S, update: ((S) -> S) -> Unit) {
 	if (!spec.shownWhen(prefs)) return
+	// Marked with a dot while away from its default, on every control type.
+	val modified = spec.isModifiedIn(prefs)
 	when (spec) {
 		is BoolSpec ->
 			SettingSwitch(
 				icon = requireNotNull(spec.icon) { "'${spec.key}' rendered without an icon" },
 				label = requireNotNull(spec.label) { "'${spec.key}' rendered without a label" },
 				checked = spec.get(prefs),
-				subtitle = spec.subtitle ?: 0
+				subtitle = spec.subtitle ?: 0,
+				modified = modified
 			) { value -> update { spec.set(it, value) } }
 		is IntSpec ->
 			SettingSlider(
@@ -59,7 +62,8 @@ fun <T, S : Any> SpecRow(spec: SettingSpec<T, S>, prefs: S, update: ((S) -> S) -
 				min = spec.min,
 				max = spec.max,
 				suffix = spec.suffix ?: 0,
-				subtitle = spec.subtitle ?: 0
+				subtitle = spec.subtitle ?: 0,
+				modified = modified
 			) { value -> update { spec.set(it, value) } }
 		is EnumSpec -> {
 			// SettingRadioRow has no label slot: a spec that carries one shows
@@ -70,8 +74,8 @@ fun <T, S : Any> SpecRow(spec: SettingSpec<T, S>, prefs: S, update: ((S) -> S) -
 				icon = requireNotNull(spec.icon) { "'${spec.key}' rendered without an icon" },
 				options = spec.entries.map { it.second },
 				selected = spec.entries.indexOfFirst { it.first == spec.get(prefs) }.coerceAtLeast(0),
-				onSelect = { index -> update { spec.set(it, spec.entries[index].first) } }
-			)
+				modified = modified
+			) { index -> update { spec.set(it, spec.entries[index].first) } }
 		}
 		is TextSpec -> TextSpecRow(spec, prefs, update)
 		// Lists and free shapes have no generic control: the section carries
@@ -91,6 +95,7 @@ private fun <S : Any> TextSpecRow(spec: TextSpec<S>, prefs: S, update: ((S) -> S
 	val current = spec.get(prefs)
 	var draft by rememberSaveable(current) { mutableStateOf(current) }
 	Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+		SettingModifiedDot(spec.isModifiedIn(prefs))
 		OutlinedTextField(
 			value = draft,
 			onValueChange = { draft = it },

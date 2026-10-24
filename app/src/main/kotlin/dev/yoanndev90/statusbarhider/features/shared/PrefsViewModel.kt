@@ -9,7 +9,6 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
-import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
 import dev.yoanndev90.statusbarhider.core.settings.SettingsRegistry
 import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
@@ -149,11 +148,6 @@ open class PrefsViewModel(
 		SettingsRegistry.resetStore(overlayStore)
 		OverlayController.replaceAll(app, overlayStore.default)
 		log(R.string.log_settings_reset)
-	}
-
-	/** Puts one overlay setting back to its default; the bar redraws from the new prefs. */
-	fun resetSpec(spec: SettingSpec<*, OverlayPrefs>) {
-		updatePrefs { spec.resetIn(this) }
 	}
 
 	/** Puts a section's settings back to their defaults; the rest of the file is kept. */

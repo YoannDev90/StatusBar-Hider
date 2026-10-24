@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,12 +20,13 @@ import androidx.compose.ui.unit.dp
  * most of the frame the switch cost.
  */
 @Composable
-fun SettingsScreen(content: LazyListScope.() -> Unit) {
+fun SettingsScreen(state: LazyListState = rememberLazyListState(), content: LazyListScope.() -> Unit) {
 	LazyColumn(
 		modifier =
 			Modifier
 				.fillMaxSize()
 				.padding(horizontal = 16.dp, vertical = 8.dp),
+		state = state,
 		content = content
 	)
 }

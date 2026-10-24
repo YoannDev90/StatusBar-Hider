@@ -291,7 +291,7 @@ private fun AppNavHost(
 		composable(Routes.PROFILES) { ProfilesScreen() }
 		composable(Routes.OEM) { OemScreen(statusViewModel) }
 		composable(Routes.DEBUG) { DebugHubScreen(navController::navigate) }
-		composable(Routes.DEBUG_DIFF) { DebugDiffScreen(statusViewModel) }
+		composable(Routes.DEBUG_DIFF) { DebugDiffScreen(statusViewModel, navController::navigate) }
 		composable(Routes.DEBUG_INFO) { DebugInfoScreen(statusViewModel) }
 		composable(Routes.DEBUG_PERMISSIONS) { DebugPermissionsScreen(statusViewModel) }
 		composable(Routes.LOGS) { LogsScreen(logsViewModel) }

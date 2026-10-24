@@ -1,12 +1,11 @@
 package dev.yoanndev90.statusbarhider.features.settings
 
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,14 +13,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.PendingFocus
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
 import dev.yoanndev90.statusbarhider.core.settings.SettingsRegistry
@@ -32,17 +31,15 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 
-/** The "+added" green of a diff, readable on both card tones. */
-private val DiffAdded = Color(0xFF2E7D32)
-
 /**
- * Debug > Modified settings: the settings that are not at their default,
- * grouped by section, each on one diff-style line — the current value as
- * `+added` in green over the default as `-removed` in red — with a one-tap
- * reset for the setting or the whole section.
+ * Debug > Modified settings: an index of the settings that are not at their
+ * default, grouped by section. A line jumps to the setting's own screen —
+ * [PendingFocus] scrolls it up to the card holding the setting, where the
+ * green marker points it out; each group keeps one reset for the whole
+ * section.
  */
 @Composable
-fun DebugDiffScreen(vm: StatusViewModel) {
+fun DebugDiffScreen(vm: StatusViewModel, onNavigate: (String) -> Unit) {
 	val prefs by vm.prefs.collectAsStateWithLifecycle()
 	// One group per section that still differs from its defaults.
 	val modified = remember(prefs) { modifiedSections(prefs) }
@@ -63,13 +60,15 @@ fun DebugDiffScreen(vm: StatusViewModel) {
 			item(key = "modified-${section.id}") {
 				SettingGroup(section.title) {
 					specs.forEach { spec ->
-						DiffRow(
+						IndexRow(
 							// An enum spec may carry no row label of its own:
 							// its values name it, so fall back to the key.
 							label = spec.label?.let { stringResource(it) } ?: spec.key,
-							current = spec.get(prefs).toString(),
-							default = spec.default.toString(),
-							onReset = { vm.resetSpec(spec) }
+							value = spec.get(prefs).toString(),
+							onClick = {
+								PendingFocus.key = spec.key
+								onNavigate(section.route)
+							}
 						)
 					}
 					SettingAction(R.drawable.ic_refresh, R.string.action_reset_settings) { vm.resetSection(section) }
@@ -79,51 +78,40 @@ fun DebugDiffScreen(vm: StatusViewModel) {
 	}
 }
 
-/** One modified setting: name, `+current` over `-default`, and an icon-only reset. */
+/** One index entry: the setting's name, its current value, a chevron to its screen. */
 @Composable
-private fun DiffRow(
-	label: String,
-	current: String,
-	default: String,
-	onReset: () -> Unit
-) {
+private fun IndexRow(label: String, value: String, onClick: () -> Unit) {
 	Row(
-		modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+		modifier =
+			Modifier
+				.fillMaxWidth()
+				.clickable(onClick = onClick)
+				.padding(vertical = 6.dp),
 		verticalAlignment = Alignment.CenterVertically
 	) {
 		Text(
 			text = label,
 			style = MaterialTheme.typography.bodyMedium,
-			color = MaterialTheme.colorScheme.onSurfaceVariant,
-			modifier = Modifier.weight(1.2f).padding(end = 8.dp)
+			modifier = Modifier.weight(1f).padding(end = 8.dp)
 		)
-		Column(Modifier.weight(1f)) {
-			Text(
-				text = "+$current",
-				style = MaterialTheme.typography.bodySmall,
-				fontFamily = FontFamily.Monospace,
-				color = DiffAdded
-			)
-			Text(
-				text = "-$default",
-				style = MaterialTheme.typography.bodySmall,
-				fontFamily = FontFamily.Monospace,
-				color = MaterialTheme.colorScheme.error
-			)
-		}
-		IconButton(onClick = onReset) {
-			Icon(
-				painter = painterResource(R.drawable.ic_refresh),
-				contentDescription = stringResource(R.string.action_reset),
-				tint = MaterialTheme.colorScheme.onSurfaceVariant,
-				modifier = Modifier.size(20.dp)
-			)
-		}
+		Text(
+			text = value,
+			style = MaterialTheme.typography.bodyMedium,
+			color = MaterialTheme.colorScheme.onSurfaceVariant,
+			maxLines = 1,
+			overflow = TextOverflow.Ellipsis
+		)
+		Icon(
+			painter = painterResource(R.drawable.ic_chevron_right),
+			contentDescription = null,
+			tint = MaterialTheme.colorScheme.onSurfaceVariant,
+			modifier = Modifier.size(20.dp).padding(start = 4.dp)
+		)
 	}
 }
 
 /** Sections with at least one setting away from its default, with those settings. */
-private fun modifiedSections(
+internal fun modifiedSections(
 	prefs: OverlayPrefs
 ): List<Pair<SettingSection<OverlayPrefs>, List<SettingSpec<*, OverlayPrefs>>>> =
 	SettingsRegistry.sections.mapNotNull { section ->

@@ -10,6 +10,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.ui.components.cardIndexForKey
 import dev.yoanndev90.statusbarhider.ui.components.cardsOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -179,6 +180,15 @@ class SettingSectionTest {
 			val opened = visible.flatMap { row -> if (row is SettingRow.Group) row.rows else listOf(row) }
 			assertEquals(opened, cardsOf(visible).flatMap { it.rows })
 		}
+	}
+
+	@Test
+	fun `the deep-link card index finds the spec's card and misses on an unknown key`() {
+		val cards = cardsOf(AppearanceSection.visibleRows(OverlayPrefs()))
+		val index = cardIndexForKey(cards, "background")
+		assertTrue(index >= 0)
+		assertTrue(cards[index].rows.ofSpecs().any { it.spec.key == "background" })
+		assertEquals(-1, cardIndexForKey(cards, "no_such_key"))
 	}
 
 	@Test
