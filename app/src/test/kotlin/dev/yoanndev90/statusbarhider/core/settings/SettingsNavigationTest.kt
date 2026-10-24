@@ -146,6 +146,7 @@ class SettingsNavigationTest {
 				notifListener = true,
 				calendar = true,
 				postNotifs = true,
+				bluetooth = true,
 				usage = true,
 				lockOverlay = true
 			)

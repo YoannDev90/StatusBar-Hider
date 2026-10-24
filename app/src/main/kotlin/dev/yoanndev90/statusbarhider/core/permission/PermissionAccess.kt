@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
@@ -22,6 +23,7 @@ data class PermissionGrants(
 	val notifListener: Boolean,
 	val calendar: Boolean,
 	val postNotifs: Boolean,
+	val bluetooth: Boolean,
 	val usage: Boolean,
 	val lockOverlay: Boolean
 )
@@ -38,9 +40,15 @@ object PermissionAccess {
 			notifListener = NotifListenerService.isEnabled(context),
 			calendar = context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED,
 			postNotifs = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
+			bluetooth = bluetoothGranted(context),
 			usage = UsageAccess.granted(context),
 			lockOverlay = lockOverlayEnabled(context)
 		)
+
+	/** Below Android 12 the legacy install-time permission covers the device list. */
+	private fun bluetoothGranted(context: Context): Boolean =
+		Build.VERSION.SDK_INT < 31 ||
+			context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
 
 	/** True when [LockScreenOverlayService] is in the enabled accessibility services list. */
 	fun lockOverlayEnabled(context: Context): Boolean {

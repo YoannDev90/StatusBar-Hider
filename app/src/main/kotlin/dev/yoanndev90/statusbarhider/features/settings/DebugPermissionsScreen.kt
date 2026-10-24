@@ -44,6 +44,8 @@ fun DebugPermissionsScreen(vm: StatusViewModel) {
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	val notificationsLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
+	val bluetoothLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	// The permission rows are binder calls (overlay, listener, AppOps, grants):
 	// read them once per resume on IO instead of on every recomposition. Values
 	// from the previous read stay on screen while a refresh is in flight.
@@ -76,6 +78,12 @@ fun DebugPermissionsScreen(vm: StatusViewModel) {
 						label = R.string.perm_post_notifs,
 						granted = loaded.postNotifs
 					) { notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+				}
+				if (Build.VERSION.SDK_INT >= 31) {
+					SettingStatusRow(
+						label = R.string.perm_bluetooth,
+						granted = loaded.bluetooth
+					) { bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
 				}
 				SettingStatusRow(
 					label = R.string.perm_usage,

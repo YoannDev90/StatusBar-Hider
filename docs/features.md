@@ -10,7 +10,7 @@ entry point - device identity, Shizuku status, Show / Hide - and the gear in
 its top bar opens Settings. Every Settings category is its own screen (stack
 navigation, back arrow), and Lock screen / Debug each hold two sub-screens.
 
-- **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications and usage access (re-openable from Settings > About).
+- **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications, Bluetooth, usage access and accessibility (re-openable from Settings > About).
 - **Show / hide from Home** -- Home opens with Show custom bar / Hide custom bar actions, no need to dig into Settings.
 - **Custom status bar overlay** -- a Compose bar with clock, date, battery, connectivity, notification and media widgets. Stays visible over the **lock screen** (toggleable) and shows over the system bar while it is hidden.
 - **Auto-start bar on boot** -- optional switch (Settings > General): brings the custom bar back after every reboot on its own, without Shizuku and independently of "Auto-hide after reboot".

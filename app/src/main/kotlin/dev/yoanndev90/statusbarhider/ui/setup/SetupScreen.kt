@@ -65,6 +65,8 @@ fun SetupScreen(
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	val notificationsLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
+	val bluetoothLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	// The permission rows are binder calls (overlay, listener, AppOps, grants):
 	// read them once per resume on IO instead of on every recomposition. Values
 	// from the previous read stay on screen while a refresh is in flight.
@@ -122,10 +124,20 @@ fun SetupScreen(
 						granted = loaded.postNotifs
 					) { notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
 				}
+				if (Build.VERSION.SDK_INT >= 31) {
+					SettingStatusRow(
+						label = R.string.setup_bluetooth,
+						granted = loaded.bluetooth
+					) { bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
+				}
 				SettingStatusRow(
 					label = R.string.setup_usage,
 					granted = loaded.usage
 				) { PermissionAccess.openSettings(context, Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+				SettingStatusRow(
+					label = R.string.setup_accessibility,
+					granted = loaded.lockOverlay
+				) { PermissionAccess.openSettings(context, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
 			}
 		}
 
