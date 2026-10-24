@@ -82,6 +82,14 @@ private const val KEY_CAMERA_RING = "camera_ring"
 private const val KEY_CAMERA_RING_STROKE = "camera_ring_stroke_dp"
 private const val KEY_CAMERA_RING_COLOR = "camera_ring_color"
 
+/** Font weight of the bar text; serializes by name, so the JSON keeps "NORMAL"/"MEDIUM"/"BOLD". */
+@Serializable
+enum class BarFontWeight {
+	NORMAL,
+	MEDIUM,
+	BOLD
+}
+
 @Serializable
 enum class OverlayBackground {
 	TRANSPARENT,
@@ -209,7 +217,7 @@ data class OverlayPrefs(
 	@SerialName(KEY_FONT_SIZE)
 	val fontSizeSp: Int = 13,
 	@SerialName(KEY_FONT_WEIGHT)
-	val fontWeightName: String = "NORMAL",
+	val fontWeightName: BarFontWeight = BarFontWeight.NORMAL,
 	@SerialName(KEY_WIDGET_SPACING)
 	val widgetSpacingDp: Int = 6,
 	@SerialName(KEY_CAMERA_AUTO)

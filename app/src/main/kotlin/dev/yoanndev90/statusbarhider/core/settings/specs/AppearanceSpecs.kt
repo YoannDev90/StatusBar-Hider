@@ -5,6 +5,7 @@ import dev.yoanndev90.statusbarhider.core.settings.BoolSpec
 import dev.yoanndev90.statusbarhider.core.settings.EnumSpec
 import dev.yoanndev90.statusbarhider.core.settings.IntSpec
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
+import dev.yoanndev90.statusbarhider.overlay.BarFontWeight
 import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
@@ -101,18 +102,17 @@ object AppearanceSpecs {
 			suffix = R.string.suffix_sp
 		)
 
-	/** Plain id strings until the model gains a proper enum (phase 6). */
 	val fontWeightName =
-		EnumSpec<String, OverlayPrefs>(
+		EnumSpec<BarFontWeight, OverlayPrefs>(
 			key = "font_weight",
 			get = OverlayPrefs::fontWeightName,
 			set = { p, v -> p.copy(fontWeightName = v) },
-			default = "NORMAL",
+			default = BarFontWeight.NORMAL,
 			entries =
 				listOf(
-					"NORMAL" to R.string.font_weight_normal,
-					"MEDIUM" to R.string.font_weight_medium,
-					"BOLD" to R.string.font_weight_bold
+					BarFontWeight.NORMAL to R.string.font_weight_normal,
+					BarFontWeight.MEDIUM to R.string.font_weight_medium,
+					BarFontWeight.BOLD to R.string.font_weight_bold
 				),
 			icon = R.drawable.ic_format_bold,
 			label = R.string.label_text_weight

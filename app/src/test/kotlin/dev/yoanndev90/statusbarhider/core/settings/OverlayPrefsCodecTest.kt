@@ -1,5 +1,6 @@
 package dev.yoanndev90.statusbarhider.core.settings
 
+import dev.yoanndev90.statusbarhider.overlay.BarFontWeight
 import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
 import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.WidgetId
@@ -55,13 +56,20 @@ class OverlayPrefsCodecTest {
 		val element =
 			Json.encodeToJsonElement(
 				OverlayPrefs.serializer(),
-				OverlayPrefs().copy(updateIntervalSec = 999, fontSizeSp = 999, maxNotifs = 0, fontWeightName = "NOPE")
+				OverlayPrefs().copy(updateIntervalSec = 999, fontSizeSp = 999, maxNotifs = 0)
 			)
 		val prefs = OverlayPrefsCodec.decodeStrict(element)
 		assertEquals(60, prefs.updateIntervalSec)
 		assertEquals(20, prefs.fontSizeSp)
 		assertEquals(1, prefs.maxNotifs)
-		assertEquals("NORMAL", prefs.fontWeightName)
+		assertEquals(BarFontWeight.NORMAL, prefs.fontWeightName)
+	}
+
+	@Test
+	fun `strict decode coerces an unknown font weight to the default`() {
+		// The model is typed now: an unknown weight only exists on the wire.
+		val element = Json.parseToJsonElement("""{"font_weight":"NOPE"}""")
+		assertEquals(BarFontWeight.NORMAL, OverlayPrefsCodec.decodeStrict(element).fontWeightName)
 	}
 
 	@Test

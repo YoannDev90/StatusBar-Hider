@@ -354,9 +354,9 @@ private fun OverlayPrefs.textSp(delta: Int = 0): TextUnit = (fontSizeSp + delta)
 private val OverlayPrefs.fontWeightValue: FontWeight
 	get() =
 		when (fontWeightName) {
-			"BOLD" -> FontWeight.Bold
-			"MEDIUM" -> FontWeight.Medium
-			else -> FontWeight.Normal
+			BarFontWeight.BOLD -> FontWeight.Bold
+			BarFontWeight.MEDIUM -> FontWeight.Medium
+			BarFontWeight.NORMAL -> FontWeight.Normal
 		}
 
 /** Ticks aligned on [intervalMs] boundaries while [enabled]; frozen otherwise. */

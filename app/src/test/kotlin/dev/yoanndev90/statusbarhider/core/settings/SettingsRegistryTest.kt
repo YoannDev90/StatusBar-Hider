@@ -83,7 +83,6 @@ class SettingsRegistryTest {
 				Triple("burn-in above max", defaults.copy(burnInMin = 99), defaults.copy(burnInMin = 30)),
 				Triple("burn-in below zero", defaults.copy(burnInMin = -1), defaults.copy(burnInMin = 0)),
 				Triple("font size above max", defaults.copy(fontSizeSp = 999), defaults.copy(fontSizeSp = 20)),
-				Triple("unknown font weight", defaults.copy(fontWeightName = "NOPE"), defaults.copy(fontWeightName = "NORMAL")),
 				Triple(
 					"widget spacing above max",
 					defaults.copy(widgetSpacingDp = 99),
