@@ -35,13 +35,10 @@
 
     <!-- Settings categories (root list + top bar titles) -->
     <string name="cat_general">General</string>
-    <string name="cat_general_sub">Refresh, boot, touch</string>
     <string name="cat_appearance">Appearance</string>
-    <string name="cat_appearance_sub">Background, text, widget order</string>
     <string name="cat_cutout">Cutout / Camera</string>
     <string name="cat_cutout_sub">Notch position and progress ring</string>
     <string name="cat_clock">Clock &amp; date</string>
-    <string name="cat_clock_sub">Time, date, alarm, calendar</string>
     <string name="cat_battery">Battery</string>
     <string name="cat_battery_sub">Level, percentage, icon</string>
     <string name="cat_notifications">Notifications &amp; media</string>
