@@ -33,6 +33,7 @@ import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.model.IndicatorFormats
 import dev.yoanndev90.statusbarhider.overlay.model.OverlayNotifIcon
 import dev.yoanndev90.statusbarhider.overlay.model.OverlayProgress
+import dev.yoanndev90.statusbarhider.overlay.poll.PollPlanner
 import dev.yoanndev90.statusbarhider.overlay.system.MediaSessions
 import dev.yoanndev90.statusbarhider.overlay.system.NotifIcons
 import dev.yoanndev90.statusbarhider.overlay.system.SystemIndicators
@@ -198,6 +199,15 @@ class StatusBarOverlayService : Service() {
 	private var mobileJob: Job? = null
 	private var refreshJob: Job? = null
 
+	/**
+	 * The current arming decision, recomputed from the live prefs and screen
+	 * state. [PollPlanner] owns the rules; each schedule helper arms or drops
+	 * the job this names, so the "wanted?" condition can never drift apart
+	 * between the arming site and the loop's own exit check.
+	 */
+	private val pollPlan: PollPlanner.Plan
+		get() = PollPlanner.plan(prefs, barState.screenOn)
+
 	override fun onBind(intent: Intent?): IBinder? = null
 
 	override fun onCreate() {
@@ -328,7 +338,7 @@ class StatusBarOverlayService : Service() {
 	private fun scheduleBurnIn() {
 		burnInJob?.cancel()
 		burnInJob = null
-		if (prefs.burnInMin > 0 && barState.screenOn) {
+		if (pollPlan.burnIn) {
 			burnInJob = serviceScope.launch { burnInLoop() }
 		}
 	}
@@ -484,7 +494,7 @@ class StatusBarOverlayService : Service() {
 	private fun scheduleBandwidth() {
 		bandwidthJob?.cancel()
 		bandwidthJob = null
-		if (prefs.showBandwidth && barState.screenOn) {
+		if (pollPlan.bandwidth) {
 			bandwidthJob = serviceScope.launch { bandwidthLoop() }
 		}
 	}
@@ -497,7 +507,7 @@ class StatusBarOverlayService : Service() {
 	private fun scheduleForegroundPoll() {
 		foregroundJob?.cancel()
 		foregroundJob = null
-		val active = prefs.hideBarInApps && prefs.hiddenApps.isNotEmpty() && barState.screenOn
+		val active = pollPlan.foreground
 		if (active && !UsageAccess.granted(this)) {
 			if (!usageHintLogged) {
 				usageHintLogged = true
@@ -538,7 +548,7 @@ class StatusBarOverlayService : Service() {
 	private fun scheduleMobile() {
 		mobileJob?.cancel()
 		mobileJob = null
-		if (prefs.showMobileData && barState.screenOn) {
+		if (pollPlan.mobile) {
 			mobileJob = serviceScope.launch { mobileLoop() }
 		}
 	}
@@ -558,10 +568,7 @@ class StatusBarOverlayService : Service() {
 	}
 
 	/** The2s poll only earns its keep while something could actually hide. */
-	private fun CoroutineScope.foregroundPollWanted(): Boolean {
-		if (!isActive || !barState.screenOn) return false
-		return prefs.hideBarInApps && prefs.hiddenApps.isNotEmpty()
-	}
+	private fun CoroutineScope.foregroundPollWanted(): Boolean = isActive && pollPlan.foreground
 
 	/** 2 s foreground-app poll; the loop dies with the feature or the screen. */
 	private suspend fun CoroutineScope.foregroundLoop() {
