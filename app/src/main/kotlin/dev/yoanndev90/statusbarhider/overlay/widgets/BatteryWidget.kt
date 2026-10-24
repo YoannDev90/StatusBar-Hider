@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.widgets
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding

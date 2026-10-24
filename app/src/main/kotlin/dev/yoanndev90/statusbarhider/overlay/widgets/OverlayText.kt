@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.widgets
 
 import android.util.Log
 import androidx.compose.foundation.Image

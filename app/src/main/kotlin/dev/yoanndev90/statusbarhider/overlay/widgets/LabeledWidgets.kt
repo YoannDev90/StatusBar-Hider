@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.widgets
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color

@@ -43,6 +43,7 @@ import dev.yoanndev90.statusbarhider.overlay.system.receiverFlow
 import dev.yoanndev90.statusbarhider.overlay.system.runSafely
 import dev.yoanndev90.statusbarhider.overlay.system.systemSettingsFlow
 import dev.yoanndev90.statusbarhider.overlay.system.torchFlow
+import dev.yoanndev90.statusbarhider.overlay.widgets.OverlayBar
 import dev.yoanndev90.statusbarhider.overlay.window.OverlayWindow
 import dev.yoanndev90.statusbarhider.overlay.window.SharedBar
 import dev.yoanndev90.statusbarhider.overlay.window.startOverlayForeground

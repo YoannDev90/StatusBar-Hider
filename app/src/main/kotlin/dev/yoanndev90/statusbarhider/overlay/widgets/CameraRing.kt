@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.widgets
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
