@@ -149,16 +149,21 @@ fun MainScreen() {
 		}
 	) { inner ->
 		Box(Modifier.fillMaxSize().padding(inner)) {
-			AppNavHost(
-				navController = navController,
-				statusViewModel = statusViewModel,
-				logsViewModel = logsViewModel,
-				settingsQuery = settingsQuery,
-				onOpenSetup = {
-					setupReopened = true
-					setupOpen = true
-				}
-			)
+			// Setup takes the whole window: the app behind it must not
+			// compose — its screens fire permission requests and draw
+			// through the scrim. Same suppression the pre-refactor shell had.
+			if (!setupOpen) {
+				AppNavHost(
+					navController = navController,
+					statusViewModel = statusViewModel,
+					logsViewModel = logsViewModel,
+					settingsQuery = settingsQuery,
+					onOpenSetup = {
+						setupReopened = true
+						setupOpen = true
+					}
+				)
+			}
 			if (setupOpen) {
 				SetupScreen(
 					viewModel(),
