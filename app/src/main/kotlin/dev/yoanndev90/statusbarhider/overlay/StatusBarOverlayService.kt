@@ -33,7 +33,8 @@ import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.model.IndicatorFormats
 import dev.yoanndev90.statusbarhider.overlay.model.OverlayNotifIcon
 import dev.yoanndev90.statusbarhider.overlay.model.OverlayProgress
-import dev.yoanndev90.statusbarhider.overlay.poll.PollPlanner
+import dev.yoanndev90.statusbarhider.overlay.poll.OverlayPoller
+import dev.yoanndev90.statusbarhider.overlay.poll.PollHost
 import dev.yoanndev90.statusbarhider.overlay.system.MediaSessions
 import dev.yoanndev90.statusbarhider.overlay.system.NotifIcons
 import dev.yoanndev90.statusbarhider.overlay.system.SystemIndicators
@@ -55,7 +56,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
@@ -68,17 +68,12 @@ import java.util.concurrent.ConcurrentHashMap
  * is off. Polling (alarm / calendar / connectivity fallback) and bandwidth
  * sampling run only when the screen is ON to preserve deep sleep.
  */
-class StatusBarOverlayService : Service() {
+class StatusBarOverlayService :
+	Service(),
+	PollHost {
 	companion object {
 		private const val TAG = "CustomBar"
 		private const val REFRESH_DEBOUNCE_MS = 100L
-		private const val FOREGROUND_POLL_MS = 2_000L
-
-		/**
-		 * The label and the signal bars are what the eye tracks; the general
-		 * poll (5..60 s) is far too slow for a level that moves on its own.
-		 */
-		private const val MOBILE_POLL_MS = 2_000L
 
 		/**
 		 * Largest gap still taken as "the previous sample": the sampler stops
@@ -163,9 +158,6 @@ class StatusBarOverlayService : Service() {
 	/** True while the overlay window is detached because a blacklisted app is up front. */
 	private var suppressed by SharedBar.suppressed
 
-	/** The missing-usage-access hint is logged once per service run, not per poll. */
-	private var usageHintLogged = false
-
 	/**
 	 * The platform zeroes the shared disable record when the keyguard goes
 	 * away, so the system status bar comes back on every unlock. Apply right
@@ -191,22 +183,39 @@ class StatusBarOverlayService : Service() {
 		}
 	}
 
-	/** Restartable poll loops; [serviceScope] (structured) cancels them on destroy. */
-	private var pollJob: Job? = null
-	private var burnInJob: Job? = null
-	private var bandwidthJob: Job? = null
-	private var foregroundJob: Job? = null
-	private var mobileJob: Job? = null
+	/** Debounce for [refreshAll]; the poll loops themselves live in [poller]. */
 	private var refreshJob: Job? = null
 
-	/**
-	 * The current arming decision, recomputed from the live prefs and screen
-	 * state. [PollPlanner] owns the rules; each schedule helper arms or drops
-	 * the job this names, so the "wanted?" condition can never drift apart
-	 * between the arming site and the loop's own exit check.
-	 */
-	private val pollPlan: PollPlanner.Plan
-		get() = PollPlanner.plan(prefs, barState.screenOn)
+	/** Owns every poll loop. The service is the [PollHost] those loops call into. */
+	private val poller = OverlayPoller(serviceScope, this)
+
+	// --- PollHost: the live state the loops read, and their tick actions ----
+
+	override val currentPrefs: OverlayPrefs
+		get() = prefs
+
+	override val isScreenOn: Boolean
+		get() = barState.screenOn
+
+	override val usageAccessGranted: Boolean
+		get() = UsageAccess.granted(this)
+
+	override suspend fun sampleBandwidth() = updateBandwidth()
+
+	override suspend fun refreshMobile() = updateMobile()
+
+	override suspend fun refreshSuppressed() = updateSuppressed()
+
+	override suspend fun shiftForBurnIn() = window.shiftForBurnIn()
+
+	override fun onUsageAccessMissing() {
+		Log.w(TAG, "Usage access not granted - app blacklist inactive")
+		LogStore.append(this, getString(R.string.log_usage_access_missing))
+	}
+
+	override fun ensureNotSuppressed() {
+		if (suppressed) setSuppressedState(false)
+	}
 
 	override fun onBind(intent: Intent?): IBinder? = null
 
@@ -248,10 +257,10 @@ class StatusBarOverlayService : Service() {
 				if (geometry != barState.camera) barState = barState.copy(camera = geometry)
 			}
 		}
-		schedulePoll()
-		scheduleBandwidth()
-		scheduleForegroundPoll()
-		scheduleMobile()
+		poller.schedulePoll()
+		poller.scheduleBandwidth()
+		poller.scheduleForegroundPoll()
+		poller.scheduleMobile()
 		// The overlay is up for hours: it is the natural owner of the SystemUI watcher.
 		SystemUiWatcher.start(this, this)
 	}
@@ -280,10 +289,10 @@ class StatusBarOverlayService : Service() {
 		// Re-evaluates flags *and* the lock-screen teardown below.
 		syncWindowAttachment()
 		if (next.showMedia) mediaSessions.ensure(notifListenerComponent())
-		scheduleBandwidth()
-		scheduleBurnIn()
-		scheduleForegroundPoll()
-		scheduleMobile()
+		poller.scheduleBandwidth()
+		poller.scheduleBurnIn()
+		poller.scheduleForegroundPoll()
+		poller.scheduleMobile()
 		// Trailing-edge debounce: a slider drag calls this per frame, and
 		// refreshAll() itself runs six widget updates.
 		refreshJob?.cancel()
@@ -332,14 +341,6 @@ class StatusBarOverlayService : Service() {
 				)
 			} catch (_: Exception) {
 			}
-		}
-	}
-
-	private fun scheduleBurnIn() {
-		burnInJob?.cancel()
-		burnInJob = null
-		if (pollPlan.burnIn) {
-			burnInJob = serviceScope.launch { burnInLoop() }
 		}
 	}
 
@@ -427,11 +428,7 @@ class StatusBarOverlayService : Service() {
 			Intent.ACTION_SCREEN_OFF -> {
 				// The screen going off always puts the keyguard back up.
 				barState = barState.copy(screenOn = false, locked = true)
-				pollJob?.cancel()
-				burnInJob?.cancel()
-				bandwidthJob?.cancel()
-				foregroundJob?.cancel()
-				mobileJob?.cancel()
+				poller.cancelAll()
 				// Including the debounced refresh: it would otherwise run six
 				// widget updates, IPC included, while the screen is off.
 				refreshJob?.cancel()
@@ -445,11 +442,11 @@ class StatusBarOverlayService : Service() {
 				window.setRenderingActive(true)
 				syncWindowAttachment()
 				refreshAll()
-				schedulePoll()
-				scheduleBandwidth()
-				scheduleBurnIn()
-				scheduleForegroundPoll()
-				scheduleMobile()
+				poller.schedulePoll()
+				poller.scheduleBandwidth()
+				poller.scheduleBurnIn()
+				poller.scheduleForegroundPoll()
+				poller.scheduleMobile()
 			}
 			Intent.ACTION_USER_PRESENT -> {
 				barState = barState.copy(locked = false)
@@ -475,116 +472,16 @@ class StatusBarOverlayService : Service() {
 		updateAlarm()
 	}
 
-	private suspend fun refreshPolled() {
+	override suspend fun refreshPolled() {
 		updateAlarm()
 		updateCalendar()
 		updateConnectivity()
-	}
-
-	private fun schedulePoll() {
-		pollJob?.cancel()
-		pollJob = serviceScope.launch { pollLoop() }
-	}
-
-	/**
-	 * (Re)arms the 1s bandwidth sampler. Every path that can turn the screen or
-	 * the toggle back on must call it, otherwise the loop dies on the first
-	 * screen-off / screen-on cycle.
-	 */
-	private fun scheduleBandwidth() {
-		bandwidthJob?.cancel()
-		bandwidthJob = null
-		if (pollPlan.bandwidth) {
-			bandwidthJob = serviceScope.launch { bandwidthLoop() }
-		}
-	}
-
-	/**
-	 * (Re)arms the 2 s foreground-app poll. Turning the feature off, emptying
-	 * the list or switching the screen off must go through here, otherwise the
-	 * loop either dies or keeps a suppressed bar suppressed forever.
-	 */
-	private fun scheduleForegroundPoll() {
-		foregroundJob?.cancel()
-		foregroundJob = null
-		val active = pollPlan.foreground
-		if (active && !UsageAccess.granted(this)) {
-			if (!usageHintLogged) {
-				usageHintLogged = true
-				Log.w(TAG, "Usage access not granted - app blacklist inactive")
-				LogStore.append(this, getString(R.string.log_usage_access_missing))
-			}
-			if (suppressed) setSuppressedState(false)
-			return
-		}
-		if (active) {
-			foregroundJob = serviceScope.launch { foregroundLoop() }
-		} else if (suppressed) {
-			setSuppressedState(false)
-		}
-	}
-
-	/** Alarm / calendar / connectivity poll; the screen-off cancel ends it. */
-	private suspend fun CoroutineScope.pollLoop() {
-		while (isActive && barState.screenOn) {
-			refreshPolled()
-			delay((prefs.updateIntervalSec.coerceIn(5, 60) * 1000).toLong())
-		}
-	}
-
-	/** 1 s bandwidth sampler; the loop dies with the screen or the toggle. */
-	private suspend fun CoroutineScope.bandwidthLoop() {
-		while (isActive && barState.screenOn && prefs.showBandwidth) {
-			updateBandwidth()
-			delay(1000L)
-		}
-	}
-
-	/**
-	 * (Re)arms the 2 s cellular refresh. The loop dies with the screen or the
-	 * "Mobile data" toggle; turning the toggle off must go through here so the
-	 * bar does not keep polling a radio it no longer draws.
-	 */
-	private fun scheduleMobile() {
-		mobileJob?.cancel()
-		mobileJob = null
-		if (pollPlan.mobile) {
-			mobileJob = serviceScope.launch { mobileLoop() }
-		}
-	}
-
-	/** 2 s cellular label / signal-level refresh; see [scheduleMobile]. */
-	private suspend fun CoroutineScope.mobileLoop() {
-		while (isActive && barState.screenOn && prefs.showMobileData) {
-			updateMobile()
-			delay(MOBILE_POLL_MS)
-		}
 	}
 
 	/** Refreshes only the cellular indicator, on the faster loop's own cadence. */
 	private suspend fun updateMobile() {
 		val m = indicators.readMobile(prefs)
 		barState = barState.copy(mobile = m.active, mobileType = m.type, signalLevel = m.level)
-	}
-
-	/** The2s poll only earns its keep while something could actually hide. */
-	private fun CoroutineScope.foregroundPollWanted(): Boolean = isActive && pollPlan.foreground
-
-	/** 2 s foreground-app poll; the loop dies with the feature or the screen. */
-	private suspend fun CoroutineScope.foregroundLoop() {
-		while (foregroundPollWanted()) {
-			updateSuppressed()
-			delay(FOREGROUND_POLL_MS)
-		}
-	}
-
-	/** Periodic burn-in shift; re-reads [OverlayPrefs.burnInMin] every cycle. */
-	private suspend fun CoroutineScope.burnInLoop() {
-		while (isActive && barState.screenOn && prefs.burnInMin > 0) {
-			delay((prefs.burnInMin.coerceIn(1, 30) * 60 * 1000).toLong())
-			if (!isActive) return
-			window.shiftForBurnIn()
-		}
 	}
 
 	/** Recomputes the suppression state from the app currently in front. */
