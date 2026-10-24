@@ -10,7 +10,7 @@ entry point - device identity, Shizuku status, Show / Hide - and the gear in
 its top bar opens Settings. Every Settings category is its own screen (stack
 navigation, back arrow), and Lock screen / Debug each hold two sub-screens.
 
-- **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications, Bluetooth, usage access and accessibility (re-openable from Settings > About).
+- **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications, Bluetooth, usage access and accessibility (re-openable from Settings > Debug).
 - **Show / hide from Home** -- Home opens with Show custom bar / Hide custom bar actions, no need to dig into Settings.
 - **Custom status bar overlay** -- a Compose bar with clock, date, battery, connectivity, notification and media widgets. Stays visible over the **lock screen** (toggleable) and shows over the system bar while it is hidden.
 - **Auto-start bar on boot** -- optional switch (Settings > General): brings the custom bar back after every reboot on its own, without Shizuku and independently of "Auto-hide after reboot".
@@ -26,6 +26,8 @@ navigation, back arrow), and Lock screen / Debug each hold two sub-screens.
 - **Boot auto-hide** -- a `BOOT_COMPLETED` receiver re-applies the hide commands on reboot (requires "Start on boot" enabled in Shizuku settings). Disable it with the "Auto-hide after reboot" switch (Settings > General).
 - **Debug device info** (Settings > Debug > Device info) -- manufacturer, model, Android / SDK, build type, app version and the active OEM config.
 - **Debug permissions board** (Settings > Debug > Permissions) -- every grant the app relies on (Shizuku, overlay, notification access, calendar, notifications, usage access, lock-screen accessibility) with an **allowed / blocked** status and a Grant shortcut.
+- **Debug hub extras** (Settings > Debug) -- copies the control API token and re-opens the setup checklist.
+- **About** (Settings > About) -- version and build type, source / issue / license links, credits and the privacy statement.
 - **Export / share logs** (Settings > Logs) -- copies the log to the clipboard, or shares it as a file (the last 500 timestamped lines are kept on disk, including boot-time output).
 - **Log panel** (Settings > Logs) -- shows the output of every command for debugging.
 - **Profiles** (Settings > Profiles) -- save the current settings as a named profile and switch between profiles in one tap. Each profile is a full snapshot of the overlay settings; the active profile is shown with a match state (up to date / modified), and an apply is only confirmed when the live settings have drifted from the applied snapshot. Renaming and deleting are per-row; names are trimmed and capped at 40 characters, and the list at 20 profiles.

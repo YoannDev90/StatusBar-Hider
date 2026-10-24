@@ -63,7 +63,7 @@ object DebugSection : SettingSection<OverlayPrefs>(
 	title = R.string.cat_debug,
 	subtitle = Subtitle.Res(R.string.cat_debug_sub),
 	group = SectionGroup.APP,
-	keywords = listOf("device", "permissions"),
+	keywords = listOf("device", "permissions", "token", "control", "tasker", "setup", "checklist"),
 	badge = { vm -> debugGrantBadge(vm) }
 )
 
@@ -121,7 +121,7 @@ object AboutSection : SettingSection<OverlayPrefs>(
 	title = R.string.cat_about,
 	subtitle = Subtitle.Res(R.string.cat_about_sub),
 	group = SectionGroup.APP,
-	keywords = listOf("token", "version", "setup")
+	keywords = listOf("version", "license", "github", "credits", "privacy", "changelog")
 )
 
 /**

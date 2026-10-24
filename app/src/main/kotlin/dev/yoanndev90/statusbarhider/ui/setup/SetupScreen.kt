@@ -43,7 +43,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingStatusRow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** First-run checklist; also reachable from Settings > About. */
+/** First-run checklist; also reachable from Settings > Debug. */
 @Composable
 fun SetupScreen(
 	vm: PrefsViewModel,

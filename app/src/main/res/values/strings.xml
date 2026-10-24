@@ -16,6 +16,7 @@
     <string name="section_custom_bar">Custom bar</string>
     <string name="section_app_group">App</string>
     <string name="section_widget_order">Widget order</string>
+    <string name="section_control_api">Control API</string>
 
     <!-- Settings navigation -->
     <string name="settings_title">Settings</string>
@@ -54,13 +55,13 @@
     <string name="cat_oem">Device / OEM</string>
     <string name="cat_oem_sub">Hide and restore the status bar</string>
     <string name="cat_debug">Debug</string>
-    <string name="cat_debug_sub">Device info, permissions and diff</string>
+    <string name="cat_debug_sub">Device info, permissions, control API</string>
     <string name="cat_logs">Logs</string>
     <string name="cat_logs_sub">Command output</string>
     <string name="cat_backup">Backup</string>
     <string name="cat_backup_sub">Export and import settings</string>
     <string name="cat_about">About</string>
-    <string name="cat_about_sub">Version, token, setup</string>
+    <string name="cat_about_sub">Version, links and credits</string>
 
     <!-- Sub-screens -->
     <string name="lock_sub_appearance">Layout</string>
@@ -128,6 +129,13 @@
 
     <!-- About -->
     <string name="about_version">Version %1$s (%2$s)</string>
+    <string name="about_group_links">Project</string>
+    <string name="about_source_code">Source code</string>
+    <string name="about_report_issue">Report an issue</string>
+    <string name="about_license">License (MIT)</string>
+    <string name="about_group_credits">Credits</string>
+    <string name="about_credits">Hide / restore commands run through Shizuku. Inspired by Essentials by Sameera Perera and SystemUI Tuner by Zachary Wander.</string>
+    <string name="about_privacy">No internet permission, no analytics, no ads. The control API token never leaves the device unless you copy it yourself.</string>
 
     <!-- Buttons -->
     <string name="action_authorize_shizuku">Authorize Shizuku</string>

@@ -99,8 +99,8 @@ fun MainScreen() {
 	val currentRoute = backStackEntry?.destination?.route
 	val isSettingsRoot = currentRoute == Routes.SETTINGS
 
-	// Closing a reopened checklist pops back to About; on first launch back
-	// exits the app because the handler is disabled.
+	// Closing a reopened checklist pops back to Debug (where the reopen entry
+	// lives); on first launch back exits the app because the handler is disabled.
 	BackHandler(enabled = setupOpen && setupReopened) {
 		setupOpen = false
 		setupReopened = false
@@ -295,12 +295,12 @@ private fun AppNavHost(
 		composable(Routes.LOCK_BEHAVIOR) { SettingSectionScreen(statusViewModel, LockBehaviorSection) }
 		composable(Routes.PROFILES) { ProfilesScreen() }
 		composable(Routes.OEM) { OemScreen(statusViewModel) }
-		composable(Routes.DEBUG) { DebugHubScreen(navController::navigate) }
+		composable(Routes.DEBUG) { DebugHubScreen(navController::navigate, onOpenSetup) }
 		composable(Routes.DEBUG_DIFF) { DebugDiffScreen(statusViewModel, navController::navigate) }
 		composable(Routes.DEBUG_INFO) { DebugInfoScreen(statusViewModel) }
 		composable(Routes.DEBUG_PERMISSIONS) { DebugPermissionsScreen(statusViewModel) }
 		composable(Routes.LOGS) { LogsScreen(logsViewModel) }
 		composable(Routes.BACKUP) { BackupScreen(statusViewModel) }
-		composable(Routes.ABOUT) { AboutScreen(statusViewModel, onOpenSetup) }
+		composable(Routes.ABOUT) { AboutScreen() }
 	}
 }

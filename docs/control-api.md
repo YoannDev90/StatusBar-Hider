@@ -3,7 +3,7 @@
 Receivers are exported but never registered as filters, so only **explicit**
 broadcasts (targeting the component) reach them -- the component name is
 required, an action alone delivers nothing. Every broadcast must also carry
-the install's **control token**: copy it from **Status > App > Copy control
+the install's **control token**: copy it from **Settings > Debug > Copy control
 API token**, then pass it as the string extra `token`. Without it the
 broadcast is dropped before dispatch (the rejection is written to logcat).
 
