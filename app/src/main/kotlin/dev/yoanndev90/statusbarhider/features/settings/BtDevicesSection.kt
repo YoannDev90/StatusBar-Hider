@@ -1,5 +1,4 @@
 package dev.yoanndev90.statusbarhider.features.settings
-
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -29,12 +28,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.overlay.BtDeviceKind
-import dev.yoanndev90.statusbarhider.overlay.BtDevicePreview
-import dev.yoanndev90.statusbarhider.overlay.BtSource
-import dev.yoanndev90.statusbarhider.overlay.SystemIndicators
-import dev.yoanndev90.statusbarhider.overlay.connectedBluetoothPreviews
-import dev.yoanndev90.statusbarhider.overlay.kindFromOverrideName
+import dev.yoanndev90.statusbarhider.overlay.system.BtDeviceKind
+import dev.yoanndev90.statusbarhider.overlay.system.BtDevicePreview
+import dev.yoanndev90.statusbarhider.overlay.system.BtSource
+import dev.yoanndev90.statusbarhider.overlay.system.SystemIndicators
+import dev.yoanndev90.statusbarhider.overlay.system.connectedBluetoothPreviews
+import dev.yoanndev90.statusbarhider.overlay.system.kindFromOverrideName
 import dev.yoanndev90.statusbarhider.ui.components.SettingHint
 import dev.yoanndev90.statusbarhider.ui.components.SettingLabelRow
 import kotlinx.coroutines.Dispatchers

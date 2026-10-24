@@ -1,6 +1,6 @@
 package dev.yoanndev90.statusbarhider.overlay
-
 import android.app.Service
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -33,6 +33,16 @@ import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.model.IndicatorFormats
 import dev.yoanndev90.statusbarhider.overlay.model.OverlayNotifIcon
 import dev.yoanndev90.statusbarhider.overlay.model.OverlayProgress
+import dev.yoanndev90.statusbarhider.overlay.system.MediaSessions
+import dev.yoanndev90.statusbarhider.overlay.system.NotifIcons
+import dev.yoanndev90.statusbarhider.overlay.system.SystemIndicators
+import dev.yoanndev90.statusbarhider.overlay.system.networkFlow
+import dev.yoanndev90.statusbarhider.overlay.system.readConnectivity
+import dev.yoanndev90.statusbarhider.overlay.system.readMobile
+import dev.yoanndev90.statusbarhider.overlay.system.receiverFlow
+import dev.yoanndev90.statusbarhider.overlay.system.runSafely
+import dev.yoanndev90.statusbarhider.overlay.system.systemSettingsFlow
+import dev.yoanndev90.statusbarhider.overlay.system.torchFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -113,6 +123,9 @@ class StatusBarOverlayService : Service() {
 	private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 	private val indicators = SystemIndicators(this)
 	private val mediaSessions = MediaSessions(this, serviceScope)
+
+	/** Identity of the notification-listener service, for the media-session listener. */
+	private fun notifListenerComponent() = ComponentName(this, NotifListenerService::class.java)
 
 	private var prefs by mutableStateOf(OverlayPrefs())
 	private var barState by SharedBar.barState
@@ -252,7 +265,7 @@ class StatusBarOverlayService : Service() {
 		prefs = next
 		// Re-evaluates flags *and* the lock-screen teardown below.
 		syncWindowAttachment()
-		if (next.showMedia) mediaSessions.ensure()
+		if (next.showMedia) mediaSessions.ensure(notifListenerComponent())
 		scheduleBandwidth()
 		scheduleBurnIn()
 		scheduleForegroundPoll()
@@ -649,7 +662,7 @@ class StatusBarOverlayService : Service() {
 			barState = barState.copy(mediaText = null)
 			return
 		}
-		mediaSessions.ensure()
+		mediaSessions.ensure(notifListenerComponent())
 		barState = barState.copy(mediaText = mediaSessions.nowPlaying.value)
 	}
 

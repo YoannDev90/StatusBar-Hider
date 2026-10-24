@@ -1,5 +1,4 @@
 package dev.yoanndev90.statusbarhider.overlay
-
 import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Build
@@ -17,6 +16,8 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.model.CameraGeometry
+import dev.yoanndev90.statusbarhider.overlay.system.InsetsUtils
+import dev.yoanndev90.statusbarhider.overlay.system.runSafely
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -1,4 +1,4 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.system
 
 import android.content.ComponentName
 import android.content.Context
@@ -56,16 +56,19 @@ internal class MediaSessions(
 			scope.launch { sync(sessions) }
 		}
 
-	/** Registers the session listener; a no-op until notification access is granted. */
-	fun ensure() {
+	/**
+	 * Registers the session listener; a no-op until notification access is granted.
+	 * The listener [component] is passed in so this layer stays clear of the
+	 * concrete service class.
+	 */
+	fun ensure(component: ComponentName) {
 		if (registered) return
 		runSafely(context) {
 			val msm = context.getSystemService(MediaSessionManager::class.java) ?: return
-			val cn = ComponentName(context, NotifListenerService::class.java)
-			msm.addOnActiveSessionsChangedListener(listener, cn)
+			msm.addOnActiveSessionsChangedListener(listener, component)
 			registered = true
 			manager = msm
-			sync(msm.getActiveSessions(cn))
+			sync(msm.getActiveSessions(component))
 		}
 	}
 

@@ -1,5 +1,7 @@
 package dev.yoanndev90.statusbarhider.overlay
 
+import dev.yoanndev90.statusbarhider.overlay.model.CameraAnchor
+import dev.yoanndev90.statusbarhider.overlay.model.CameraGeometry
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -1,5 +1,4 @@
 package dev.yoanndev90.statusbarhider.overlay
-
 import android.app.Notification
 import android.content.ComponentName
 import android.content.pm.PackageManager
@@ -9,6 +8,7 @@ import android.service.notification.StatusBarNotification
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.overlay.system.NotifIcons
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

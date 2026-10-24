@@ -2,6 +2,7 @@ package dev.yoanndev90.statusbarhider.overlay
 
 import android.bluetooth.BluetoothClass
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.overlay.system.btDeviceIcon
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
