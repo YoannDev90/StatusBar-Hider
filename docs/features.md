@@ -24,8 +24,8 @@ navigation, back arrow), and Lock screen / Debug each hold two sub-screens.
 - **Auto OEM detection** (Settings > Device / OEM) -- matches system properties against available JSON configs on first launch; override or re-detect from the UI.
 - **Untested badge** -- configs that were only researched online are labelled `untested` on Home; their troubleshooting notes are printed in the log before the commands run.
 - **Boot auto-hide** -- a `BOOT_COMPLETED` receiver re-applies the hide commands on reboot (requires "Start on boot" enabled in Shizuku settings). Disable it with the "Auto-hide after reboot" switch (Settings > General).
-- **Debug device info** (Settings > Debug > Device info) -- manufacturer, model, Android / SDK, build type, app version and the active OEM config.
-- **Debug permissions board** (Settings > Debug > Permissions) -- every grant the app relies on (Shizuku, overlay, notification access, calendar, notifications, usage access, lock-screen accessibility) with an **allowed / blocked** status and a Grant shortcut.
+- **Debug device info** (Settings > Debug > Device info) -- manufacturer, model, Android + security patch, SDK, display / density, locale, HyperOS build (Xiaomi), build type, app version + version code, Shizuku version, sister build, the active OEM config (flagged when untested) and the custom-bar state. Every row taps to copy its `label: value` line, and **Copy all** puts the whole block on the clipboard for a bug report.
+- **Debug permissions board** (Settings > Debug > Permissions) -- every grant the app relies on (Shizuku, overlay, notification access, calendar, notifications, Bluetooth, usage access, lock-screen accessibility) with an **allowed / blocked** status and a Grant shortcut.
 - **Debug hub extras** (Settings > Debug) -- copies the control API token and re-opens the setup checklist.
 - **About** (Settings > About) -- version and build type, source / issue / license links, credits and the privacy statement.
 - **Export / share logs** (Settings > Logs) -- copies the log to the clipboard, or shares it as a file (the last 500 timestamped lines are kept on disk, including boot-time output).

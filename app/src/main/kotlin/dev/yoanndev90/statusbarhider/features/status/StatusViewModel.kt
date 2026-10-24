@@ -1,8 +1,11 @@
 package dev.yoanndev90.statusbarhider.features.status
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager.NameNotFoundException
 import android.net.Uri
+import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.viewModelScope
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.backup.SettingsBackup
@@ -25,6 +28,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private const val SHIZUKU_PACKAGE = "moe.shizuku.privileged.api"
 
 /** Device identity + Shizuku authorization, everything the Status tab shows above its cards. */
 data class StatusUiState(
@@ -50,13 +55,28 @@ class StatusViewModel(
 	/** Installed name of the other build (release <-> debug), or null when only this build is installed. */
 	val sisterLabel: StateFlow<String?> = _sisterLabel.asStateFlow()
 
+	private val _shizukuVersion = MutableStateFlow<String?>(null)
+
+	/** Installed Shizuku version ("13.5.4 (62)"), or null when Shizuku is not installed. */
+	val shizukuVersion: StateFlow<String?> = _shizukuVersion.asStateFlow()
+
 	init {
 		// Package visibility costs a binder round-trip, so detection stays off
 		// the main thread; the row simply appears once it answers.
 		viewModelScope.launch {
 			_sisterLabel.value = withContext(Dispatchers.IO) { SisterBuild.installedLabel(application) }
+			_shizukuVersion.value = withContext(Dispatchers.IO) { shizukuVersionLabel(application) }
 		}
 	}
+
+	/** Computed once per session, like the sister label; the PM caches the answer. */
+	private fun shizukuVersionLabel(context: Context): String? =
+		try {
+			val info = context.packageManager.getPackageInfo(SHIZUKU_PACKAGE, 0)
+			"${info.versionName} (${PackageInfoCompat.getLongVersionCode(info)})"
+		} catch (ignore: NameNotFoundException) {
+			null
+		}
 
 	val uiState: StateFlow<StatusUiState> =
 		combine(shizukuRepo.state, oemRepo.config) { shizuku, oem ->

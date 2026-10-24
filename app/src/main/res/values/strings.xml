@@ -114,6 +114,17 @@
     <string name="debug_oem_config">OEM config</string>
     <string name="debug_build_debug">debug</string>
     <string name="debug_build_release">release</string>
+    <string name="debug_security_patch">Security patch</string>
+    <string name="debug_display">Display</string>
+    <string name="debug_locale">Locale</string>
+    <string name="debug_miui_build">HyperOS / MIUI build</string>
+    <string name="debug_shizuku_version">Shizuku</string>
+    <string name="debug_sister_build">Sister build</string>
+    <string name="debug_custom_bar">Custom bar</string>
+    <string name="debug_untested">untested</string>
+    <string name="debug_not_installed">not installed</string>
+    <string name="debug_bar_enabled">enabled</string>
+    <string name="debug_bar_disabled">disabled</string>
 
     <!-- Debug: permissions -->
     <string name="perm_status_allowed">allowed</string>
@@ -171,6 +182,7 @@
     <string name="dialog_import_sister_title">Import from other build</string>
     <string name="dialog_import_sister">Replace the current settings with the ones saved by %1$s?</string>
     <string name="action_copy_control_token">Copy control API token</string>
+    <string name="action_copy_all">Copy all</string>
     <string name="hint_control_token">Required by every control broadcast (adb, Tasker) as the string extra \"token\". It never leaves the device on its own: the settings export does not contain it.</string>
     <string name="toast_token_copied">Control token copied to the clipboard</string>
 
@@ -313,6 +325,7 @@
     <string name="toast_calendar_permission_denied">Calendar permission denied</string>
     <string name="toast_grant_overlay_permission">Grant overlay permission first</string>
     <string name="toast_logs_copied">Logs copied to clipboard</string>
+    <string name="toast_info_copied">Copied</string>
     <string name="toast_cannot_share_logs">Cannot share logs</string>
     <string name="toast_export_failed">Cannot export settings</string>
     <string name="toast_import_failed">Cannot import these settings</string>

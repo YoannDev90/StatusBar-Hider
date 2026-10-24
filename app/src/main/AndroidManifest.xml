@@ -44,6 +44,8 @@
         </intent>
         <package android:name="dev.yoanndev90.statusbarhider" />
         <package android:name="dev.yoanndev90.statusbarhider.debug" />
+        <!-- Shizuku version read for Debug > Device info (package visibility). -->
+        <package android:name="moe.shizuku.privileged.api" />
         <provider android:authorities="dev.yoanndev90.statusbarhider.settingsprovider" />
         <provider android:authorities="dev.yoanndev90.statusbarhider.debug.settingsprovider" />
     </queries>
