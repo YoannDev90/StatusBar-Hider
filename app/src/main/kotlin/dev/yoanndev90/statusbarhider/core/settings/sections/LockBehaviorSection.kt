@@ -1,12 +1,12 @@
 package dev.yoanndev90.statusbarhider.core.settings.sections
 
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.LockSpecs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 
 /**

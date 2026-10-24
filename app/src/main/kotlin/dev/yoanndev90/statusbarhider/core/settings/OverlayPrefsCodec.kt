@@ -1,8 +1,6 @@
 package dev.yoanndev90.statusbarhider.core.settings
 
 import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
-import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor

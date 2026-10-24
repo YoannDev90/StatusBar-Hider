@@ -1,6 +1,7 @@
 package dev.yoanndev90.statusbarhider.core.settings.sections
 
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
@@ -8,7 +9,6 @@ import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.settingRows
 import dev.yoanndev90.statusbarhider.core.settings.specs.ConnectivitySpecs
 import dev.yoanndev90.statusbarhider.features.settings.BtDevicesSection
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /**
  * Connectivity indicators: radios, radios-adjacent toggles, system states

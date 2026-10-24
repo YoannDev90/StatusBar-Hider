@@ -2,8 +2,6 @@ package dev.yoanndev90.statusbarhider.core.settings
 
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
-import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.descriptors.elementNames
 import org.junit.Assert.assertEquals

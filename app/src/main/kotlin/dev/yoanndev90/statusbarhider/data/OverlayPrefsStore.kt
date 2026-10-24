@@ -1,8 +1,8 @@
 package dev.yoanndev90.statusbarhider.data
 
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingStore
 import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.coroutines.flow.StateFlow
 
 /**

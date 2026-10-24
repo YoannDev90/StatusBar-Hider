@@ -1,7 +1,7 @@
 package dev.yoanndev90.statusbarhider.core.settings.specs
 
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /**
  * The overlay settings file as one registry: every section's specs plus the

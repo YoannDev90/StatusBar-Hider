@@ -9,7 +9,6 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.GeneralSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.cardIndexForKey
 import dev.yoanndev90.statusbarhider.ui.components.cardsOf
 import org.junit.Assert.assertEquals

@@ -8,6 +8,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshotFlow
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

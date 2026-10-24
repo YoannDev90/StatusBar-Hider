@@ -7,7 +7,7 @@ import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.profiles.Profile
 import dev.yoanndev90.statusbarhider.core.profiles.ProfilesState
 import dev.yoanndev90.statusbarhider.core.profiles.ProfilesStore
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

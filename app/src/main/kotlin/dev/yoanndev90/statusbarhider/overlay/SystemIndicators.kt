@@ -20,6 +20,7 @@ import android.telephony.TelephonyManager
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat

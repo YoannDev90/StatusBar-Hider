@@ -5,12 +5,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import dev.yoanndev90.statusbarhider.core.settings.EnumSpec
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
 import dev.yoanndev90.statusbarhider.core.settings.SettingsRegistry
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /**
  * A section with its strings resolved once, search haystack included. The

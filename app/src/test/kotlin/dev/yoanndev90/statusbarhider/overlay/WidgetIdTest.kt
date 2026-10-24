@@ -1,6 +1,7 @@
 package dev.yoanndev90.statusbarhider.overlay
 
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.WidgetId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

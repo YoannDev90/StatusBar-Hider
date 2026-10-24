@@ -1,12 +1,9 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.core.settings
 
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import dev.yoanndev90.statusbarhider.core.log.LogStore
-import dev.yoanndev90.statusbarhider.core.settings.CsvListSerializer
-import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefsCodec
-import dev.yoanndev90.statusbarhider.core.settings.WidgetOrderSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement

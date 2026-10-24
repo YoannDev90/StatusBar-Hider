@@ -1,9 +1,5 @@
 package dev.yoanndev90.statusbarhider.core.settings
 
-import dev.yoanndev90.statusbarhider.overlay.BarFontWeight
-import dev.yoanndev90.statusbarhider.overlay.OverlayBackground
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
-import dev.yoanndev90.statusbarhider.overlay.WidgetId
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject

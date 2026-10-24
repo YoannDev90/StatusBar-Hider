@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.os.Build
 import android.view.View
 import android.view.WindowManager
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 
 /**
  * Notch (display cutout) helpers for the overlay bar.

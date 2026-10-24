@@ -57,6 +57,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.settings.BarFontWeight
+import dev.yoanndev90.statusbarhider.core.settings.LockScreenMode
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
+import dev.yoanndev90.statusbarhider.core.settings.WidgetId
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date

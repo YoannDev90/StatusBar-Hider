@@ -1,6 +1,6 @@
 package dev.yoanndev90.statusbarhider.core.profiles
 
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

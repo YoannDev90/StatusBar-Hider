@@ -1,7 +1,7 @@
 package dev.yoanndev90.statusbarhider.data
 
 import android.content.Context
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

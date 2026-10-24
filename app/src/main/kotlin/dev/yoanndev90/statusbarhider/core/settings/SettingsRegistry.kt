@@ -21,7 +21,6 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.OemSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ProfilesSection
 import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /**
  * Every setting of every file, described once. UI, backup policy and resets

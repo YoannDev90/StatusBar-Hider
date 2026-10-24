@@ -6,9 +6,9 @@ import android.provider.Settings
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
-import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
+import dev.yoanndev90.statusbarhider.overlay.OverlayController
 
 /**
  * Single entry point behind the external control API (Tasker, `am broadcast`,

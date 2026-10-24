@@ -6,9 +6,9 @@ import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.profiles.Profile
 import dev.yoanndev90.statusbarhider.core.profiles.ProfilesState
 import dev.yoanndev90.statusbarhider.core.profiles.ProfilesStore
-import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.ProfilesRepository
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
+import dev.yoanndev90.statusbarhider.overlay.OverlayController
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

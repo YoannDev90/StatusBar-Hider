@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch

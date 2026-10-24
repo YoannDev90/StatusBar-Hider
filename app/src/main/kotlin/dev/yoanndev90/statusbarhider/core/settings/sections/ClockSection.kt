@@ -25,13 +25,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.ClockSpecs
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
 import java.text.SimpleDateFormat
 import java.util.Date

@@ -8,15 +8,15 @@ import androidx.lifecycle.AndroidViewModel
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.SettingsRegistry
-import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsStore
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.overlay.LockScreenOverlayService
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
+import dev.yoanndev90.statusbarhider.overlay.OverlayController
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow

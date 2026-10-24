@@ -5,12 +5,11 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.content.FileProvider
 import dev.yoanndev90.statusbarhider.core.oem.OemConfig
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefsCodec
 import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.OemStore
-import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -158,15 +157,18 @@ object SettingsBackup {
 	}
 
 	/**
-	 * Applies a backup: the OEM pick first (the overlay may need the right
-	 * geometry at start), then the whole prefs swap via
-	 * [OverlayController.replaceAll], which also starts / stops the service
-	 * and refreshes the widgets and tiles.
+	 * Applies a backup's OEM pick (the overlay may need the right geometry at
+	 * start), then returns the parsed prefs for the caller to swap in.
+	 *
+	 * The prefs swap itself — starting / stopping the service, refreshing the
+	 * widgets and tiles — is orchestration above this layer: the caller runs
+	 * it through `OverlayController.replaceAll`, the one path that keeps the
+	 * service and the stored state in lockstep.
 	 */
 	fun importSettings(
 		context: Context,
 		raw: String
-	) {
+	): OverlayPrefs {
 		val app = context.applicationContext
 		val backup = parse(raw)
 		if (backup.oemId.isNotEmpty()) {
@@ -174,6 +176,6 @@ object SettingsBackup {
 		} else {
 			OemRepository.getInstance(app).refresh()
 		}
-		OverlayController.replaceAll(app, backup.prefs)
+		return backup.prefs
 	}
 }

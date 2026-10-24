@@ -8,9 +8,9 @@ import android.util.Log
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.OemRepository
-import dev.yoanndev90.statusbarhider.data.OverlayController
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
+import dev.yoanndev90.statusbarhider.overlay.OverlayController
 import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

@@ -20,13 +20,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.PendingFocus
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
 import dev.yoanndev90.statusbarhider.core.settings.SettingsRegistry
 import dev.yoanndev90.statusbarhider.core.settings.specs
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen

@@ -1,8 +1,8 @@
 package dev.yoanndev90.statusbarhider.core.backup
 
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefsCodec
 import dev.yoanndev90.statusbarhider.core.settings.specs.OverlaySpecs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

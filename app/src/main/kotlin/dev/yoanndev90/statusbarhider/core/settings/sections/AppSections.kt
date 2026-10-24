@@ -13,12 +13,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.permission.PermissionAccess
 import dev.yoanndev90.statusbarhider.core.permission.PermissionGrants
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

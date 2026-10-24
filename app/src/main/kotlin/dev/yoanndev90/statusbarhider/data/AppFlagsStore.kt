@@ -8,7 +8,7 @@ import java.security.SecureRandom
 
 /**
  * App-level flags, stored next to the OEM pick and the hide state but kept
- * out of [dev.yoanndev90.statusbarhider.overlay.OverlayPrefs]: they are not
+ * out of [dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs]: they are not
  * settings of the custom bar and must survive a settings import.
  */
 data class AppFlags(

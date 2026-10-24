@@ -6,13 +6,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.PendingFocus
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.specs
 import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /**
  * Hosts one overlay section: observes the live prefs, consumes the one-shot

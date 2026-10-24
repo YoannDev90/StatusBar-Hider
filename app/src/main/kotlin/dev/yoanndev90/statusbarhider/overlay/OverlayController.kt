@@ -1,9 +1,9 @@
-package dev.yoanndev90.statusbarhider.data
+package dev.yoanndev90.statusbarhider.overlay
 
 import android.content.Context
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
+import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
-import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
 
 /**

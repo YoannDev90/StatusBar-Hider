@@ -4,12 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.CutoutSpecs
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.ColorSwatch
 import dev.yoanndev90.statusbarhider.ui.components.ColorSwatchRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingLabelRow

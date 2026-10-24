@@ -40,6 +40,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
@@ -47,7 +48,6 @@ import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.BarSpecs
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingHint
 import kotlinx.coroutines.Dispatchers

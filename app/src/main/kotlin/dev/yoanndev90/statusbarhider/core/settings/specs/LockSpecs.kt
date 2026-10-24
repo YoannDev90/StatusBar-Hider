@@ -3,9 +3,9 @@ package dev.yoanndev90.statusbarhider.core.settings.specs
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.BoolSpec
 import dev.yoanndev90.statusbarhider.core.settings.EnumSpec
+import dev.yoanndev90.statusbarhider.core.settings.LockScreenMode
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
-import dev.yoanndev90.statusbarhider.overlay.LockScreenMode
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /** What the bar shows while the keyguard is up. */
 object LockSpecs {

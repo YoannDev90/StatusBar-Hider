@@ -3,8 +3,8 @@ package dev.yoanndev90.statusbarhider.core.settings.specs
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.BoolSpec
 import dev.yoanndev90.statusbarhider.core.settings.IntSpec
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
 
 /** Bar-wide behaviour: touch, boot handling, refresh cadence, burn-in shift. */
 object GeneralSpecs {

@@ -3,9 +3,9 @@ package dev.yoanndev90.statusbarhider.core.settings.specs
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.BoolSpec
 import dev.yoanndev90.statusbarhider.core.settings.ListSpec
+import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingSpec
-import dev.yoanndev90.statusbarhider.overlay.OverlayPrefs
-import dev.yoanndev90.statusbarhider.overlay.WidgetId
+import dev.yoanndev90.statusbarhider.core.settings.WidgetId
 
 /**
  * The bar as a whole: its on/off state, the app blacklist and the widget

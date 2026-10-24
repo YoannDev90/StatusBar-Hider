@@ -18,6 +18,7 @@ import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
+import dev.yoanndev90.statusbarhider.overlay.OverlayController
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -166,7 +167,7 @@ class StatusViewModel(
 						.openInputStream(uri)
 						?.let { stream -> SettingsBackup.readCapped(stream) }
 						?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
-				SettingsBackup.importSettings(getApplication(), raw)
+				OverlayController.replaceAll(getApplication(), SettingsBackup.importSettings(getApplication(), raw))
 				log(R.string.log_settings_imported)
 				true
 			} catch (e: CancellationException) {
@@ -204,7 +205,7 @@ class StatusViewModel(
 		withContext(Dispatchers.IO) {
 			try {
 				val raw = SettingsProvider.fetchSisterBlob(getApplication())
-				SettingsBackup.importSettings(getApplication(), raw)
+				OverlayController.replaceAll(getApplication(), SettingsBackup.importSettings(getApplication(), raw))
 				log(R.string.log_settings_imported)
 				true
 			} catch (e: CancellationException) {
