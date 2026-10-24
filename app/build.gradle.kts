@@ -14,6 +14,37 @@ val keystoreProps = rootProject
 	.takeIf { it.exists() }
 	?.let { file -> Properties().apply { file.inputStream().use { load(it) } } }
 
+// Local version derivation, same scheme as the release workflow: the nearest
+// tag plus the commits on top of it (v1.2.0-46-gf8af045 ->
+// 1002046 / "1.2.0-dev.46+gf8af045"), so a local release installs over a CI
+// build of the same tag and still tells itself apart. Queried through
+// providers.exec, so the configuration cache recomputes it on a new commit.
+// No git or no vX.Y.Z tag falls back to the placeholder pair.
+val gitVersion: Pair<Int, String> =
+	runCatching {
+		providers
+			.exec {
+				commandLine("git", "describe", "--tags", "--long")
+			}.standardOutput.asText
+			.get()
+			.trim()
+	}.getOrNull()
+		?.let { describe ->
+			Regex("""^v(\d+)\.(\d+)\.(\d+)-(\d+)-g([0-9a-f]+)$""").find(describe)?.let { match ->
+				val (major, minor, patch, commits, sha) = match.destructured
+				val base = major.toInt() * 1_000_000 + minor.toInt() * 1_000 + patch.toInt()
+				// One bump per commit; a fresh tag jumps to its own base again.
+				val code = base + commits.toInt()
+				val name =
+					if (commits == "0") {
+						"$major.$minor.$patch"
+					} else {
+						"$major.$minor.$patch-dev.$commits+$sha"
+					}
+				code to name
+			}
+		} ?: (1 to "1.0")
+
 android {
 	namespace = "dev.yoanndev90.statusbarhider"
 	compileSdk = 37
@@ -22,15 +53,16 @@ android {
 		applicationId = "dev.yoanndev90.statusbarhider"
 		minSdk = 26
 		targetSdk = 37
-		// The release workflow derives these from the pushed tag (v1.2.3 ->
-		// 1002003 / "1.2.3") so every build can be told apart; local builds
-		// fall back to the placeholders below. A supplied but malformed value
+		// The release workflow overrides both from the pushed tag (v1.2.3 ->
+		// 1002003 / "1.2.3"); local builds derive the same scheme from git
+		// (gitVersion above) so every build stays tellable apart and a local
+		// release installs over a CI build. A supplied but malformed value
 		// fails the build instead of silently shipping versionCode 1.
 		versionCode =
 			(findProperty("versionCode") as String?)?.let { raw ->
 				raw.toIntOrNull()?.takeIf { it > 0 } ?: error("versionCode must be a positive integer, got '$raw'")
-			} ?: 1
-		versionName = (findProperty("versionName") as String?) ?: "1.0"
+			} ?: gitVersion.first
+		versionName = (findProperty("versionName") as String?) ?: gitVersion.second
 	}
 
 	signingConfigs {
