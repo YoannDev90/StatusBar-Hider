@@ -24,6 +24,7 @@ object Routes {
 	const val PROFILES = "settings/profiles"
 	const val OEM = "settings/oem"
 	const val DEBUG = "settings/debug"
+	const val DEBUG_DIFF = "settings/debug/diff"
 	const val DEBUG_INFO = "settings/debug/info"
 	const val DEBUG_PERMISSIONS = "settings/debug/permissions"
 	const val LOGS = "settings/logs"

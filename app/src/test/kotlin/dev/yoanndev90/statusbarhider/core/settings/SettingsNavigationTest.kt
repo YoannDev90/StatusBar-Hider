@@ -9,6 +9,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
+import dev.yoanndev90.statusbarhider.core.settings.sections.DebugDiffSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.DebugInfoSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.DebugPermissionsSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.DebugSection
@@ -52,6 +53,7 @@ class SettingsNavigationTest {
 			Routes.PROFILES to ProfilesSection,
 			Routes.OEM to OemSection,
 			Routes.DEBUG to DebugSection,
+			Routes.DEBUG_DIFF to DebugDiffSection,
 			Routes.DEBUG_INFO to DebugInfoSection,
 			Routes.DEBUG_PERMISSIONS to DebugPermissionsSection,
 			Routes.LOGS to LogsSection,
@@ -86,7 +88,7 @@ class SettingsNavigationTest {
 	@Test
 	fun `only sub-screens are unlisted`() {
 		assertEquals(
-			setOf("lock/appearance", "lock/behavior", "debug/info", "debug/permissions"),
+			setOf("lock/appearance", "lock/behavior", "debug/info", "debug/permissions", "debug/diff"),
 			SettingsRegistry.sections
 				.filterNot { it.listed }
 				.map { it.id }

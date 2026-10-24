@@ -56,6 +56,7 @@ import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
 import dev.yoanndev90.statusbarhider.features.logs.LogsViewModel
 import dev.yoanndev90.statusbarhider.features.settings.AboutScreen
 import dev.yoanndev90.statusbarhider.features.settings.BackupScreen
+import dev.yoanndev90.statusbarhider.features.settings.DebugDiffScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugHubScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugInfoScreen
 import dev.yoanndev90.statusbarhider.features.settings.DebugPermissionsScreen
@@ -290,6 +291,7 @@ private fun AppNavHost(
 		composable(Routes.PROFILES) { ProfilesScreen() }
 		composable(Routes.OEM) { OemScreen(statusViewModel) }
 		composable(Routes.DEBUG) { DebugHubScreen(navController::navigate) }
+		composable(Routes.DEBUG_DIFF) { DebugDiffScreen(statusViewModel) }
 		composable(Routes.DEBUG_INFO) { DebugInfoScreen(statusViewModel) }
 		composable(Routes.DEBUG_PERMISSIONS) { DebugPermissionsScreen(statusViewModel) }
 		composable(Routes.LOGS) { LogsScreen(logsViewModel) }

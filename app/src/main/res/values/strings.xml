@@ -57,7 +57,7 @@
     <string name="cat_oem">Device / OEM</string>
     <string name="cat_oem_sub">Hide and restore the status bar</string>
     <string name="cat_debug">Debug</string>
-    <string name="cat_debug_sub">Device info and permissions</string>
+    <string name="cat_debug_sub">Device info, permissions and diff</string>
     <string name="cat_logs">Logs</string>
     <string name="cat_logs_sub">Command output</string>
     <string name="cat_backup">Backup</string>
@@ -74,6 +74,9 @@
     <string name="debug_sub_info_sub">Manufacturer, model, build</string>
     <string name="debug_sub_permissions">Permissions</string>
     <string name="debug_sub_permissions_sub">Allowed and blocked grants</string>
+    <string name="debug_sub_diff">Modified settings</string>
+    <string name="debug_sub_diff_sub">Settings away from their default</string>
+    <string name="debug_diff_empty">Every setting is at its default value.</string>
 
     <!-- Profiles -->
     <string name="profile_active">Active profile</string>

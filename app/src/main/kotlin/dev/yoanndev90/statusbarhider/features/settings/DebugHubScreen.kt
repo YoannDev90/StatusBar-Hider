@@ -7,7 +7,7 @@ import dev.yoanndev90.statusbarhider.ui.components.SettingSubRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
 import dev.yoanndev90.statusbarhider.ui.shell.Routes
 
-/** Debug hub: device info and the permission status board. */
+/** Debug hub: device info, the permission status board and the settings diff. */
 @Composable
 fun DebugHubScreen(onNavigate: (String) -> Unit) {
 	SettingsScreen {
@@ -15,6 +15,7 @@ fun DebugHubScreen(onNavigate: (String) -> Unit) {
 			SettingGroup {
 				SettingSubRow(R.drawable.ic_info, R.string.debug_sub_info) { onNavigate(Routes.DEBUG_INFO) }
 				SettingSubRow(R.drawable.ic_check_circle, R.string.debug_sub_permissions) { onNavigate(Routes.DEBUG_PERMISSIONS) }
+				SettingSubRow(R.drawable.ic_query_stats, R.string.debug_sub_diff) { onNavigate(Routes.DEBUG_DIFF) }
 			}
 		}
 	}

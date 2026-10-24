@@ -87,6 +87,16 @@ object DebugPermissionsSection : SettingSection<OverlayPrefs>(
 	listed = false
 )
 
+object DebugDiffSection : SettingSection<OverlayPrefs>(
+	id = "debug/diff",
+	icon = R.drawable.ic_query_stats,
+	title = R.string.debug_sub_diff,
+	subtitle = Subtitle.Res(R.string.debug_sub_diff_sub),
+	group = SectionGroup.APP,
+	keywords = listOf("modified", "default", "reset", "diff", "custom", "changed"),
+	listed = false
+)
+
 object LogsSection : SettingSection<OverlayPrefs>(
 	id = "logs",
 	icon = R.drawable.ic_nav_log,

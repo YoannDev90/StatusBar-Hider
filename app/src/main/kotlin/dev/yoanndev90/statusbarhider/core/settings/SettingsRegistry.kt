@@ -7,6 +7,7 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.BatterySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ClockSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ConnectivitySection
 import dev.yoanndev90.statusbarhider.core.settings.sections.CutoutSection
+import dev.yoanndev90.statusbarhider.core.settings.sections.DebugDiffSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.DebugInfoSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.DebugPermissionsSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.DebugSection
@@ -58,6 +59,7 @@ object SettingsRegistry {
 			DebugSection,
 			DebugInfoSection,
 			DebugPermissionsSection,
+			DebugDiffSection,
 			LogsSection,
 			BackupSection,
 			AboutSection
