@@ -13,9 +13,17 @@
 | `mise run logs`           | Live log TUI (logstream)         |
 | `mise run uninstall`      | Uninstall the app from device    |
 
-Building needs a **JDK 21** and an **Android SDK** (`ANDROID_HOME`) with the
+Building needs an **Android SDK** (`ANDROID_HOME`) with the
 `platforms;android-37.0` and `build-tools;37.0.0` packages - neither is
 installed by mise.
+
+The **JDK 21** is: `mise.toml` pins `java = "21"`, so every `mise run` starts
+Gradle with an installed Temurin 21 on `JAVA_HOME`. The Gradle daemon is pinned
+to 21 as well (`gradle/gradle-daemon-jvm.properties`, `toolchainVendor=eclipse`
+= Temurin) because detekt 1.23.8's embedded compiler throws on newer JVMs. That
+daemon JVM is chosen before any build script runs, so Gradle **cannot download
+it**: a 21 has to be installed locally, which is exactly what the mise pin
+guarantees.
 
 ## Build without mise
 
@@ -24,7 +32,8 @@ installed by mise.
 ./gradlew testDebugUnitTest # unit tests (prefs, backup, control API)
 ```
 
-Requires `ANDROID_HOME` to be set and the following SDK components installed:
+Requires a **JDK 21** on `JAVA_HOME` (see the daemon pin above) and the
+following SDK components installed:
 
 - `platforms;android-37.0`
 - `build-tools;37.0.0` (or higher)

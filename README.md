@@ -51,11 +51,12 @@ lever underneath. The launcher label changed from *StatusBar Hider* to
 ## Quick start
 
 ```bash
-mise install        # dev tooling (pre-commit, ktlint)
+mise install        # dev tooling (JDK 21, pre-commit, ktlint)
 mise run install    # build + install the release APK
 ```
 
-You also need a **JDK 21** and an **Android SDK** (`ANDROID_HOME`).
+You also need an **Android SDK** (`ANDROID_HOME`). The **JDK 21** comes with
+`mise install` (`java = "21"` in `mise.toml`) — no separate install.
 
 Everything else — every `mise` task, plain Gradle, the release keystore,
 debug vs release builds — is in [Build & signing](docs/building.md).

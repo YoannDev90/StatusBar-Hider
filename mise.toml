@@ -1,11 +1,19 @@
 # Project tooling — `mise install` then `mise run build`.
-# Only git hooks and the formatter live here; the build itself needs a JDK 21
-# and an Android SDK (ANDROID_HOME), see README.md.
+# The Android SDK (ANDROID_HOME) is the one build requirement mise does not
+# cover, see README.md.
 # Versions are pinned, not "latest": everyone (and CI) must get the exact same
 # formatter output, otherwise ktlint disagreements turn into commit noise.
 [tools]
 pre-commit = "4.6.2"
 ktlint = "1.5.0"
+# The build's JDK: detekt 1.23.8 throws on 27, so the Gradle daemon is pinned
+# to 21 (see gradle/gradle-daemon-jvm.properties). Declaring it here puts an
+# installed 21 on JAVA_HOME for every `mise run`, which is how Gradle finds a
+# local match when it must start a *new* daemon: mise's install dir is not one
+# of Gradle's auto-detected locations, so a 27 on JAVA_HOME left daemon
+# resolution with no 21 and it tried to download one — which daemon-JVM
+# criteria cannot do (foojay only runs inside an already-started daemon).
+java = "21"
 
 [vars]
 APK = "app/build/outputs/apk/release/app-release.apk"
