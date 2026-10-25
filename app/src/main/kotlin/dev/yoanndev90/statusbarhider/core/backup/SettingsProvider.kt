@@ -13,10 +13,10 @@ import androidx.core.net.toUri
  *
  * exported=true cannot be avoided: the sibling is a separate package signed
  * with a different key, so `exported=false` and a signature permission would
- * both lock it out. The gate lives in [call]: only the sister package -
- * resolved by the system from the caller's UID, not forgeable - gets an
- * answer. The blob itself is the file export, which never carries the
- * control-API token (see [SettingsBackup.export]).
+ * both lock it out. The gate lives in [call]: only the sister package or the
+ * [SuccessorBuild] - both resolved by the system from the caller's UID, not
+ * forgeable - get an answer. The blob itself is the file export, which never
+ * carries the control-API token (see [SettingsBackup.export]).
  */
 class SettingsProvider : ContentProvider() {
 	override fun onCreate(): Boolean = true
@@ -27,8 +27,13 @@ class SettingsProvider : ContentProvider() {
 		extras: Bundle?
 	): Bundle {
 		val app = requireNotNull(context) { "provider called before attach" }
-		if (!SisterBuild.isSisterCall(app.packageName, callingPackage)) {
-			throw SecurityException("Only ${SisterBuild.sisterPackageOf(app.packageName)} may read the settings backup")
+		val mayRead =
+			SisterBuild.isSisterCall(app.packageName, callingPackage) ||
+				SuccessorBuild.isSuccessorCall(callingPackage)
+		if (!mayRead) {
+			throw SecurityException(
+				"Only ${SisterBuild.sisterPackageOf(app.packageName)} or ${SuccessorBuild.readableBy()} may read the settings backup"
+			)
 		}
 		require(method == METHOD_EXPORT) { "Unknown method '$method'" }
 		return Bundle().apply { putString(KEY_BLOB, SettingsBackup.export(app)) }
