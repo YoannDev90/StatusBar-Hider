@@ -1,16 +1,7 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.system
 
 import android.bluetooth.BluetoothClass
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.overlay.system.BtDeviceKind
-import dev.yoanndev90.statusbarhider.overlay.system.BtDeviceType
-import dev.yoanndev90.statusbarhider.overlay.system.BtSource
-import dev.yoanndev90.statusbarhider.overlay.system.kindFromClass
-import dev.yoanndev90.statusbarhider.overlay.system.kindFromOverrideName
-import dev.yoanndev90.statusbarhider.overlay.system.kindFromTypeName
-import dev.yoanndev90.statusbarhider.overlay.system.parseBondedNames
-import dev.yoanndev90.statusbarhider.overlay.system.parseFastPairDeviceTypes
-import dev.yoanndev90.statusbarhider.overlay.system.resolveKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull

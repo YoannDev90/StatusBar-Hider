@@ -1,7 +1,5 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.core.settings
 
-import dev.yoanndev90.statusbarhider.core.settings.OverlayBackground
-import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

@@ -1,7 +1,6 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.system
 
 import android.telephony.TelephonyManager
-import dev.yoanndev90.statusbarhider.overlay.system.networkTypeLabel
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

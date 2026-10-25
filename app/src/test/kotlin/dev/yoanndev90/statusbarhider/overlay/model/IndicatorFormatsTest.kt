@@ -1,6 +1,5 @@
-package dev.yoanndev90.statusbarhider.overlay
+package dev.yoanndev90.statusbarhider.overlay.model
 
-import dev.yoanndev90.statusbarhider.overlay.model.IndicatorFormats
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
