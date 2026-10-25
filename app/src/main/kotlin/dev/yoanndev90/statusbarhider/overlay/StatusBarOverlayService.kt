@@ -19,8 +19,6 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.core.graphics.drawable.toBitmap
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
@@ -30,12 +28,11 @@ import dev.yoanndev90.statusbarhider.core.watcher.SystemUiWatcher
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.model.IndicatorFormats
-import dev.yoanndev90.statusbarhider.overlay.model.OverlayNotifIcon
-import dev.yoanndev90.statusbarhider.overlay.model.OverlayProgress
 import dev.yoanndev90.statusbarhider.overlay.poll.OverlayPoller
 import dev.yoanndev90.statusbarhider.overlay.poll.PollHost
 import dev.yoanndev90.statusbarhider.overlay.system.MediaSessions
 import dev.yoanndev90.statusbarhider.overlay.system.NotifIcons
+import dev.yoanndev90.statusbarhider.overlay.system.NotifMediaReader
 import dev.yoanndev90.statusbarhider.overlay.system.SystemIndicators
 import dev.yoanndev90.statusbarhider.overlay.system.SystemStatusReader
 import dev.yoanndev90.statusbarhider.overlay.system.networkFlow
@@ -182,13 +179,27 @@ class StatusBarOverlayService :
 	 * re-reads a live field at the very point the original code did, so a
 	 * value changed while a probe suspends is seen exactly as before.
 	 */
-	private val reader =
+	private val statusReader =
 		SystemStatusReader(
 			indicators,
 			{ prefs },
 			{ barState = it(barState) },
 			{ usbConnected },
 			{ torchIds }
+		)
+
+	/**
+	 * Notification icons, their progress ring and the now-playing text: the
+	 * parts of the bar that come from the notification listener.
+	 */
+	private val notifReader =
+		NotifMediaReader(
+			{ prefs },
+			{ barState },
+			{ barState = it(barState) },
+			{ NotifListenerService.isEnabled(this@StatusBarOverlayService) },
+			mediaSessions,
+			{ notifListenerComponent() }
 		)
 
 	// --- PollHost: the live state the loops read, and their tick actions ----
@@ -202,9 +213,9 @@ class StatusBarOverlayService :
 	override val usageAccessGranted: Boolean
 		get() = UsageAccess.granted(this)
 
-	override suspend fun sampleBandwidth() = reader.updateBandwidth()
+	override suspend fun sampleBandwidth() = statusReader.updateBandwidth()
 
-	override suspend fun refreshMobile() = reader.updateMobile()
+	override suspend fun refreshMobile() = statusReader.updateMobile()
 
 	override suspend fun refreshSuppressed() = updateSuppressed()
 
@@ -246,12 +257,12 @@ class StatusBarOverlayService :
 		}
 		serviceScope.launch {
 			NotifIcons.snapshots.collect {
-				if (barState.screenOn) updateNotifs()
+				if (barState.screenOn) notifReader.updateNotifs()
 			}
 		}
 		serviceScope.launch {
 			mediaSessions.nowPlaying.collect {
-				if (barState.screenOn) updateMedia()
+				if (barState.screenOn) notifReader.updateMedia()
 			}
 		}
 		serviceScope.launch {
@@ -385,18 +396,18 @@ class StatusBarOverlayService :
 			filter.addAction("android.location.GPS_ENABLED_CHANGE")
 			filter.addAction(ConnectivityManager.ACTION_RESTRICT_BACKGROUND_CHANGED)
 			receiverFlow(filter).collect {
-				if (barState.screenOn) reader.updateConnectivity()
+				if (barState.screenOn) statusReader.updateConnectivity()
 			}
 		}
 		serviceScope.launch {
 			networkFlow().collect {
-				if (barState.screenOn) reader.updateConnectivity()
+				if (barState.screenOn) statusReader.updateConnectivity()
 			}
 		}
 		serviceScope.launch {
 			// DND / auto-rotate changes land here so the icons react immediately.
 			systemSettingsFlow(handler).collect {
-				if (barState.screenOn) reader.updateConnectivity()
+				if (barState.screenOn) statusReader.updateConnectivity()
 			}
 		}
 		serviceScope.launch {
@@ -406,7 +417,7 @@ class StatusBarOverlayService :
 				} else {
 					torchIds.remove(cameraId)
 				}
-				if (barState.screenOn) reader.updateConnectivity()
+				if (barState.screenOn) statusReader.updateConnectivity()
 			}
 		}
 	}
@@ -421,7 +432,7 @@ class StatusBarOverlayService :
 			status == BatteryManager.BATTERY_STATUS_FULL
 		if (pct >= 0) {
 			batteryPct = pct
-			reader.updateBattery(batteryPct, batteryCharging)
+			statusReader.updateBattery(batteryPct, batteryCharging)
 		}
 	}
 
@@ -453,7 +464,7 @@ class StatusBarOverlayService :
 			Intent.ACTION_USER_PRESENT -> {
 				barState = barState.copy(locked = false)
 				syncWindowAttachment()
-				updateNotifs()
+				notifReader.updateNotifs()
 				reapplyHideAfterUnlock()
 			}
 		}
@@ -461,23 +472,23 @@ class StatusBarOverlayService :
 
 	private suspend fun onUsb(intent: Intent) {
 		usbConnected = intent.extras?.getBoolean("connected") == true
-		if (barState.screenOn) reader.updateConnectivity()
+		if (barState.screenOn) statusReader.updateConnectivity()
 	}
 
 	private suspend fun refreshAll() {
 		window.updateCamera()
-		reader.updateBattery(batteryPct, batteryCharging)
-		updateNotifs()
-		reader.updateCalendar()
-		updateMedia()
-		reader.updateConnectivity()
-		reader.updateAlarm()
+		statusReader.updateBattery(batteryPct, batteryCharging)
+		notifReader.updateNotifs()
+		statusReader.updateCalendar()
+		notifReader.updateMedia()
+		statusReader.updateConnectivity()
+		statusReader.updateAlarm()
 	}
 
 	override suspend fun refreshPolled() {
-		reader.updateAlarm()
-		reader.updateCalendar()
-		reader.updateConnectivity()
+		statusReader.updateAlarm()
+		statusReader.updateCalendar()
+		statusReader.updateConnectivity()
 	}
 
 	/** Recomputes the suppression state from the app currently in front. */
@@ -505,53 +516,5 @@ class StatusBarOverlayService :
 		if (suppressed == value) return
 		suppressed = value
 		syncWindowAttachment()
-	}
-
-	private suspend fun updateNotifs() {
-		val p = prefs
-		val locked = barState.locked
-		// Privacy filter: while the keyguard is up the icons (and the progress
-		// ring they feed) would leak what the notifications are about.
-		val privateFilter = locked && p.hideNotifsOnLock
-		// Settings read + icon rasterization are IPC/CPU: off the main thread.
-		val (enabled, icons, progress) =
-			withContext(Dispatchers.IO) {
-				val listenerOn = NotifListenerService.isEnabled(this@StatusBarOverlayService)
-				val on = p.showNotifs && listenerOn && !privateFilter
-				val list: List<OverlayNotifIcon> =
-					if (!on) {
-						emptyList()
-					} else {
-						NotifIcons.snapshot().take(p.maxNotifs.coerceIn(1, 8)).mapNotNull { e ->
-							try {
-								val bitmap = e.icon?.toBitmap()?.asImageBitmap()
-								OverlayNotifIcon(bitmap, e.pkg)
-							} catch (_: Exception) {
-								null
-							}
-						}
-					}
-				val ring =
-					NotifIcons
-						.progress()
-						?.let { OverlayProgress(it.fraction, it.indeterminate, it.pkg) }
-						?.takeIf { listenerOn && !privateFilter }
-				Triple(on, list, ring)
-			}
-		barState = barState.copy(notifsEnabled = enabled, notifs = icons, progress = progress)
-	}
-
-	/** Now playing from media sessions; hidden when notification access is off. */
-	private suspend fun updateMedia() {
-		// The notification-access check is a Settings read: off the main thread.
-		// ensure() stays here - it registers a framework listener, which is a
-		// one-off and must land on the thread the manager expects.
-		val listenerOn = withContext(Dispatchers.IO) { NotifListenerService.isEnabled(this@StatusBarOverlayService) }
-		if (!prefs.showMedia || !listenerOn) {
-			barState = barState.copy(mediaText = null)
-			return
-		}
-		mediaSessions.ensure(notifListenerComponent())
-		barState = barState.copy(mediaText = mediaSessions.nowPlaying.value)
 	}
 }
