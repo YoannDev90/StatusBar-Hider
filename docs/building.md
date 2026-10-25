@@ -62,5 +62,5 @@ keyPassword=<password>
 ## Debug vs release
 
 Debug builds install alongside the release one (`applicationIdSuffix = ".debug"`)
-and are told apart by a **"StatusBar Hider Debug"** label and a launcher icon
+and are told apart by a **"Corniche Debug"** label and a launcher icon
 with an amber `D` badge - see `app/src/debug/res/`.

@@ -23,6 +23,20 @@ swiping down to expand notifications keeps working.
 - Backup / restore, home-screen widget, Tasker-friendly control API
 - Per-OEM shell commands, auto-detected on first launch
 
+## Why "Corniche"?
+
+*Corniche* is French for the ledge or molding that runs along the very top of
+a building — the highest edge of a facade (it also names the coastal road
+carved along the top of a cliff). That is exactly where this app works: the
+status bar lives on the topmost edge of your screen, and Corniche replaces it
+with your own bar along that same edge.
+
+The name is also a nod to the fact that the app grew well beyond hiding the
+system bar — it is now mostly a custom status bar (widgets, lock screen,
+profiles, control API), and the hide/restore commands are just the
+lever underneath. The launcher label changed from *StatusBar Hider* to
+*Corniche*; the package name, repository and control API are unchanged.
+
 ## Requirements
 
 - A device running a supported OEM skin

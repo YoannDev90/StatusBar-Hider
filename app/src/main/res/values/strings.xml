@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <resources>
-    <string name="app_name">StatusBar Hider</string>
+    <string name="app_name">Corniche</string>
     <string name="oem_unknown">Unknown OEM</string>
     <string name="header_untested">untested config - commands may need adjustment</string>
 
@@ -310,7 +310,7 @@
     <string name="tile_tap_to_restore">Tap to restore</string>
 
     <!-- Home screen widget -->
-    <string name="widget_label">StatusBar Hider controls</string>
+    <string name="widget_label">Corniche controls</string>
     <string name="widget_description">Toggle the custom bar, hide or restore the system status bar</string>
 
     <!-- Foreground service notification -->
@@ -337,9 +337,9 @@
 
     <!-- Test notification (Style tab) -->
     <string name="test_notif_channel">Tests</string>
-    <string name="test_notif_title">StatusBar Hider</string>
+    <string name="test_notif_title">Corniche</string>
     <string name="test_notif_text">Test - progress at 42%</string>
-    <string name="clipboard_label">StatusBarHider logs</string>
+    <string name="clipboard_label">Corniche logs</string>
 
     <!-- Content descriptions (accessibility) -->
     <string name="cd_reorder">Reorder</string>
