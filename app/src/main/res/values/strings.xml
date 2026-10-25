@@ -4,11 +4,6 @@
     <string name="oem_unknown">Unknown OEM</string>
     <string name="header_untested">untested config - commands may need adjustment</string>
 
-    <!-- Shizuku status -->
-    <string name="shizuku_not_running">Shizuku: not running</string>
-    <string name="shizuku_not_granted">Shizuku: waiting for authorization</string>
-    <string name="shizuku_ready">Shizuku: ready</string>
-
     <!-- Section titles (card headings on the settings screens) -->
     <string name="section_shizuku">Shizuku</string>
     <string name="section_status_bar">Status bar</string>
@@ -31,8 +26,12 @@
     <string name="cd_clear">Clear</string>
 
     <!-- Home -->
-    <string name="home_bar_visible">Custom bar: visible</string>
-    <string name="home_bar_hidden">Custom bar: hidden</string>
+    <string name="home_device">Device</string>
+    <string name="home_value_ready">Ready</string>
+    <string name="home_value_visible">Visible</string>
+    <string name="home_value_hidden">Hidden</string>
+    <string name="home_shizuku_waiting">Waiting for authorization</string>
+    <string name="home_shizuku_off">Not running</string>
 
     <!-- Settings categories (root list + top bar titles) -->
     <string name="cat_general">General</string>

@@ -6,12 +6,13 @@ flow behind the hide/restore actions.
 ## Navigation
 
 Two screens at the top level: **Home** and **Settings**. Home is the only
-entry point - device identity, Shizuku status, Show / Hide - and the gear in
+entry point - device identity, Shizuku status and a card per bar (system
+status bar, custom bar) with its live state and one action - and the gear in
 its top bar opens Settings. Every Settings category is its own screen (stack
 navigation, back arrow), and Lock screen / Debug each hold two sub-screens.
 
 - **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications, Bluetooth, usage access and accessibility (re-openable from Settings > Debug).
-- **Show / hide from Home** -- Home opens with Show custom bar / Hide custom bar actions, no need to dig into Settings.
+- **Hide / restore from Home** -- the status header (device, Shizuku, untested badge) taps through to the permission board and an *Authorize Shizuku* card appears while that grant is missing. Below it, the **Status bar** card shows the persisted hide state (*Visible* / *Hidden*, re-read on every resume and after every command run) with one state-aware action - *Hide status bar* or *Restore (undo)* - and the **Custom bar** card does the same for the overlay with *Show custom bar* / *Hide custom bar*.
 - **Custom status bar overlay** -- a Compose bar with clock, date, battery, connectivity, notification and media widgets. Stays visible over the **lock screen** (toggleable) and shows over the system bar while it is hidden.
 - **Auto-start bar on boot** -- optional switch (Settings > General): brings the custom bar back after every reboot on its own, without Shizuku and independently of "Auto-hide after reboot".
 - **Lock screen modes** (Settings > Lock screen > Appearance) -- "Full" keeps every widget above the keyguard, "Clock only" draws strictly the clock.
