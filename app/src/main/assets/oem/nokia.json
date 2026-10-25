@@ -59,5 +59,16 @@
       "cmd": "dumpsys statusbar | grep -m1 mDisabled1",
       "description": "Non-zero = disable flags are active"
     }
+  ],
+  "keepAlive": [
+    {
+      "name": "power_saver",
+      "label": "Power saver exceptions",
+      "hint": "Add this app to the exception list so the power saver never stops it.",
+      "components": [
+        "com.evenwell.powersaving.g3/com.evenwell.powersaving.g3.exception.PowerSaverExceptionActivity"
+      ],
+      "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
+    }
   ]
 }

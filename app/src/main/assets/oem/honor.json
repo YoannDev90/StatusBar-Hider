@@ -58,5 +58,17 @@
       "cmd": "dumpsys statusbar | grep -m1 mDisabled1",
       "description": "Non-zero = disable flags are active"
     }
+  ],
+  "keepAlive": [
+    {
+      "name": "startup",
+      "label": "App launch management",
+      "hint": "Tick this app so MagicOS is allowed to start it in the background.",
+      "components": [
+        "com.huawei.systemmanager/com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity",
+        "com.huawei.systemmanager/com.huawei.systemmanager.optimize.process.ProtectActivity"
+      ],
+      "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
+    }
   ]
 }

@@ -10,6 +10,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.keepalive.KeepAliveAccess
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
 import dev.yoanndev90.statusbarhider.overlay.LockScreenOverlayService
@@ -25,7 +26,9 @@ data class PermissionGrants(
 	val postNotifs: Boolean,
 	val bluetooth: Boolean,
 	val usage: Boolean,
-	val lockOverlay: Boolean
+	val lockOverlay: Boolean,
+	/** Not a permission: whether Doze already exempts the app from battery optimization. */
+	val batteryExempt: Boolean = false
 )
 
 /**
@@ -42,7 +45,8 @@ object PermissionAccess {
 			postNotifs = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
 			bluetooth = bluetoothGranted(context),
 			usage = UsageAccess.granted(context),
-			lockOverlay = lockOverlayEnabled(context)
+			lockOverlay = lockOverlayEnabled(context),
+			batteryExempt = KeepAliveAccess.isExempt(context)
 		)
 
 	/** Below Android 12 the legacy install-time permission covers the device list. */

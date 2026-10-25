@@ -59,5 +59,18 @@
       "cmd": "dumpsys statusbar | grep -m1 mDisabled1",
       "description": "Non-zero = disable flags are active"
     }
+  ],
+  "keepAlive": [
+    {
+      "name": "startup",
+      "label": "Startup manager",
+      "hint": "Allow this app to start in the background.",
+      "components": [
+        "com.coloros.safecenter/com.coloros.safecenter.permission.startup.StartupAppListActivity",
+        "com.oppo.safe/com.oppo.safe.permission.startup.StartupAppListActivity",
+        "com.coloros.safecenter/com.coloros.safecenter.startupapp.StartupAppListActivity"
+      ],
+      "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
+    }
   ]
 }

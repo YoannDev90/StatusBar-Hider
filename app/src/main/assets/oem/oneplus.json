@@ -59,5 +59,16 @@
       "cmd": "dumpsys statusbar | grep -m1 mDisabled1",
       "description": "Non-zero = disable flags are active"
     }
+  ],
+  "keepAlive": [
+    {
+      "name": "auto_launch",
+      "label": "App auto-launch",
+      "hint": "Disable auto-launch for this app; OnePlus blocks everything started from the background otherwise.",
+      "components": [
+        "com.oneplus.security/com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity"
+      ],
+      "action": "com.android.settings.action.BACKGROUND_OPTIMIZE"
+    }
   ]
 }

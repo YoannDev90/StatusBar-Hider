@@ -8,6 +8,9 @@ import org.junit.Test
 import java.io.File
 
 class OemConfigParseTest {
+	/** `package/class`, the shape `KeepAliveAccess.parseComponent` accepts. */
+	private val flatComponent = Regex("[^/]+/[^/]+")
+
 	@Test
 	fun `too-new schema version is rejected with a clear message`() {
 		val raw = """{"schema_version":99,"name":"X","hide":[],"restore":[],"status":[]}"""
@@ -53,6 +56,48 @@ class OemConfigParseTest {
 	fun `config without schema version is accepted as legacy`() {
 		val raw = """{"name":"Old","hide":[],"restore":[],"status":[]}"""
 		assertEquals("Old", OemConfig.parseJson("test", raw).name)
+	}
+
+	@Test
+	fun `config without keep-alive ships an empty list`() {
+		val raw = """{"name":"Old","hide":[],"restore":[],"status":[]}"""
+		assertTrue(OemConfig.parseJson("test", raw).keepAlive.isEmpty())
+	}
+
+	@Test
+	fun `keep-alive entry parses with its defaults`() {
+		val raw =
+			"""
+			{"schema_version":1,"name":"X","hide":[],"restore":[],"status":[],
+			 "keepAlive":[{"name":"autostart","label":"Autostart",
+			   "components":["com.a/com.a.A"],"action":"android.settings.X"}]}
+			""".trimIndent()
+		val link = OemConfig.parseJson("test", raw).keepAlive.single()
+		assertEquals("autostart", link.name)
+		assertEquals("Autostart", link.label)
+		assertEquals("", link.hint)
+		assertEquals(listOf("com.a/com.a.A"), link.components)
+		assertEquals("android.settings.X", link.action)
+	}
+
+	@Test
+	fun `every bundled keep-alive entry is well formed`() {
+		for (file in assetFiles()) {
+			val config = OemConfig.parseJson(file.nameWithoutExtension, file.readText())
+			val names = config.keepAlive.map { it.name }
+			assertEquals("${file.name} keep-alive names must be unique", names.toSet().size, names.size)
+			for (link in config.keepAlive) {
+				val at = "${file.name} keepAlive.${link.name}"
+				assertTrue("$at needs a name", link.name.isNotBlank())
+				assertTrue("$at needs a label", link.label.isNotBlank())
+				assertTrue("$at has no target at all", link.components.isNotEmpty() || link.action.isNotBlank())
+				for (spec in link.components) {
+					// ComponentName is android.jar, which throws "Stub!" under a
+					// plain JVM test, so the shape is checked as text instead.
+					assertTrue("$at malformed component '$spec'", flatComponent.matches(spec))
+				}
+			}
+		}
 	}
 
 	@Test

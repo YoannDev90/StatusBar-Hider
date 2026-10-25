@@ -56,5 +56,16 @@
       "name": "mDisabled1",
       "cmd": "dumpsys statusbar | grep -m1 mDisabled1"
     }
+  ],
+  "keepAlive": [
+    {
+      "name": "autostart",
+      "label": "Background autostart",
+      "hint": "Turn the toggle on for this app; MIUI clears anything else from the background once the screen is off.",
+      "components": [
+        "com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity"
+      ],
+      "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
+    }
   ]
 }

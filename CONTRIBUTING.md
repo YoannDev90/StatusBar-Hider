@@ -147,6 +147,15 @@ Edit the file. The structure is:
     { "name": "policy_control",     "cmd": "settings get global policy_control" },
     { "name": "icon_blacklist_size", "cmd": "settings get secure icon_blacklist | wc -c" },
     { "name": "mDisabled1",         "cmd": "dumpsys statusbar | grep -m1 mDisabled1" }
+  ],
+  "keepAlive": [
+    {
+      "name": "autostart",
+      "label": "Background autostart",
+      "hint": "Turn the toggle on for this app.",
+      "components": ["com.miui.securitycenter/com.miui.permcenter.autostart.AutoStartManagementActivity"],
+      "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
+    }
   ]
 }
 ```
@@ -167,6 +176,24 @@ Edit the file. The structure is:
 | `restore[].cmd` | yes | Command to undo the hide |
 | `status[].name` | yes | Short identifier for the status field |
 | `status[].cmd` | yes | Command that returns the current value |
+| `keepAlive` | no | OEM screens the setup checklist deep-links into. Omit it when the skin has no such screen (AOSP, Pixel, Nothing, ...) - the checklist always shows the generic battery optimization row anyway. Default: `[]` |
+| `keepAlive[].name` | yes | Short identifier, unique within the file (shown in the log when nothing opens) |
+| `keepAlive[].label` | yes | Row label in the checklist. English, like every other human-readable string in these files |
+| `keepAlive[].hint` | no | Second line under the label: what to do once the screen is open |
+| `keepAlive[].components` | yes* | Ordered flattened `package/class` candidates. Skins rename these activities between firmware builds, so list every known spelling; the first one this device resolves wins |
+| `keepAlive[].action` | yes* | Plain `Settings.ACTION_*` used when no `components` entry resolves. The usual value is `android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS` |
+
+\* At least one of `components` or `action` must be present - an entry with
+neither cannot open anything and is rejected by `OemConfigParseTest`.
+
+Ticking a box in a `keepAlive` row is **not** verified: these toggles are
+private OEM AppOps with no read API, so the checklist can only open the screen
+and trust the user. What *is* verified is reaching a screen at all - a
+candidate that does not resolve falls through to the next one, and a total
+miss is logged. Declare every package appearing in `components` in the
+`<queries>` block of `AndroidManifest.xml` too: Android 11+ hides undeclared
+packages from the platform, and a row that opens nothing has no other way to
+say so.
 
 The app auto-detects the OEM in three steps: JSON file name substring >
 `match` substrings > fallback to `aosp.json` (generic defaults). The result is saved in

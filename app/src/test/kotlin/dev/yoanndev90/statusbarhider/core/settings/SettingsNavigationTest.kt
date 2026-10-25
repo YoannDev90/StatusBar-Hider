@@ -147,7 +147,8 @@ class SettingsNavigationTest {
 				postNotifs = true,
 				bluetooth = true,
 				usage = true,
-				lockOverlay = true
+				lockOverlay = true,
+				batteryExempt = true
 			)
 		assertEquals(0, missingGrantCount(shizukuReady = true, grants = all))
 		assertEquals(1, missingGrantCount(shizukuReady = false, grants = all))

@@ -32,11 +32,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.keepalive.KeepAliveAccess
+import dev.yoanndev90.statusbarhider.core.oem.OemDeepLink
 import dev.yoanndev90.statusbarhider.core.permission.PermissionAccess
 import dev.yoanndev90.statusbarhider.core.permission.PermissionGrants
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
+import dev.yoanndev90.statusbarhider.ui.components.SettingHint
+import dev.yoanndev90.statusbarhider.ui.components.SettingOpenRow
 import dev.yoanndev90.statusbarhider.ui.components.SettingStatusRow
 import dev.yoanndev90.statusbarhider.ui.state.HandlePrefsEvents
 import dev.yoanndev90.statusbarhider.ui.state.PrefsViewModel
@@ -51,6 +55,9 @@ fun SetupScreen(
 ) {
 	val context = LocalContext.current
 	val shizuku by vm.shizuku.collectAsStateWithLifecycle()
+	// OEM detection runs on IO and fills in a placeholder first, so the
+	// keep-alive group renders empty until it lands instead of guessing.
+	val oem by vm.oem.collectAsStateWithLifecycle()
 	// Same contract as every other screen owning a PrefsViewModel.
 	HandlePrefsEvents(vm)
 	// Bumped on every resume: the grants happen in other screens, so the rows
@@ -139,6 +146,8 @@ fun SetupScreen(
 					granted = loaded.lockOverlay
 				) { PermissionAccess.openSettings(context, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
 			}
+
+			KeepAliveGroup(oem.keepAlive, loaded.batteryExempt)
 		}
 
 		Spacer(Modifier.size(8.dp))
@@ -148,6 +157,36 @@ fun SetupScreen(
 			modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
 		) {
 			Text(stringResource(R.string.action_setup_later))
+		}
+	}
+}
+
+/**
+ * Background-survival block: the Doze exemption (the one state the platform
+ * reports) plus the OEM autostart screens (states it cannot). Sits after the
+ * permission grants because a bar killed in the background only matters once
+ * the bar can be drawn at all.
+ */
+@Composable
+private fun KeepAliveGroup(
+	links: List<OemDeepLink>,
+	batteryExempt: Boolean
+) {
+	val context = LocalContext.current
+	SettingGroup(R.string.setup_group_keepalive) {
+		SettingHint(R.string.setup_keepalive_hint)
+		SettingStatusRow(
+			label = R.string.setup_battery_opt,
+			granted = batteryExempt,
+			actionLabel = R.string.action_open
+		) { KeepAliveAccess.openBatteryOptimization(context) }
+		// The OEM toggles are unreadable, so these rows stay actionable rather
+		// than granted/missing (see SettingOpenRow).
+		for (link in links) {
+			SettingOpenRow(
+				label = link.label,
+				hint = link.hint
+			) { KeepAliveAccess.open(context, link) }
 		}
 	}
 }

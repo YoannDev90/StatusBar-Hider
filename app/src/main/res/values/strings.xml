@@ -136,6 +136,7 @@
     <string name="perm_bluetooth">Bluetooth devices</string>
     <string name="perm_usage">Usage access</string>
     <string name="perm_accessibility">Accessibility (lock screen)</string>
+    <string name="perm_battery_opt">Battery optimization</string>
 
     <!-- About -->
     <string name="about_version">Version %1$s (%2$s)</string>
@@ -169,6 +170,7 @@
     <string name="action_hide_custom_bar">Hide custom bar</string>
     <string name="action_test_notification">Send test notification</string>
     <string name="action_grant">Grant</string>
+    <string name="action_open">Open</string>
     <string name="action_setup_done">All done</string>
     <string name="action_setup_later">Not now</string>
     <string name="action_open_setup">Run setup checklist</string>
@@ -197,6 +199,9 @@
     <string name="setup_bluetooth">Bluetooth devices (per-device icons)</string>
     <string name="setup_usage">Usage access (app blacklist, optional)</string>
     <string name="setup_accessibility">Accessibility (lock screen overlay)</string>
+    <string name="setup_group_keepalive">Keep alive</string>
+    <string name="setup_keepalive_hint">These screens decide whether the app may keep running once the screen is off. If the bar disappears on its own, work through them.</string>
+    <string name="setup_battery_opt">Battery optimization exemption</string>
 
     <!-- Switches -->
     <string name="switch_show_seconds">Show seconds</string>

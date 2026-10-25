@@ -27,6 +27,30 @@ data class OemCommand(
 	val persistent: Boolean = true
 )
 
+/**
+ * One OEM screen that controls whether the app may run in the background
+ * (autostart, "no restrictions" battery, sleeping-apps lists).
+ *
+ * None of these toggles can be *read*: they are private OEM AppOps with no
+ * public API, so the checklist opens the screen and lets the user set it. OEM
+ * skins rename these activities between firmware builds, so [components] holds
+ * flattened `package/class` candidates tried in order and [action] is a plain
+ * `Settings.ACTION_*` used when none of them resolves.
+ */
+@Serializable
+data class OemDeepLink(
+	/** Stable id within the OEM file; shows up in the log when nothing opens. */
+	val name: String,
+	/** Row label. English, like every other human-readable string in an OEM file. */
+	val label: String,
+	/** Optional second line: what to do once the screen is open. */
+	val hint: String = "",
+	/** Flattened `package/class` candidates, first resolvable one wins. */
+	val components: List<String> = emptyList(),
+	/** `Settings.ACTION_*` used when no [components] candidate resolves. */
+	val action: String = ""
+)
+
 data class OemConfig(
 	val id: String,
 	val name: String,
@@ -35,7 +59,9 @@ data class OemConfig(
 	val notes: List<String> = emptyList(),
 	val hide: List<OemCommand>,
 	val restore: List<OemCommand>,
-	val status: List<OemCommand>
+	val status: List<OemCommand>,
+	/** Extra OEM keep-alive screens for the setup checklist; empty = none ship. */
+	val keepAlive: List<OemDeepLink> = emptyList()
 ) {
 	companion object {
 		private const val TAG = "OemConfig"
@@ -193,7 +219,8 @@ data class OemConfig(
 				notes = file.notes,
 				hide = file.hide,
 				restore = file.restore,
-				status = file.status
+				status = file.status,
+				keepAlive = file.keepAlive
 			)
 		}
 
@@ -250,5 +277,6 @@ private data class OemConfigFile(
 	val notes: List<String> = emptyList(),
 	val hide: List<OemCommand>,
 	val restore: List<OemCommand>,
-	val status: List<OemCommand>
+	val status: List<OemCommand>,
+	val keepAlive: List<OemDeepLink> = emptyList()
 )

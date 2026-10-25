@@ -60,5 +60,18 @@
       "cmd": "dumpsys statusbar | grep -m1 mDisabled1",
       "description": "Non-zero = disable flags are active"
     }
+  ],
+  "keepAlive": [
+    {
+      "name": "bg_start",
+      "label": "Background autostart",
+      "hint": "Whitelist this app so it may be started while the screen is off.",
+      "components": [
+        "com.iqoo.secure/com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity",
+        "com.vivo.permissionmanager/com.vivo.permissionmanager.activity.BgStartUpManagerActivity",
+        "com.iqoo.secure/com.iqoo.secure.ui.phoneoptimize.BgStartUpManager"
+      ],
+      "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
+    }
   ]
 }

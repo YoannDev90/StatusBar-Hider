@@ -8,9 +8,11 @@ import androidx.lifecycle.AndroidViewModel
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
+import dev.yoanndev90.statusbarhider.core.oem.OemConfig
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.SettingsRegistry
+import dev.yoanndev90.statusbarhider.data.OemRepository
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsStore
 import dev.yoanndev90.statusbarhider.data.ShizukuRepository
@@ -44,6 +46,9 @@ open class PrefsViewModel(
 
 	/** Live Shizuku authorization; can change under an open screen (permission dialog). */
 	val shizuku: StateFlow<ShizukuState> = shizukuRepo.state
+
+	/** Live OEM config; the setup checklist reads its keep-alive screens from it. */
+	val oem: StateFlow<OemConfig> = OemRepository.getInstance(application).config
 
 	/** One-shot UI instructions; a tryEmit never suspends, drops only when the screen ignores them. */
 	private val _events = MutableSharedFlow<PrefsEvent>(extraBufferCapacity = 8)

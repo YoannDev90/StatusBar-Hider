@@ -11,7 +11,7 @@ status bar, custom bar) with its live state and one action - and the gear in
 its top bar opens Settings. Every Settings category is its own screen (stack
 navigation, back arrow), and Lock screen / Debug each hold two sub-screens.
 
-- **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications, Bluetooth, usage access and accessibility (re-openable from Settings > Debug).
+- **Setup checklist** -- first launch walks through Shizuku, overlay, notification access, calendar, notifications, Bluetooth, usage access and accessibility, then a **Keep alive** group (battery optimization exemption plus the OEM autostart screens the current config ships). Re-openable from Settings > Debug.
 - **Hide / restore from Home** -- the status header (device, Shizuku, untested badge) taps through to the permission board and an *Authorize Shizuku* card appears while that grant is missing. Below it, the **Status bar** card shows the persisted hide state (*Visible* / *Hidden*, re-read on every resume and after every command run) with one state-aware action - *Hide status bar* or *Restore (undo)* - and the **Custom bar** card does the same for the overlay with *Show custom bar* / *Hide custom bar*.
 - **Custom status bar overlay** -- a Compose bar with clock, date, battery, connectivity, notification and media widgets. Stays visible over the **lock screen** (toggleable) and shows over the system bar while it is hidden.
 - **Auto-start bar on boot** -- optional switch (Settings > General): brings the custom bar back after every reboot on its own, without Shizuku and independently of "Auto-hide after reboot".

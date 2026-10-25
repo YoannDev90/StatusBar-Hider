@@ -58,5 +58,17 @@
       "cmd": "dumpsys statusbar | grep -m1 mDisabled1",
       "description": "Non-zero = disable flags are active"
     }
+  ],
+  "keepAlive": [
+    {
+      "name": "auto_start",
+      "label": "Auto-start manager",
+      "hint": "Allow this app to start in the background.",
+      "components": [
+        "com.asus.mobilemanager/com.asus.mobilemanager.autostart.AutoStartActivity",
+        "com.asus.mobilemanager/com.asus.mobilemanager.powersaver.PowerSaverSettings"
+      ],
+      "action": "android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS"
+    }
   ]
 }

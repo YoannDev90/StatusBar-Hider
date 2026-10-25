@@ -6,6 +6,14 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <!-- Lets ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS show the direct "let
+         this app always run in background?" prompt instead of dropping the
+         user into the full exemption list to find us in. Normal level, so it
+         is granted at install with no dialog. Play policy restricts this
+         permission - if the build ever ships on the store, delete it: the
+         ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS fallback in
+         KeepAliveAccess needs no permission at all. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
@@ -46,6 +54,21 @@
         <package android:name="dev.yoanndev90.statusbarhider.debug" />
         <!-- Shizuku version read for Debug > Device info (package visibility). -->
         <package android:name="moe.shizuku.privileged.api" />
+        <!-- OEM battery / autostart screens the setup checklist deep-links into
+             (see keepAlive in assets/oem/*.json). Android 11+ hides other
+             packages from PackageManager unless they are declared here, so a
+             candidate component can be reported as absent while its screen
+             exists. Keep this list in step with the components field. -->
+        <package android:name="com.miui.securitycenter" />
+        <package android:name="com.samsung.android.lool" />
+        <package android:name="com.oneplus.security" />
+        <package android:name="com.coloros.safecenter" />
+        <package android:name="com.oppo.safe" />
+        <package android:name="com.huawei.systemmanager" />
+        <package android:name="com.iqoo.secure" />
+        <package android:name="com.vivo.permissionmanager" />
+        <package android:name="com.asus.mobilemanager" />
+        <package android:name="com.evenwell.powersaving.g3" />
         <provider android:authorities="dev.yoanndev90.statusbarhider.settingsprovider" />
         <provider android:authorities="dev.yoanndev90.statusbarhider.debug.settingsprovider" />
     </queries>

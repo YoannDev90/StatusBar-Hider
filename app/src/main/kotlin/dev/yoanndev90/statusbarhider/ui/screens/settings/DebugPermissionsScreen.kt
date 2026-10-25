@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
+import dev.yoanndev90.statusbarhider.core.keepalive.KeepAliveAccess
 import dev.yoanndev90.statusbarhider.core.permission.PermissionAccess
 import dev.yoanndev90.statusbarhider.core.permission.PermissionGrants
 import dev.yoanndev90.statusbarhider.data.ShizukuState
@@ -93,6 +94,13 @@ fun DebugPermissionsScreen(vm: StatusViewModel) {
 					label = R.string.perm_accessibility,
 					granted = loaded.lockOverlay
 				) { PermissionAccess.openSettings(context, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
+				// Not a permission, but it is a grant the app survives on: the
+				// only keep-alive state the platform reports without guessing.
+				SettingStatusRow(
+					label = R.string.perm_battery_opt,
+					granted = loaded.batteryExempt,
+					actionLabel = R.string.action_open
+				) { KeepAliveAccess.openBatteryOptimization(context) }
 			}
 		}
 	}
