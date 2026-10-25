@@ -18,7 +18,7 @@ import dev.yoanndev90.statusbarhider.core.settings.SectionGroup
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.data.ShizukuState
-import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.ui.screens.status.StatusViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

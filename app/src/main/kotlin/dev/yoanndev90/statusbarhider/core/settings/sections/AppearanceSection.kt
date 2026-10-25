@@ -9,7 +9,7 @@ import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.AppearanceSpecs
-import dev.yoanndev90.statusbarhider.features.settings.WidgetOrderGroup
+import dev.yoanndev90.statusbarhider.ui.screens.settings.WidgetOrderGroup
 
 /** Background, paddings, type, and the drag-to-reorder widget list. */
 object AppearanceSection :

@@ -23,8 +23,8 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.OemSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.ProfilesSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.missingGrantCount
-import dev.yoanndev90.statusbarhider.features.settings.ResolvedSection
-import dev.yoanndev90.statusbarhider.features.settings.searchSections
+import dev.yoanndev90.statusbarhider.ui.screens.settings.ResolvedSection
+import dev.yoanndev90.statusbarhider.ui.screens.settings.searchSections
 import dev.yoanndev90.statusbarhider.ui.shell.Routes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

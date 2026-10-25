@@ -11,8 +11,8 @@ import dev.yoanndev90.statusbarhider.core.settings.PendingFocus
 import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.specs
-import dev.yoanndev90.statusbarhider.features.shared.HandlePrefsEvents
-import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
+import dev.yoanndev90.statusbarhider.ui.state.HandlePrefsEvents
+import dev.yoanndev90.statusbarhider.ui.state.PrefsViewModel
 
 /**
  * Hosts one overlay section: observes the live prefs, consumes the one-shot

@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import dev.yoanndev90.statusbarhider.R
-import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
+import dev.yoanndev90.statusbarhider.ui.screens.status.StatusViewModel
 
 /** Root listing bucket: which card of the settings home gathers the section. */
 enum class SectionGroup(

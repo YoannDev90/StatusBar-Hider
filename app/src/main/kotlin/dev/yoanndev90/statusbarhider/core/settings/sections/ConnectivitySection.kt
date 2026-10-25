@@ -8,7 +8,7 @@ import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.settingRows
 import dev.yoanndev90.statusbarhider.core.settings.specs.ConnectivitySpecs
-import dev.yoanndev90.statusbarhider.features.settings.BtDevicesSection
+import dev.yoanndev90.statusbarhider.ui.screens.settings.BtDevicesSection
 
 /**
  * Connectivity indicators: radios, radios-adjacent toggles, system states

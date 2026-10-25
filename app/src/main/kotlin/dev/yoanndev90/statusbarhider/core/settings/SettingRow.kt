@@ -2,7 +2,7 @@ package dev.yoanndev90.statusbarhider.core.settings
 
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
-import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
+import dev.yoanndev90.statusbarhider.ui.state.PrefsViewModel
 
 /**
  * One rendered line of a [SettingSection].

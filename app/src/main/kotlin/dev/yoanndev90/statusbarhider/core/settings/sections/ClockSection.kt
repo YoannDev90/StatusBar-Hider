@@ -31,8 +31,8 @@ import dev.yoanndev90.statusbarhider.core.settings.SettingRow
 import dev.yoanndev90.statusbarhider.core.settings.SettingSection
 import dev.yoanndev90.statusbarhider.core.settings.Subtitle
 import dev.yoanndev90.statusbarhider.core.settings.specs.ClockSpecs
-import dev.yoanndev90.statusbarhider.features.shared.PrefsViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SettingSwitch
+import dev.yoanndev90.statusbarhider.ui.state.PrefsViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

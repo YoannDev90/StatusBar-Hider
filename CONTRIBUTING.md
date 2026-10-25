@@ -202,6 +202,26 @@ OEM notes. To promote a config to tested:
 
 ---
 
+## Where new code goes
+
+Everything UI-related lives under a single `ui/` roof. Pick the sub-package by
+what the code *is*:
+
+| You are adding… | Put it in |
+|---|---|
+| A screen (navigation destination) + its ViewModel | `ui/screens/<feature>/` |
+| A reusable composable | `ui/components/` |
+| The navigation host (`MainScreen`, `Routes`) | `ui/shell/` |
+| State / events shared between screens | `ui/state/` |
+| Theme | `ui/theme/` |
+
+In short: **new screen → `ui/screens/<feature>/`, reusable composable →
+`ui/components/`, shared state → `ui/state/`.** `ui/components/` must never
+import `ui/screens/` — a reusable composable cannot depend on one particular
+screen.
+
+---
+
 ## Quick reference: how to find hidden settings
 
 ```bash

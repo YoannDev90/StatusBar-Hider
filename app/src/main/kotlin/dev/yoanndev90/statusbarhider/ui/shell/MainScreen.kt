@@ -51,22 +51,22 @@ import dev.yoanndev90.statusbarhider.core.settings.sections.LockAppearanceSectio
 import dev.yoanndev90.statusbarhider.core.settings.sections.LockBehaviorSection
 import dev.yoanndev90.statusbarhider.core.settings.sections.NotificationSection
 import dev.yoanndev90.statusbarhider.data.AppFlagsStore
-import dev.yoanndev90.statusbarhider.features.home.HomeScreen
-import dev.yoanndev90.statusbarhider.features.logs.LogsScreen
-import dev.yoanndev90.statusbarhider.features.logs.LogsViewModel
-import dev.yoanndev90.statusbarhider.features.settings.AboutScreen
-import dev.yoanndev90.statusbarhider.features.settings.BackupScreen
-import dev.yoanndev90.statusbarhider.features.settings.DebugDiffScreen
-import dev.yoanndev90.statusbarhider.features.settings.DebugHubScreen
-import dev.yoanndev90.statusbarhider.features.settings.DebugInfoScreen
-import dev.yoanndev90.statusbarhider.features.settings.DebugPermissionsScreen
-import dev.yoanndev90.statusbarhider.features.settings.LockHubScreen
-import dev.yoanndev90.statusbarhider.features.settings.OemScreen
-import dev.yoanndev90.statusbarhider.features.settings.ProfilesScreen
-import dev.yoanndev90.statusbarhider.features.settings.SettingsRootScreen
-import dev.yoanndev90.statusbarhider.features.status.StatusViewModel
 import dev.yoanndev90.statusbarhider.ui.components.SettingSectionScreen
-import dev.yoanndev90.statusbarhider.ui.setup.SetupScreen
+import dev.yoanndev90.statusbarhider.ui.screens.home.HomeScreen
+import dev.yoanndev90.statusbarhider.ui.screens.logs.LogsScreen
+import dev.yoanndev90.statusbarhider.ui.screens.logs.LogsViewModel
+import dev.yoanndev90.statusbarhider.ui.screens.settings.AboutScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.BackupScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.DebugDiffScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.DebugHubScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.DebugInfoScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.DebugPermissionsScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.LockHubScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.OemScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.ProfilesScreen
+import dev.yoanndev90.statusbarhider.ui.screens.settings.SettingsRootScreen
+import dev.yoanndev90.statusbarhider.ui.screens.setup.SetupScreen
+import dev.yoanndev90.statusbarhider.ui.screens.status.StatusViewModel
 
 /**
  * App shell: a NavHost over Home and the Settings tree, a top bar titled after
