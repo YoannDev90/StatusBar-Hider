@@ -40,7 +40,9 @@ description = "Check Kotlin formatting (no rewrite)"
 run = "ktlint"
 
 [tasks.check]
-description = "Everything CI runs: format, static analysis, tests, lint"
+# CI runs exactly this (`mise run check`) before building the debug APK, so
+# this task is the single source of truth for the quality gate.
+description = "Quality gate CI runs: format, static analysis, tests, lint"
 depends = ["ktlint"]
 run = "./gradlew detekt testDebugUnitTest lintDebug"
 

@@ -13,25 +13,28 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-java@v6
+      # SHA pins + persist-credentials:false harden against zizmor's
+      # unpinned-uses and artipacked. Dependabot keeps the pins fresh
+      # (see dependabot.yml, github-actions ecosystem).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          distribution: temurin
-          java-version: 21
+          persist-credentials: false
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+      # Installs the exact toolchain pinned in mise.toml (JDK 21, ktlint 1.5.0)
+      # and puts it on PATH, so CI lints and formats with the same bytes a local
+      # `mise run check` produces. The Android SDK is the one requirement mise
+      # does not cover; ubuntu-latest ships it preinstalled.
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
 
       # AGP downloads the missing compileSdk platform once licenses are accepted.
       - name: Accept Android SDK licenses
         run: yes | sdkmanager --licenses > /dev/null || true
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest
-
-      - name: Lint
-        run: ./gradlew lintDebug
+      # The full local gate: ktlint + detekt + unit tests + Android lint.
+      - name: Run checks
+        run: mise run check
 
       - name: Build debug APK
         run: ./gradlew assembleDebug

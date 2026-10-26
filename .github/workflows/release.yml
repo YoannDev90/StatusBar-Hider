@@ -12,15 +12,24 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v7
+      # SHA pins + persist-credentials:false harden against zizmor's
+      # unpinned-uses and artipacked. Dependabot keeps the pins fresh
+      # (see dependabot.yml, github-actions ecosystem).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-java@v6
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
         with:
           distribution: temurin
           java-version: 21
 
+      # cache-disabled: a tag-triggered publish must not read a Gradle cache an
+      # untrusted ref could have poisoned (zizmor cache-poisoning).
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+        with:
+          cache-disabled: true
 
       # The runner image ships an Android SDK, but not necessarily the
       # compileSdk platform / build-tools this project needs. AGP downloads
@@ -53,14 +62,21 @@ jobs:
       - name: Lint
         run: ./gradlew lintDebug
 
+      # versionCode/versionName travel through env, not inline ${{ }} in the run
+      # block: the tag name is attacker-controllable, so expanding it straight
+      # into shell would be code injection (zizmor template-injection).
       - name: Build release APK
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.code }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
         run: >
           ./gradlew assembleRelease
-          -PversionCode=${{ steps.version.outputs.code }}
-          -PversionName=${{ steps.version.outputs.name }}
+          -PversionCode=$VERSION_CODE
+          -PversionName=$VERSION_NAME
 
+      # gh CLI instead of action-gh-release (zizmor superfluous-actions): the
+      # runner ships gh, and this drops a whole third-party action to pin.
       - name: Create release
-        uses: softprops/action-gh-release@v3
-        with:
-          files: app/build/outputs/apk/release/app-release.apk
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" app/build/outputs/apk/release/app-release.apk --generate-notes
