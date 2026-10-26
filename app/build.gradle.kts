@@ -25,6 +25,15 @@ val gitVersion: Pair<Int, String> =
 		providers
 			.exec {
 				commandLine("git", "describe", "--tags", "--long")
+				// A shallow clone (the CI checkout default) or a repo without
+				// tags makes `git describe` exit 128 with empty stdout. That
+				// must not fail the build: runCatching below only guards the
+				// eager .get(), not the configuration cache, which re-runs
+				// this exec as a ValueSource when storing the cache — an
+				// exception there surfaces as a cache problem and fails the
+				// build (problems=fail). Ignoring the exit code yields empty
+				// output, which falls through to the placeholder pair below.
+				isIgnoreExitValue = true
 			}.standardOutput.asText
 			.get()
 			.trim()
