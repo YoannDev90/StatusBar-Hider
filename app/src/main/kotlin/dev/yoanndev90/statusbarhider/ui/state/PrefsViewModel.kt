@@ -115,14 +115,18 @@ open class PrefsViewModel(
 	/**
 	 * Adds or drops [component] in the secure enabled-accessibility list and
 	 * keeps `accessibility_enabled` in step with what is left. Returns the
-	 * shell failure text, or null when both writes took.
+	 * shell failure text, or null when the list was read and both writes took.
 	 */
 	private suspend fun writeLockOverlay(
 		app: Application,
 		component: String,
 		enable: Boolean
 	): String? {
-		val (_, current) = ShellRunner.run(app, "settings get secure enabled_accessibility_services")
+		val (readExit, current) = ShellRunner.run(app, "settings get secure enabled_accessibility_services")
+		// A failed read answers with error text, not the service list (the
+		// transport merges stderr into out): parsing that as a list and writing
+		// it back would wipe every service the user actually enabled.
+		if (readExit != 0) return current.trim().ifEmpty { "exit $readExit" }
 		val existing = current.trim().let { if (it == "null" || it.isEmpty()) "" else it }
 		val others = existing.split(':').filter { it.isNotEmpty() && it != component }
 		val merged = if (enable) (others + component).joinToString(":") else others.joinToString(":")
