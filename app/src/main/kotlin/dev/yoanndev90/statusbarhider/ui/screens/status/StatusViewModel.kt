@@ -7,7 +7,6 @@ import android.content.pm.PackageManager.NameNotFoundException
 import android.net.Uri
 import androidx.core.content.pm.PackageInfoCompat
 import androidx.lifecycle.viewModelScope
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.backup.SettingsBackup
 import dev.yoanndev90.statusbarhider.core.backup.SettingsBackupException
 import dev.yoanndev90.statusbarhider.core.backup.SettingsProvider
@@ -114,31 +113,31 @@ class StatusViewModel(
 	}
 
 	fun applyHide() {
-		ShellRunner.run(getApplication(), R.string.log_applying_hide) { oem ->
+		ShellRunner.run(getApplication(), "applying hide...") { oem ->
 			if (oem.untested) {
-				appendLog(str(R.string.log_untested_config, oem.name))
+				appendLog("Warning: '${oem.name}' config is untested here - adjust commands if nothing happens.")
 			}
 			for (note in oem.notes) {
-				appendLog(str(R.string.log_note, note))
+				appendLog("note: $note")
 			}
 			val result = HideInteractor.applyAndLog(getApplication(), hide = true)
 			if (result.ok) {
-				appendLog(str(R.string.log_done))
+				appendLog("Done. Swipe-down is preserved.")
 			}
 		}
 	}
 
 	fun checkState() {
-		ShellRunner.run(getApplication(), R.string.log_reading_state) { oem ->
+		ShellRunner.run(getApplication(), "reading state...") { oem ->
 			for (cmd in oem.status) {
-				val (_, out) = ShellRunner.run(getApplication(), cmd.cmd)
-				appendLog(str(R.string.log_status_value, cmd.name, out.ifEmpty { str(R.string.log_status_empty) }))
+				val (_, out) = ShellRunner.run(cmd.cmd)
+				appendLog("${cmd.name} = ${out.ifEmpty { "(empty)" }}")
 			}
 		}
 	}
 
 	fun restore() {
-		ShellRunner.run(getApplication(), R.string.log_restoring) {
+		ShellRunner.run(getApplication(), "restoring...") {
 			HideInteractor.applyAndLog(getApplication(), hide = false)
 			// Restoring the system bar and the custom bar are alternatives: only
 			// touch the overlay state when it is actually on.
@@ -155,7 +154,7 @@ class StatusViewModel(
 	fun selectOem(id: String) {
 		viewModelScope.launch {
 			val config = withContext(Dispatchers.IO) { oemRepo.select(id) }
-			appendLog(str(R.string.log_oem_selected, config.name))
+			appendLog("OEM config: ${config.name}")
 		}
 	}
 
@@ -163,7 +162,7 @@ class StatusViewModel(
 	fun redetectOem() {
 		viewModelScope.launch {
 			val config = withContext(Dispatchers.IO) { oemRepo.redetect() }
-			appendLog(str(R.string.log_oem_redetected, config.name))
+			appendLog("OEM config re-detected: ${config.name}")
 		}
 	}
 
@@ -171,7 +170,7 @@ class StatusViewModel(
 	suspend fun exportSettings(): Intent? =
 		withContext(Dispatchers.IO) {
 			val intent = SettingsBackup.shareIntent(getApplication())
-			if (intent != null) log(R.string.log_settings_exported)
+			if (intent != null) log("Settings exported to a JSON file")
 			intent
 		}
 
@@ -190,12 +189,12 @@ class StatusViewModel(
 						?.let { stream -> SettingsBackup.readCapped(stream) }
 						?: throw SettingsBackupException("Cannot read ${uri.lastPathSegment}")
 				OverlayController.replaceAll(getApplication(), SettingsBackup.importSettings(getApplication(), raw))
-				log(R.string.log_settings_imported)
+				log("Settings imported")
 				true
 			} catch (e: CancellationException) {
 				throw e
 			} catch (e: Exception) {
-				log(R.string.log_error, e.message)
+				log("ERROR: ${e.message}")
 				false
 			}
 		}
@@ -228,12 +227,12 @@ class StatusViewModel(
 			try {
 				val raw = SettingsProvider.fetchSisterBlob(getApplication())
 				OverlayController.replaceAll(getApplication(), SettingsBackup.importSettings(getApplication(), raw))
-				log(R.string.log_settings_imported)
+				log("Settings imported")
 				true
 			} catch (e: CancellationException) {
 				throw e
 			} catch (e: Exception) {
-				log(R.string.log_error, e.message)
+				log("ERROR: ${e.message}")
 				false
 			}
 		}

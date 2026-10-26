@@ -4,8 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import androidx.annotation.StringRes
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.oem.OemConfig
 import dev.yoanndev90.statusbarhider.data.OemRepository
@@ -99,18 +97,18 @@ object ShellRunner {
 	 * through a `settings put` sequence.
 	 *
 	 * @param app used for resources and as the OEM / log lookup context.
-	 * @param labelRes resource id of the progress line shown before [block]
-	 * runs, or null to run without one (automatic re-applies still log failures
-	 * and refusals -- an auto path that dropped them silently could leave the
-	 * bar unhidden with nothing in the log to say why).
+	 * @param label progress line shown before [block] runs, or null to run
+	 * without one (automatic re-applies still log failures and refusals -- an
+	 * auto path that dropped them silently could leave the bar unhidden with
+	 * nothing in the log to say why).
 	 * @param block the command set to run; it receives the active OEM config.
 	 */
 	fun run(
 		app: Application,
-		@StringRes labelRes: Int?,
+		label: String?,
 		block: suspend (oem: OemConfig) -> Unit
 	) {
-		scope.launch { runSequence(app, labelRes, block) }
+		scope.launch { runSequence(app, label, block) }
 	}
 
 	/**
@@ -127,27 +125,27 @@ object ShellRunner {
 	 */
 	suspend fun runSequence(
 		app: Context,
-		@StringRes labelRes: Int?,
+		label: String?,
 		block: suspend (oem: OemConfig) -> Unit
 	): Boolean {
 		if (!granted()) {
-			log(app, R.string.log_shizuku_not_authorized)
+			log(app, "Shizuku not authorized. Use button 1 first.")
 			return false
 		}
 		if (!_busy.compareAndSet(false, true)) {
-			log(app, R.string.log_busy)
+			log(app, "Busy - wait for the current command to finish.")
 			return false
 		}
 		return try {
-			if (labelRes != null) {
-				log(app, R.string.log_progress, app.getString(labelRes))
+			if (label != null) {
+				log(app, "... $label")
 			}
 			block(OemRepository.getInstance(app).awaitLoaded())
 			true
 		} catch (e: CancellationException) {
 			throw e
 		} catch (e: Exception) {
-			log(app, R.string.log_error, e.message ?: e.toString())
+			log(app, "ERROR: ${e.message ?: e.toString()}")
 			false
 		} finally {
 			_busy.value = false
@@ -160,10 +158,9 @@ object ShellRunner {
 	 * parallel shell processes.
 	 */
 	suspend fun run(
-		context: Context,
 		cmd: String,
 		timeoutSec: Long = 15
-	): Result = withContext(Dispatchers.IO) { mutex.withLock { execute(context, cmd, timeoutSec) } }
+	): Result = withContext(Dispatchers.IO) { mutex.withLock { execute(cmd, timeoutSec) } }
 
 	/**
 	 * Blocking transport for one command; must only be called with [mutex]
@@ -173,18 +170,17 @@ object ShellRunner {
 	 * deadlocks as soon as the other one fills its 64 KB buffer.
 	 */
 	private fun execute(
-		context: Context,
 		cmd: String,
 		timeoutSec: Long
 	): Result {
-		val binder = Shizuku.getBinder() ?: return Result(-1, context.getString(R.string.err_shizuku_binder_unavailable))
+		val binder = Shizuku.getBinder() ?: return Result(-1, "Shizuku binder not available")
 		val service = IShizukuService.Stub.asInterface(binder)
 		val remote =
 			try {
 				service.newProcess(arrayOf("sh", "-c", cmd), null, null)
 			} catch (e: Exception) {
 				Log.e(TAG, "Failed to start process for: $cmd", e)
-				return Result(-1, context.getString(R.string.err_start_process, e.message))
+				return Result(-1, "Failed to start process: ${e.message}")
 			}
 
 		val deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSec)
@@ -199,10 +195,10 @@ object ShellRunner {
 				} catch (e: TimeoutException) {
 					exitTask.cancel(true)
 					Log.w(TAG, "Command timed out after ${timeoutSec}s: $cmd", e)
-					return Result(-1, context.getString(R.string.err_command_timeout, timeoutSec))
+					return Result(-1, "TIMEOUT after ${timeoutSec}s")
 				} catch (e: Exception) {
 					Log.e(TAG, "waitFor failed for: $cmd", unwrap(e))
-					return Result(-1, context.getString(R.string.err_start_process, unwrap(e).message))
+					return Result(-1, "Failed to start process: ${unwrap(e).message}")
 				}
 
 			// waitFor() may have consumed the whole budget: the pipes get a window
@@ -269,9 +265,8 @@ object ShellRunner {
 
 	private fun log(
 		app: Context,
-		@StringRes id: Int,
-		vararg args: Any?
+		line: String
 	) {
-		LogStore.append(app, app.getString(id, *args))
+		LogStore.append(app, line)
 	}
 }

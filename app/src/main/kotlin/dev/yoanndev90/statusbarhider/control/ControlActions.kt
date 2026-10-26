@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.provider.Settings
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.OverlayPrefsRepository
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
@@ -75,12 +74,12 @@ object ControlActions {
 		if (enabled && !Settings.canDrawOverlays(app)) {
 			// Enabling would silently do nothing: the window cannot be attached.
 			Log.w(TAG, "Overlay permission missing")
-			LogStore.append(app, app.getString(R.string.log_overlay_permission_missing))
+			LogStore.append(app, "Overlay permission missing - the custom bar was not started.")
 			return
 		}
 		OverlayController.setEnabled(app, enabled)
 		// OverlayController stays quiet on purpose (tiles and boot do not log).
-		LogStore.append(app, app.getString(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden))
+		LogStore.append(app, if (enabled) "Custom bar shown (overlay)" else "Custom bar hidden")
 	}
 
 	/** Runs the OEM hide / restore set through the shared busy-gated sequence. */
@@ -89,6 +88,6 @@ object ControlActions {
 		hide: Boolean
 	) {
 		val app = context.applicationContext as? Application ?: return
-		HideInteractor.hideLogged(app, hide, if (hide) R.string.log_applying_hide else R.string.log_restoring)
+		HideInteractor.hideLogged(app, hide, if (hide) "applying hide..." else "restoring...")
 	}
 }

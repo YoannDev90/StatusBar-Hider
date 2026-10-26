@@ -403,59 +403,7 @@
     <string name="cd_download">Download</string>
     <string name="cd_upload">Upload</string>
 
-    <!-- In-app log lines -->
-    <string name="log_shizuku_not_running">Shizuku is not running. Start it, then try again.</string>
-    <string name="log_already_authorized">Already authorized.</string>
-    <string name="log_shizuku_not_authorized">Shizuku not authorized. Use button 1 first.</string>
-    <string name="log_progress">... %1$s</string>
-    <string name="log_applying_hide">applying hide...</string>
-    <string name="log_reading_state">reading state...</string>
-    <string name="log_restoring">restoring...</string>
-    <string name="log_enabling_lock_a11y">enabling lock-screen accessibility service...</string>
-    <string name="log_lock_a11y_ok">Lock-screen overlay service enabled. Lock the screen to see it.</string>
-    <string name="log_lock_a11y_failed">Could not enable lock-screen overlay service: %1$s</string>
-    <string name="log_disabling_lock_a11y">disabling lock-screen accessibility service...</string>
-    <string name="log_lock_a11y_disabled">Lock-screen overlay service disabled.</string>
-    <string name="log_lock_a11y_disable_failed">Could not disable lock-screen overlay service: %1$s</string>
-    <string name="log_done">Done. Swipe-down is preserved.</string>
-    <string name="log_untested_config">Warning: \'%1$s\' config is untested here - adjust commands if nothing happens.</string>
-    <string name="log_note">note: %1$s</string>
-    <string name="log_status_value">%1$s = %2$s</string>
-    <string name="log_status_empty">(empty)</string>
-    <string name="log_bar_shown">Custom bar shown (overlay)</string>
-    <string name="log_bar_hidden">Custom bar hidden</string>
-    <string name="log_date_format">Date format: %1$s</string>
-    <string name="log_error">ERROR: %1$s</string>
-    <string name="log_no_hide_commands">No hide commands for %1$s</string>
-    <string name="log_no_restore_commands">No restore commands for %1$s</string>
-    <string name="log_command_ok">%1$s -&gt; %2$s</string>
-    <string name="log_command_failed">%1$s -&gt; FAILED (%2$s)</string>
-    <string name="log_ok">ok</string>
-    <string name="log_exit_code">exit %1$d</string>
-    <string name="log_busy">Busy - wait for the current command to finish.</string>
+    <!-- Logs-tab empty-state hint (UI). Log *lines* themselves are hardcoded
+         English on purpose - see CONTRIBUTING.md, "Strings vs logs". -->
     <string name="log_empty">No output yet - run a command first.</string>
-    <string name="log_oem_selected">OEM config: %1$s</string>
-    <string name="log_oem_redetected">OEM config re-detected: %1$s</string>
-    <string name="log_usage_access_missing">Usage access not granted - app blacklist inactive.</string>
-    <string name="log_systemui_restarted">SystemUI restarted (%1$s -&gt; %2$s) - re-applying hide commands</string>
-    <string name="log_reapply_hide">Re-applying hide after a SystemUI restart...</string>
-    <string name="log_reapply_hide_unlock">Re-applying hide after unlock failed</string>
-    <string name="log_overlay_permission_missing">Overlay permission missing - the custom bar was not started.</string>
-    <string name="log_settings_exported">Settings exported to a JSON file</string>
-    <string name="log_settings_imported">Settings imported</string>
-    <string name="log_settings_reset">Settings reset to defaults</string>
-    <string name="log_profile_saved">Profile saved: %1$s</string>
-    <string name="log_profile_applied">Profile applied: %1$s</string>
-    <string name="log_profile_updated">Profile updated: %1$s</string>
-    <string name="log_profile_renamed">Profile renamed: %1$s</string>
-    <string name="log_profile_deleted">Profile deleted: %1$s</string>
-    <string name="log_start_service_failed">Custom bar could not be started: %1$s</string>
-    <string name="log_stop_service_failed">Custom bar could not be stopped: %1$s</string>
-    <string name="log_start_foreground_failed">Custom bar failed to run in the foreground: %1$s</string>
-    <string name="log_oem_load_failed">OEM config %1$s could not be loaded (%2$s) - hide and restore run no command</string>
-
-    <!-- Shell command failures -->
-    <string name="err_shizuku_binder_unavailable">Shizuku binder not available</string>
-    <string name="err_start_process">Failed to start process: %1$s</string>
-    <string name="err_command_timeout">TIMEOUT after %1$ds</string>
 </resources>

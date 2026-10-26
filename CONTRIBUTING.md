@@ -249,6 +249,30 @@ screen.
 
 ---
 
+## Strings vs logs: what goes where
+
+The app has two kinds of user-visible text, and they follow opposite rules:
+
+- **Everything outside the Logs tab must be a string resource** (`values/strings.xml`)
+  reached through `stringResource(...)` / `getString(...)`. No hardcoded
+  literals in composables, toasts, tiles, notifications, or widget text.
+  This includes the Logs tab's own **chrome** — the empty-state hint
+  (`log_empty`) and any label around the log area.
+- **Every log *line* — the text written into the in-app Logs tab — is hardcoded
+  English, on purpose, with no string resource behind it.** The maintainer
+  greps the app's own log output, so log messages must be stable, literal,
+  English strings. Build them inline (Kotlin string templates), e.g.
+  `log("ERROR: ${e.message}")`, `appendLog("OEM config: ${config.name}")`.
+  Do **not** introduce `R.string.log_*` resources or route log text through
+  `getString`/`stringResource`.
+
+So the rule of thumb: if the string ends up in `LogStore.append` /
+`appendLog` / `log(...)`, it is a hardcoded English literal; everything else
+is a `strings.xml` resource. If you ever add translations (`values-xx/`),
+translate the UI only — never the log lines.
+
+---
+
 ## Quick reference: how to find hidden settings
 
 ```bash

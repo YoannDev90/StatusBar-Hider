@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.oem.OemDeepLink
 
@@ -93,7 +92,7 @@ object KeepAliveAccess {
 		LogStore.appendOnce(
 			context,
 			"$TAG#$where",
-			context.getString(R.string.log_error, "no keep-alive screen for ${link.name} on this device")
+			"ERROR: no keep-alive screen for ${link.name} on this device"
 		)
 		return false
 	}
@@ -131,7 +130,7 @@ object KeepAliveAccess {
 				LogStore.appendOnce(
 					context,
 					"$TAG#$where",
-					context.getString(R.string.log_error, "$where: ${e.message}")
+					"ERROR: $where: ${e.message}"
 				)
 			}
 			false

@@ -21,14 +21,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.settings.BarFontWeight
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
@@ -84,7 +82,6 @@ internal fun formattedText(
 	what: String
 ): String {
 	val context = LocalContext.current
-	val errorFormat = stringResource(R.string.log_error)
 	return remember(tick, pattern) {
 		try {
 			SimpleDateFormat(pattern, Locale.getDefault()).format(Date(tick))
@@ -93,7 +90,7 @@ internal fun formattedText(
 			LogStore.appendOnce(
 				context,
 				"$TAG#${what}Format#$pattern",
-				String.format(errorFormat, "bad $what format: ${e.message}")
+				"ERROR: bad $what format: ${e.message}"
 			)
 			""
 		}

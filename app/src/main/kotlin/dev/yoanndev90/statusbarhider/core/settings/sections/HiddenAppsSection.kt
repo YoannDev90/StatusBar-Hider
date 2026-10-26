@@ -89,7 +89,6 @@ private fun HiddenAppsRows(
 	vm: PrefsViewModel
 ) {
 	val context = LocalContext.current
-	val errorFormat = stringResource(R.string.log_error)
 	// Querying and labelling every installed app is a few hundred binder calls:
 	// run once per process, off the main thread, and never per screen visit.
 	val apps by produceState(AppListCache.peek()) {
@@ -116,7 +115,7 @@ private fun HiddenAppsRows(
 				LogStore.appendOnce(
 					context,
 					"$TAG#usageSettings",
-					String.format(errorFormat, "usage settings: ${e.message}")
+					"ERROR: usage settings: ${e.message}"
 				)
 			}
 		}
@@ -291,7 +290,7 @@ private object AppListCache {
 			LogStore.appendOnce(
 				context,
 				"$TAG#query",
-				context.getString(R.string.log_error, "launcher apps: ${e.message}")
+				"ERROR: launcher apps: ${e.message}"
 			)
 			emptyList()
 		}

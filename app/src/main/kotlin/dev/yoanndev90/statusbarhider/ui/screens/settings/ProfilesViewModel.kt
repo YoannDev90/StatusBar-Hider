@@ -2,7 +2,6 @@ package dev.yoanndev90.statusbarhider.ui.screens.settings
 
 import android.app.Application
 import androidx.lifecycle.viewModelScope
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.profiles.Profile
 import dev.yoanndev90.statusbarhider.core.profiles.ProfilesState
 import dev.yoanndev90.statusbarhider.core.profiles.ProfilesStore
@@ -56,7 +55,7 @@ class ProfilesViewModel(
 	 */
 	fun saveCurrent(name: String): Boolean {
 		val profile = profilesRepo.create(name, prefs.value) ?: return false
-		log(R.string.log_profile_saved, profile.name)
+		log("Profile saved: ${profile.name}")
 		return true
 	}
 
@@ -66,7 +65,7 @@ class ProfilesViewModel(
 			.find { it.id == id } ?: return
 		OverlayController.replaceAll(getApplication(), profile.prefs)
 		profilesRepo.setActive(id)
-		log(R.string.log_profile_applied, profile.name)
+		log("Profile applied: ${profile.name}")
 	}
 
 	/** Re-snapshots the live settings into [id], keeping it active. */
@@ -74,7 +73,7 @@ class ProfilesViewModel(
 		val profile = profilesRepo.state.value.profiles
 			.find { it.id == id } ?: return
 		profilesRepo.update(id, prefs.value)
-		log(R.string.log_profile_updated, profile.name)
+		log("Profile updated: ${profile.name}")
 	}
 
 	/** Renames [id]; returns false when the new name is blank. */
@@ -85,7 +84,7 @@ class ProfilesViewModel(
 		if (!profilesRepo.rename(id, name)) return false
 		val renamed = profilesRepo.state.value.profiles
 			.find { it.id == id } ?: return true
-		log(R.string.log_profile_renamed, renamed.name)
+		log("Profile renamed: ${renamed.name}")
 		return true
 	}
 
@@ -94,7 +93,7 @@ class ProfilesViewModel(
 		val profile = profilesRepo.state.value.profiles
 			.find { it.id == id } ?: return
 		profilesRepo.delete(id)
-		log(R.string.log_profile_deleted, profile.name)
+		log("Profile deleted: ${profile.name}")
 	}
 
 	/** Resolves the cap for the UI ("limit reached" hint). */

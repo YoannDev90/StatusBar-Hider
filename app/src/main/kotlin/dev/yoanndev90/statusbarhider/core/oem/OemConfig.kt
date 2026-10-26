@@ -251,7 +251,7 @@ data class OemConfig(
 			LogStore.appendOnce(
 				context,
 				"$TAG#load#$id",
-				context.getString(R.string.log_oem_load_failed, id, e.message ?: e.toString())
+				"ERROR: OEM config $id could not be loaded (${e.message ?: e.toString()}) - hide and restore run no command"
 			)
 			return fallback(context)
 		}

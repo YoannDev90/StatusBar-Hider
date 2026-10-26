@@ -2,7 +2,6 @@ package dev.yoanndev90.statusbarhider.overlay.system
 
 import android.content.Context
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 
 private const val TAG = "Safely"
@@ -22,6 +21,6 @@ internal inline fun runSafely(
 	} catch (e: Exception) {
 		val line = e.toString()
 		Log.w(TAG, line)
-		LogStore.appendOnce(context, "$TAG#$line", context.getString(R.string.log_error, line))
+		LogStore.appendOnce(context, "$TAG#$line", "ERROR: $line")
 	}
 }

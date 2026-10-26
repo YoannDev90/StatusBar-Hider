@@ -3,9 +3,7 @@ package dev.yoanndev90.statusbarhider.ui.state
 import android.app.Application
 import android.content.ComponentName
 import android.provider.Settings
-import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.oem.OemConfig
@@ -57,10 +55,10 @@ open class PrefsViewModel(
 	/** Asks for the Shizuku grant; logs instead of prompting when that is pointless. */
 	fun requestShizukuPermission() {
 		when (shizukuRepo.state.value) {
-			ShizukuState.NOT_RUNNING -> log(R.string.log_shizuku_not_running)
-			ShizukuState.READY -> log(R.string.log_already_authorized)
+			ShizukuState.NOT_RUNNING -> log("Shizuku is not running. Start it, then try again.")
+			ShizukuState.READY -> log("Already authorized.")
 			ShizukuState.NOT_GRANTED ->
-				if (!shizukuRepo.requestPermission()) log(R.string.log_shizuku_not_running)
+				if (!shizukuRepo.requestPermission()) log("Shizuku is not running. Start it, then try again.")
 		}
 	}
 
@@ -72,7 +70,7 @@ open class PrefsViewModel(
 	/** Switches the custom bar on or off and logs the transition. */
 	fun setOverlayEnabled(enabled: Boolean) {
 		OverlayController.setEnabled(getApplication(), enabled)
-		log(if (enabled) R.string.log_bar_shown else R.string.log_bar_hidden)
+		log(if (enabled) "Custom bar shown (overlay)" else "Custom bar hidden")
 	}
 
 	/**
@@ -82,12 +80,12 @@ open class PrefsViewModel(
 	 */
 	fun enableLockScreenOverlay() {
 		val app = getApplication<Application>()
-		ShellRunner.run(app, R.string.log_enabling_lock_a11y) {
-			val error = writeLockOverlay(app, lockOverlayComponent(app), enable = true)
+		ShellRunner.run(app, "enabling lock-screen accessibility service...") {
+			val error = writeLockOverlay(lockOverlayComponent(app), enable = true)
 			if (error == null) {
-				log(R.string.log_lock_a11y_ok)
+				log("Lock-screen overlay service enabled. Lock the screen to see it.")
 			} else {
-				log(R.string.log_lock_a11y_failed, error)
+				log("Could not enable lock-screen overlay service: $error")
 			}
 		}
 	}
@@ -99,12 +97,12 @@ open class PrefsViewModel(
 	 */
 	fun disableLockScreenOverlay() {
 		val app = getApplication<Application>()
-		ShellRunner.run(app, R.string.log_disabling_lock_a11y) {
-			val error = writeLockOverlay(app, lockOverlayComponent(app), enable = false)
+		ShellRunner.run(app, "disabling lock-screen accessibility service...") {
+			val error = writeLockOverlay(lockOverlayComponent(app), enable = false)
 			if (error == null) {
-				log(R.string.log_lock_a11y_disabled)
+				log("Lock-screen overlay service disabled.")
 			} else {
-				log(R.string.log_lock_a11y_disable_failed, error)
+				log("Could not disable lock-screen overlay service: $error")
 			}
 		}
 	}
@@ -118,11 +116,10 @@ open class PrefsViewModel(
 	 * shell failure text, or null when the list was read and both writes took.
 	 */
 	private suspend fun writeLockOverlay(
-		app: Application,
 		component: String,
 		enable: Boolean
 	): String? {
-		val (readExit, current) = ShellRunner.run(app, "settings get secure enabled_accessibility_services")
+		val (readExit, current) = ShellRunner.run("settings get secure enabled_accessibility_services")
 		// A failed read answers with error text, not the service list (the
 		// transport merges stderr into out): parsing that as a list and writing
 		// it back would wipe every service the user actually enabled.
@@ -131,9 +128,9 @@ open class PrefsViewModel(
 		val others = existing.split(':').filter { it.isNotEmpty() && it != component }
 		val merged = if (enable) (others + component).joinToString(":") else others.joinToString(":")
 		val (exit, out) =
-			ShellRunner.run(app, "settings put secure enabled_accessibility_services '$merged'")
+			ShellRunner.run("settings put secure enabled_accessibility_services '$merged'")
 		val enabledFlag = if (enable || others.isNotEmpty()) 1 else 0
-		val (exit2, out2) = ShellRunner.run(app, "settings put secure accessibility_enabled $enabledFlag")
+		val (exit2, out2) = ShellRunner.run("settings put secure accessibility_enabled $enabledFlag")
 		return if (exit == 0 && exit2 == 0) {
 			null
 		} else {
@@ -144,7 +141,7 @@ open class PrefsViewModel(
 	/** Persists the date pattern and logs it so the user can confirm it took. */
 	fun setDateFormat(pattern: String) {
 		updatePrefs { copy(dateFormat = pattern) }
-		log(R.string.log_date_format, pattern)
+		log("Date format: $pattern")
 	}
 
 	/**
@@ -156,7 +153,7 @@ open class PrefsViewModel(
 		val app = getApplication<Application>()
 		SettingsRegistry.resetStore(overlayStore)
 		OverlayController.replaceAll(app, overlayStore.default)
-		log(R.string.log_settings_reset)
+		log("Settings reset to defaults")
 	}
 
 	/** Puts a section's settings back to their defaults; the rest of the file is kept. */
@@ -199,17 +196,8 @@ open class PrefsViewModel(
 		LogStore.append(getApplication(), line)
 	}
 
-	/** Appends the formatted string behind [id] to the app log. */
-	protected fun log(
-		@StringRes id: Int,
-		vararg args: Any?
-	) {
-		appendLog(str(id, *args))
+	/** Appends [line] (a hardcoded English log message) to the app log. */
+	protected fun log(line: String) {
+		appendLog(line)
 	}
-
-	/** Resolves a string resource, optionally formatted with [args]. */
-	protected fun str(
-		@StringRes id: Int,
-		vararg args: Any?
-	): String = getApplication<Application>().getString(id, *args)
 }

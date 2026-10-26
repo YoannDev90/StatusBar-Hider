@@ -51,7 +51,7 @@ internal fun Service.startOverlayForeground() {
 		Log.w(TAG, "startForeground failed", e)
 		LogStore.append(
 			this,
-			getString(R.string.log_start_foreground_failed, e.message ?: e.toString())
+			"ERROR: Custom bar failed to run in the foreground: ${e.message ?: e.toString()}"
 		)
 		stopSelf()
 	}

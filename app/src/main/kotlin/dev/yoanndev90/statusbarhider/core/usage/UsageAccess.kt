@@ -6,7 +6,6 @@ import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Process
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 
 /**
@@ -34,7 +33,7 @@ object UsageAccess {
 			LogStore.appendOnce(
 				context,
 				"$TAG#granted",
-				context.getString(R.string.log_error, "usage access check: ${e.message}")
+				"ERROR: usage access check: ${e.message}"
 			)
 			false
 		}
@@ -59,7 +58,7 @@ object UsageAccess {
 			LogStore.appendOnce(
 				context,
 				"$TAG#foregroundPackage",
-				context.getString(R.string.log_error, "foreground package query: ${e.message}")
+				"ERROR: foreground package query: ${e.message}"
 			)
 			null
 		}

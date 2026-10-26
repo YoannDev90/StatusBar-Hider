@@ -19,7 +19,6 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
@@ -113,7 +112,7 @@ class StatusBarOverlayService :
 				// Without this line the switch stays "on" while no window ever
 				// appears and the failure is invisible from the app.
 				Log.w(TAG, "start failed", e)
-				LogStore.append(app, app.getString(R.string.log_start_service_failed, e.message ?: e.toString()))
+				LogStore.append(app, "ERROR: Custom bar could not be started: ${e.message ?: e.toString()}")
 				false
 			}
 		}
@@ -124,7 +123,7 @@ class StatusBarOverlayService :
 				app.stopService(Intent(context, StatusBarOverlayService::class.java))
 			} catch (e: Exception) {
 				Log.w(TAG, "stop failed", e)
-				LogStore.append(app, app.getString(R.string.log_stop_service_failed, e.message ?: e.toString()))
+				LogStore.append(app, "ERROR: Custom bar could not be stopped: ${e.message ?: e.toString()}")
 			}
 		}
 	}
@@ -188,7 +187,7 @@ class StatusBarOverlayService :
 				if (!HideInteractor.isApplied(app)) last = HideInteractor.applyHide(app)
 			}
 			if (!last.ok) {
-				LogStore.append(app, app.getString(R.string.log_reapply_hide_unlock))
+				LogStore.append(app, "Re-applying hide after unlock failed")
 				last.lines.forEach { LogStore.append(app, it) }
 			}
 		}
@@ -249,7 +248,7 @@ class StatusBarOverlayService :
 
 	override fun onUsageAccessMissing() {
 		Log.w(TAG, "Usage access not granted - app blacklist inactive")
-		LogStore.append(this, getString(R.string.log_usage_access_missing))
+		LogStore.append(this, "Usage access not granted - app blacklist inactive")
 	}
 
 	override fun ensureNotSuppressed() {

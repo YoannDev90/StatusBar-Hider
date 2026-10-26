@@ -288,7 +288,7 @@ internal class BluetoothTypes(
 		lastReadAt = System.currentTimeMillis()
 		val res =
 			try {
-				ShellRunner.run(context, DUMP_CMD, TIMEOUT_SEC)
+				ShellRunner.run(DUMP_CMD, TIMEOUT_SEC)
 			} catch (e: CancellationException) {
 				throw e
 			} catch (e: Exception) {

@@ -51,7 +51,7 @@ class HideRestoreTile : TileService() {
 					HideInteractor.applyAndLogGated(
 						app,
 						hide = hide,
-						labelRes = if (hide) R.string.log_applying_hide else R.string.log_restoring
+						label = if (hide) "applying hide..." else "restoring..."
 					)
 				result?.lines?.forEach { Log.i(TAG, it) }
 			} catch (e: CancellationException) {

@@ -18,7 +18,6 @@ import android.provider.CalendarContract
 import android.provider.Settings
 import android.telephony.TelephonyManager
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.model.BtDeviceIcon
@@ -303,7 +302,7 @@ internal class SystemIndicators(
 		LogStore.appendOnce(
 			context,
 			"$TAG#$where",
-			context.getString(R.string.log_error, "$where: ${e.message}")
+			"ERROR: $where: ${e.message}"
 		)
 	}
 

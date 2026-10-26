@@ -6,8 +6,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.service.quicksettings.TileService
 import android.util.Log
-import androidx.annotation.StringRes
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.data.OemRepository
@@ -86,7 +84,7 @@ object HideInteractor {
 
 	/** [isApplied]'s reading, or null when `dumpsys` carried no usable answer. */
 	private suspend fun readApplied(context: Context): Boolean? {
-		val (exit, out) = ShellRunner.run(context, "dumpsys statusbar")
+		val (exit, out) = ShellRunner.run("dumpsys statusbar")
 		if (exit != 0) return null
 		return holdsMask(parseDisableFlags(out), expectedMask(context))
 	}
@@ -102,7 +100,7 @@ object HideInteractor {
 	 * still set while the keyguard goes away - never enter the mask.
 	 */
 	private suspend fun rememberMask(context: Context) {
-		val (exit, out) = ShellRunner.run(context, "dumpsys statusbar")
+		val (exit, out) = ShellRunner.run("dumpsys statusbar")
 		if (exit != 0) return
 		val shared = parseDisableFlags(out)?.shared ?: return
 		if (shared <= 0L) return
@@ -131,9 +129,9 @@ object HideInteractor {
 	fun hideLogged(
 		app: Application,
 		hide: Boolean,
-		@StringRes labelRes: Int?
+		label: String?
 	) {
-		ShellRunner.run(app, labelRes) { applyAndLog(app, hide) }
+		ShellRunner.run(app, label) { applyAndLog(app, hide) }
 	}
 
 	/**
@@ -145,10 +143,10 @@ object HideInteractor {
 	suspend fun applyAndLogGated(
 		context: Context,
 		hide: Boolean,
-		@StringRes labelRes: Int?
+		label: String?
 	): Result? {
 		var outcome: Result? = null
-		ShellRunner.runSequence(context, labelRes) { outcome = applyAndLog(context, hide) }
+		ShellRunner.runSequence(context, label) { outcome = applyAndLog(context, hide) }
 		return outcome
 	}
 
@@ -180,20 +178,20 @@ object HideInteractor {
 		val config = OemRepository.getInstance(context).awaitLoaded()
 		val commands = if (hide) config.hide else config.restore
 		if (commands.isEmpty()) {
-			val resId = if (hide) R.string.log_no_hide_commands else R.string.log_no_restore_commands
-			return Result(false, listOf(context.getString(resId, config.name)))
+			val message = if (hide) "No hide commands for ${config.name}" else "No restore commands for ${config.name}"
+			return Result(false, listOf(message))
 		}
 		val lines = mutableListOf<String>()
 		var ok = true
 		for (cmd in commands) {
-			val (exit, out) = ShellRunner.run(context, cmd.cmd)
+			val (exit, out) = ShellRunner.run(cmd.cmd)
 			if (exit == 0) {
-				val output = out.ifEmpty { context.getString(R.string.log_ok) }
-				lines += context.getString(R.string.log_command_ok, cmd.name, output)
+				val output = out.ifEmpty { "ok" }
+				lines += "${cmd.name} -> $output"
 			} else {
 				ok = false
-				val output = out.ifEmpty { context.getString(R.string.log_exit_code, exit) }
-				lines += context.getString(R.string.log_command_failed, cmd.name, output)
+				val output = out.ifEmpty { "exit $exit" }
+				lines += "${cmd.name} -> FAILED ($output)"
 			}
 		}
 		if (ok) {

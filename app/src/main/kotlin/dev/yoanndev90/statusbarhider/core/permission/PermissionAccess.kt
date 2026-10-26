@@ -9,7 +9,6 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.keepalive.KeepAliveAccess
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.usage.UsageAccess
@@ -94,6 +93,6 @@ object PermissionAccess {
 		e: Exception
 	) {
 		Log.w(TAG, key, e)
-		LogStore.appendOnce(context, "$TAG#$key", context.getString(R.string.log_error, "$action: ${e.message}"))
+		LogStore.appendOnce(context, "$TAG#$key", "ERROR: $action: ${e.message}")
 	}
 }

@@ -3,7 +3,6 @@ package dev.yoanndev90.statusbarhider.core.watcher
 import android.app.Application
 import android.content.Context
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
@@ -141,13 +140,13 @@ object SystemUiWatcher {
 			return
 		}
 		if (pid == baseline) return
-		val line = application.getString(R.string.log_systemui_restarted, baseline, pid)
+		val line = "SystemUI restarted ($baseline -> $pid) - re-applying hide commands"
 		// The baseline moves only once the sequence actually started. Advancing
 		// it before a fire-and-forget launch recorded the restart and then lost
 		// the re-apply when the shell refused the command as busy - the bar
 		// stayed visible with nothing left to retry it.
 		val started =
-			ShellRunner.runSequence(application, R.string.log_reapply_hide) {
+			ShellRunner.runSequence(application, "Re-applying hide after a SystemUI restart...") {
 				baselinePid = pid
 				Log.i(TAG, line)
 				LogStore.append(application, line)
@@ -158,7 +157,7 @@ object SystemUiWatcher {
 
 	private suspend fun readSystemUiPid(context: Context): String? =
 		try {
-			val (exit, out) = ShellRunner.run(context, PID_CMD, CMD_TIMEOUT_SEC)
+			val (exit, out) = ShellRunner.run(PID_CMD, CMD_TIMEOUT_SEC)
 			// stderr is merged into `out`: a failure such as "sh: pidof: not
 			// found" must never be taken for the pid.
 			if (exit != 0) null else out
@@ -168,7 +167,7 @@ object SystemUiWatcher {
 			LogStore.appendOnce(
 				context,
 				"$TAG#readSystemUiPid",
-				context.getString(R.string.log_error, "pidof: ${e.message}")
+				"ERROR: pidof: ${e.message}"
 			)
 			null
 		}

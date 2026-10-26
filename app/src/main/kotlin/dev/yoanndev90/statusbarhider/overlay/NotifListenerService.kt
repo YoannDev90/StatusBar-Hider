@@ -6,7 +6,6 @@ import android.graphics.drawable.Drawable
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
-import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.overlay.system.NotifIcons
 import kotlinx.coroutines.CoroutineScope
@@ -72,7 +71,7 @@ class NotifListenerService : NotificationListenerService() {
 					LogStore.appendOnce(
 						this,
 						"$TAG#activeNotifications",
-						getString(R.string.log_error, "activeNotifications: ${e.message}")
+						"ERROR: activeNotifications: ${e.message}"
 					)
 					emptyList()
 				}
@@ -96,7 +95,7 @@ class NotifListenerService : NotificationListenerService() {
 			LogStore.appendOnce(
 				this,
 				"$TAG#rebuild",
-				getString(R.string.log_error, "notif rebuild: ${e.message}")
+				"ERROR: notif rebuild: ${e.message}"
 			)
 		}
 	}
