@@ -18,6 +18,7 @@ import dev.yoanndev90.statusbarhider.data.ShizukuRepository
 import dev.yoanndev90.statusbarhider.data.ShizukuState
 import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.overlay.OverlayController
+import dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService
 import dev.yoanndev90.statusbarhider.ui.state.PrefsViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -90,6 +91,27 @@ class StatusViewModel(
 		}
 			// WhileSubscribed: no eternal combine while the tab is off screen.
 			.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatusUiState())
+
+	/**
+	 * System status bar: whether the hide is in effect on the device, read
+	 * back from `dumpsys` rather than from the flag the last run wrote. Seeded
+	 * from that flag so the card is not blank until the first read lands.
+	 */
+	private val _systemBarHidden = MutableStateFlow(HideInteractor.isHidden(application))
+
+	val systemBarHidden: StateFlow<Boolean> = _systemBarHidden.asStateFlow()
+
+	/** Custom bar: the overlay window's real attachment, straight from the service. */
+	val customBarVisible: StateFlow<Boolean> = StatusBarOverlayService.visible
+
+	/**
+	 * Re-reads the hide state from the shell. Home calls it on every resume
+	 * and on the falling edge of [ShellRunner.busy] - the moment a command
+	 * run has finished writing the state it claims.
+	 */
+	fun refreshSystemBarState() {
+		viewModelScope.launch { _systemBarHidden.value = HideInteractor.readHidden(getApplication()) }
+	}
 
 	fun applyHide() {
 		ShellRunner.run(getApplication(), R.string.log_applying_hide) { oem ->

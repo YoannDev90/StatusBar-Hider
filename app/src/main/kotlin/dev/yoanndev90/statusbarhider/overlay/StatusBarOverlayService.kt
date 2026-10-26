@@ -51,6 +51,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.ConcurrentHashMap
@@ -72,10 +75,29 @@ class StatusBarOverlayService :
 
 		private const val USB_STATE_ACTION = "android.hardware.usb.action.USB_STATE"
 		private const val REAPPLY_AFTER_UNLOCK_MS = 0L
-		private const val REAPPLY_WATCH_MS = 350L
-		private const val REAPPLY_POLL_MS = 30L
+
+		/**
+		 * Offsets, in ms after unlock, at which the shared disable record is
+		 * re-checked. The overwrite does not come from the platform: a
+		 * third-party app's own `cmd statusbar send-disable-flag` replaces
+		 * the record ~0.5s after `ACTION_USER_PRESENT` (Essentials on the
+		 * test device, docs/limitations.md), which the old single 350ms
+		 * window always missed. 300/700 straddle that point, then the checks
+		 * drift out to 3s to catch a slower writer.
+		 */
+		private val REAPPLY_WATCH_OFFSETS_MS = longArrayOf(300L, 700L, 1500L, 3000L)
 
 		const val ACTION_STOP = "dev.yoanndev90.statusbarhider.overlay.STOP"
+
+		private val _visible = MutableStateFlow(false)
+
+		/**
+		 * True while the overlay window is attached: the bar the user can
+		 * actually see. Deliberately not the persisted `enabled` flag, which
+		 * keeps claiming a bar after the system killed the service - a screen
+		 * showing the state must answer "is it up", not "was it asked for".
+		 */
+		val visible: StateFlow<Boolean> = _visible.asStateFlow()
 
 		/**
 		 * Starts the foreground service. Returns false when the system refused
@@ -144,10 +166,13 @@ class StatusBarOverlayService :
 	private var suppressed by SharedBar.suppressed
 
 	/**
-	 * The platform zeroes the shared disable record when the keyguard goes
-	 * away, so the system status bar comes back on every unlock. Apply right
-	 * after unlock, then watch for the late wipe and re-apply; silent unless
-	 * an apply command itself fails.
+	 * A third-party app's own `cmd statusbar send-disable-flag` replaces our
+	 * disable record shortly after the keyguard goes away (Essentials on the
+	 * test device, ~0.5s after `ACTION_USER_PRESENT`; see
+	 * docs/limitations.md), so the system status bar comes back on every
+	 * unlock. Apply right after unlock, then watch for that overwrite at
+	 * [REAPPLY_WATCH_OFFSETS_MS] and re-apply; silent unless an apply command
+	 * itself fails.
 	 */
 	private fun reapplyHideAfterUnlock() {
 		val app = application
@@ -155,10 +180,11 @@ class StatusBarOverlayService :
 		ShellRunner.run(app, null) {
 			delay(REAPPLY_AFTER_UNLOCK_MS)
 			var last = HideInteractor.applyHide(app)
-			var watched = 0L
-			while (last.ok && watched < REAPPLY_WATCH_MS) {
-				delay(REAPPLY_POLL_MS)
-				watched += REAPPLY_POLL_MS
+			var at = 0L
+			for (offset in REAPPLY_WATCH_OFFSETS_MS) {
+				if (!last.ok) break
+				delay(offset - at)
+				at = offset
 				if (!HideInteractor.isApplied(app)) last = HideInteractor.applyHide(app)
 			}
 			if (!last.ok) {
@@ -326,6 +352,8 @@ class StatusBarOverlayService :
 		window.detach()
 		// The overlay is gone: let SystemUI re-read the "Custom bar" tile state.
 		HideInteractor.notifyTiles(this)
+		// Without this the flag would outlive the service it describes.
+		_visible.value = false
 		super.onDestroy()
 	}
 
@@ -505,7 +533,11 @@ class StatusBarOverlayService :
 	 * composing a bar the keyguard would cover anyway.
 	 */
 	private fun syncWindowAttachment() {
-		window.sync(!suppressed && !(barState.locked && !prefs.showOnLockScreen))
+		val show = !suppressed && !(barState.locked && !prefs.showOnLockScreen)
+		window.sync(show)
+		// Published right where the window is decided, so the flag a screen
+		// reads cannot drift from the bar that is actually on screen.
+		_visible.value = show
 	}
 
 	/**

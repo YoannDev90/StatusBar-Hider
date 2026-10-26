@@ -24,7 +24,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -34,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.command.ShellRunner
 import dev.yoanndev90.statusbarhider.data.ShizukuState
-import dev.yoanndev90.statusbarhider.hide.HideInteractor
 import dev.yoanndev90.statusbarhider.ui.components.SettingAction
 import dev.yoanndev90.statusbarhider.ui.components.SettingGroup
 import dev.yoanndev90.statusbarhider.ui.components.SettingsScreen
@@ -53,17 +51,19 @@ fun HomeScreen(
 	vm: StatusViewModel,
 	onNavigate: (String) -> Unit
 ) {
-	val context = LocalContext.current
 	val state by vm.uiState.collectAsStateWithLifecycle()
-	val prefs by vm.prefs.collectAsStateWithLifecycle()
 	// The show button can emit GrantOverlayPermission; without the collector
 	// the event would be dropped.
 	HandlePrefsEvents(vm)
 
-	// The hide flag is persisted, never observed: re-read it when the user
-	// comes back (grants and OEM picks happen in other screens) and on the
-	// falling edge of the shell busy flag, which is the moment a run writes
-	// it. Both bumps are the same key of that read.
+	// Neither card can trust a flag it read once: the system bar's shared
+	// disable record gets replaced, not OR-ed, so a third party's
+	// `send-disable-flag` drops our bits on unlock (docs/limitations.md),
+	// and the custom bar's `enabled` flag survives the service the system
+	// killed. Give both a reason to look again - the user coming back
+	// (grants and OEM picks happen in other screens) and the falling edge
+	// of the shell busy flag, which is the moment a run has finished
+	// writing. One tick keys both re-reads.
 	var refreshTick by remember { mutableStateOf(0) }
 	LifecycleResumeEffect(Unit) {
 		refreshTick++
@@ -75,7 +75,10 @@ fun HomeScreen(
 		if (wasBusy && !busy) refreshTick++
 		wasBusy = busy
 	}
-	val hidden = remember(refreshTick) { HideInteractor.isHidden(context) }
+	val hidden by vm.systemBarHidden.collectAsStateWithLifecycle()
+	val customBarVisible by vm.customBarVisible.collectAsStateWithLifecycle()
+	// suspend, so it cannot sit inside remember { }: the read goes to the shell.
+	LaunchedEffect(refreshTick) { vm.refreshSystemBarState() }
 
 	SettingsScreen {
 		item {
@@ -111,10 +114,10 @@ fun HomeScreen(
 		item {
 			SettingGroup(R.string.section_custom_bar) {
 				StateLine(
-					value = stringResource(if (prefs.enabled) R.string.home_value_visible else R.string.home_value_hidden),
-					color = if (prefs.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+					value = stringResource(if (customBarVisible) R.string.home_value_visible else R.string.home_value_hidden),
+					color = if (customBarVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
 				)
-				if (prefs.enabled) {
+				if (customBarVisible) {
 					SettingAction(R.drawable.ic_visibility_off, R.string.action_hide_custom_bar) { vm.setOverlayEnabled(false) }
 				} else {
 					SettingAction(R.drawable.ic_visibility, R.string.action_show_custom_bar) { vm.showOverlayBar() }

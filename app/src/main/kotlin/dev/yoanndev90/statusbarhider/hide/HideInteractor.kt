@@ -17,9 +17,11 @@ import dev.yoanndev90.statusbarhider.widget.BarWidgetProvider as BarWidget
 
 /**
  * Everything the app does to the system status bar: run the OEM hide /
- * restore command set, remember the state (the platform exposes no query for
- * it, so the last successful run is persisted), and read the disable flags
- * back from `dumpsys`.
+ * restore command set, remember the intended state (nothing asks the system
+ * whether this app's hide is the one still in force, so the last successful
+ * run is persisted), and read the disable flags back from `dumpsys` - both
+ * the aggregate `mDisabled1` and the shared record our own bits live in,
+ * parsed by [DisableFlags].
  *
  * [applyAndLog] and [hideLogged] exist because "run the sequence, then append
  * every line to the app log" was copied at every entry point (Status screen,
@@ -35,6 +37,9 @@ object HideInteractor {
 	private const val TAG = "HideInteractor"
 	private const val PREFS_NAME = "statusbarhider"
 	private const val KEY_HIDDEN = "status_bar_hidden"
+
+	/** Bits the last successful hide read back; -1 until one has run. */
+	private const val KEY_MASK = "status_bar_disable_mask"
 
 	/** Outcome of one hide / restore run, already formatted for the log view. */
 	data class Result(
@@ -52,21 +57,56 @@ object HideInteractor {
 	suspend fun restore(context: Context): Result = run(context, hide = false)
 
 	/**
-	 * True while `dumpsys statusbar` reports a non-zero `mDisabled1`, i.e.
-	 * any disable record is still active -- ours and/or SystemUI's lock flags.
-	 * False only when everything has been cleared: the platform wipes every
-	 * disable record ~0.5-2s after keyguard dismissal, so the unlock re-apply
-	 * watches for that total clear (see
-	 * [dev.yoanndev90.statusbarhider.overlay.StatusBarOverlayService]) instead
-	 * of trusting a guessed sleep.
+	 * True while the flags this app applied are still held - the exact bits,
+	 * not "some record". `mDisabled1` is a shared slot: AOSP's
+	 * `cmd statusbar send-disable-flag` replaces it for every caller from a
+	 * single static token, so a third-party app writing its own flags can
+	 * drop ours (Essentials was seen doing it ~0.5s after every unlock, see
+	 * docs/limitations.md) and leave a non-zero remainder that the old
+	 * `!= 0` read called "applied" while the bar was visibly back on screen.
+	 *
+	 * The mask compared here is what [rememberMask] read back right after our
+	 * own apply; with none recorded yet the old any-record rule stands. An
+	 * unreadable `dumpsys` still counts as "not applied", which is what every
+	 * caller but [readHidden] wants to know.
 	 */
-	suspend fun isApplied(context: Context): Boolean {
+	suspend fun isApplied(context: Context): Boolean = readApplied(context) ?: false
+
+	/**
+	 * The hide state as the device reports it, for a screen that displays it:
+	 * [isApplied]'s answer whenever `dumpsys` can be read, the persisted flag
+	 * only when it cannot (Shizuku off, no `mDisabled1` line).
+	 *
+	 * [isHidden] alone is the last thing written, never the current state -
+	 * the shared record can lose our bits right after every unlock, so a
+	 * screen that only re-reads that flag keeps calling a bar that is back on
+	 * screen "Hidden".
+	 */
+	suspend fun readHidden(context: Context): Boolean = readApplied(context) ?: isHidden(context)
+
+	/** [isApplied]'s reading, or null when `dumpsys` carried no usable answer. */
+	private suspend fun readApplied(context: Context): Boolean? {
 		val (exit, out) = ShellRunner.run(context, "dumpsys statusbar")
-		if (exit != 0) return false
-		val line = out.lineSequence().firstOrNull { it.trimStart().startsWith("mDisabled1=") } ?: return false
-		val hex = line.substringAfter("mDisabled1=").trim().removePrefix("0x")
-		val disabled1 = hex.toLongOrNull(16) ?: 0L
-		return disabled1 != 0L
+		if (exit != 0) return null
+		return holdsMask(parseDisableFlags(out), expectedMask(context))
+	}
+
+	/** The bits our last successful hide wrote, or null when none is recorded. */
+	private fun expectedMask(context: Context): Long? =
+		prefs(context).getLong(KEY_MASK, -1L).takeIf { it > 0L }
+
+	/**
+	 * Reads our flags back right after a successful apply and remembers them:
+	 * the one value later reads can be compared against. Taken from the
+	 * shared record rather than `mDisabled1`, so SystemUI's own lock flags -
+	 * still set while the keyguard goes away - never enter the mask.
+	 */
+	private suspend fun rememberMask(context: Context) {
+		val (exit, out) = ShellRunner.run(context, "dumpsys statusbar")
+		if (exit != 0) return
+		val shared = parseDisableFlags(out)?.shared ?: return
+		if (shared <= 0L) return
+		prefs(context).edit().putLong(KEY_MASK, shared).apply()
 	}
 
 	/**
@@ -158,6 +198,10 @@ object HideInteractor {
 		}
 		if (ok) {
 			prefs(context).edit().putBoolean(KEY_HIDDEN, hide).apply()
+			// Read the mask back now, while the flags we just wrote are the
+			// ones the shared record holds; a restore keeps the previous one,
+			// whose absence is what makes the post-restore read say "off".
+			if (hide) rememberMask(context)
 		}
 		notifyTiles(context)
 		BarWidget.updateAll(context)
