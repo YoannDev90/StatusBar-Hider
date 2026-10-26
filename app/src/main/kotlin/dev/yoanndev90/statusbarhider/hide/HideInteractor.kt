@@ -45,8 +45,34 @@ object HideInteractor {
 		val lines: List<String>
 	)
 
-	/** Last persisted hide state. */
+	/** Last persisted hide state; what the app *intends*, not necessarily what the device shows. */
 	fun isHidden(context: Context): Boolean = prefs(context).getBoolean(KEY_HIDDEN, false)
+
+	/**
+	 * Last hide state this app observed from the device: a completed [run], or
+	 * a [readHidden] `dumpsys` read. The QS tile, the widget and the
+	 * control-API toggle show or toggle from it, because they are synchronous
+	 * (main thread, RemoteViews, broadcast receivers) and cannot suspend into
+	 * a shell read.
+	 *
+	 * [isHidden] alone is only the last thing *written* and goes stale the
+	 * moment a third-party app wipes our flags after unlock (Essentials, see
+	 * docs/limitations.md) - a tile that re-read only that flag keeps calling
+	 * a bar that is back on screen "Hidden". This cache is refreshed at the two
+	 * points that establish the real state (a successful run, the next
+	 * authoritative read), so those surfaces stop lying. Seeded from [isHidden]
+	 * until the first refresh.
+	 */
+	@Volatile
+	private var observed: Boolean? = null
+
+	/** The cached observed hide state, falling back to the [isHidden] intent before any refresh. */
+	fun observedHidden(context: Context): Boolean = observed ?: isHidden(context)
+
+	/** Records the hide state a run or a read just established. */
+	private fun rememberObserved(value: Boolean) {
+		observed = value
+	}
 
 	/** Applies every configured hide command; persists the state on full success. */
 	suspend fun applyHide(context: Context): Result = run(context, hide = true)
@@ -80,7 +106,7 @@ object HideInteractor {
 	 * screen that only re-reads that flag keeps calling a bar that is back on
 	 * screen "Hidden".
 	 */
-	suspend fun readHidden(context: Context): Boolean = readApplied(context) ?: isHidden(context)
+	suspend fun readHidden(context: Context): Boolean = (readApplied(context) ?: isHidden(context)).also { rememberObserved(it) }
 
 	/** [isApplied]'s reading, or null when `dumpsys` carried no usable answer. */
 	private suspend fun readApplied(context: Context): Boolean? {
@@ -196,6 +222,8 @@ object HideInteractor {
 		}
 		if (ok) {
 			prefs(context).edit().putBoolean(KEY_HIDDEN, hide).apply()
+			// The run just wrote these flags: this is the observed state now.
+			rememberObserved(hide)
 			// Read the mask back now, while the flags we just wrote are the
 			// ones the shared record holds; a restore keeps the previous one,
 			// whose absence is what makes the post-restore read say "off".

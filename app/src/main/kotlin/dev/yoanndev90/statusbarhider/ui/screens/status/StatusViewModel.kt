@@ -94,9 +94,10 @@ class StatusViewModel(
 	/**
 	 * System status bar: whether the hide is in effect on the device, read
 	 * back from `dumpsys` rather than from the flag the last run wrote. Seeded
-	 * from that flag so the card is not blank until the first read lands.
+	 * from the observed state (the [HideInteractor] cache, falling back to that
+	 * flag) so the card is not blank until the first read lands.
 	 */
-	private val _systemBarHidden = MutableStateFlow(HideInteractor.isHidden(application))
+	private val _systemBarHidden = MutableStateFlow(HideInteractor.observedHidden(application))
 
 	val systemBarHidden: StateFlow<Boolean> = _systemBarHidden.asStateFlow()
 

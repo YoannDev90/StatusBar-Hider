@@ -39,7 +39,7 @@ class BarWidgetProvider : AppWidgetProvider() {
 			val barOn = OverlayPrefsRepository
 				.getInstance(app)
 				.state.value.enabled
-			val systemHidden = HideInteractor.isHidden(app)
+			val systemHidden = HideInteractor.observedHidden(app)
 			return RemoteViews(app.packageName, R.layout.widget_bar).apply {
 				setTextViewText(
 					R.id.widget_action_bar,

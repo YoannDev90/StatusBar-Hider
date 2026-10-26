@@ -42,7 +42,7 @@ class HideRestoreTile : TileService() {
 			return
 		}
 		val app = applicationContext
-		val hide = !HideInteractor.isHidden(app)
+		val hide = !HideInteractor.observedHidden(app)
 		scope.launch {
 			try {
 				// Gated: a tile tap cannot interleave with a Status screen action
@@ -79,7 +79,7 @@ class HideRestoreTile : TileService() {
 
 	private fun refresh() {
 		val tile = qsTile ?: return
-		val hidden = HideInteractor.isHidden(this)
+		val hidden = HideInteractor.observedHidden(this)
 		tile.state = if (hidden) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
 		if (Build.VERSION.SDK_INT >= 29) {
 			tile.subtitle =

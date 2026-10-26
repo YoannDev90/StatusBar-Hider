@@ -59,7 +59,7 @@ object ControlActions {
 			)
 			ACTION_HIDE_SYSTEM_BAR -> systemBar(app, hide = true)
 			ACTION_RESTORE_SYSTEM_BAR -> systemBar(app, hide = false)
-			ACTION_TOGGLE_SYSTEM_BAR -> systemBar(app, hide = !HideInteractor.isHidden(app))
+			ACTION_TOGGLE_SYSTEM_BAR -> systemBar(app, hide = !HideInteractor.observedHidden(app))
 			else -> return false
 		}
 		return true
