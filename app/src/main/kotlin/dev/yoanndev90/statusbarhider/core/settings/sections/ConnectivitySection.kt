@@ -27,6 +27,7 @@ object ConnectivitySection :
 			settingRows(
 				ConnectivitySpecs.showWifi,
 				ConnectivitySpecs.showMobileData,
+				ConnectivitySpecs.showSim2Icons,
 				ConnectivitySpecs.showBluetooth,
 				ConnectivitySpecs.showAirplane,
 				ConnectivitySpecs.showUsb,

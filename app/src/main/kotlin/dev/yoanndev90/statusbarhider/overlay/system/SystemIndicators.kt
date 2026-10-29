@@ -16,11 +16,14 @@ import android.nfc.NfcAdapter
 import android.os.Build
 import android.provider.CalendarContract
 import android.provider.Settings
+import android.telephony.SubscriptionInfo
+import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.util.Log
 import dev.yoanndev90.statusbarhider.core.log.LogStore
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.model.BtDeviceIcon
+import dev.yoanndev90.statusbarhider.overlay.model.SimStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -169,16 +172,100 @@ internal class SystemIndicators(
 	 * is not the transport in use. One entry point for the full connectivity
 	 * read and for the service's faster mobile loop, so the two can never show
 	 * different values.
+	 *
+	 * [showSecond] drops the second SIM's row when its toggle is off; the
+	 * network-type label always describes the data SIM, never the slot order.
 	 */
-	fun mobileStatus(active: Boolean): MobileStatus =
+	fun mobileStatus(
+		active: Boolean,
+		showSecond: Boolean
+	): MobileStatus =
 		if (active) {
-			MobileStatus(active = true, type = mobileTypeLabel().ifEmpty { "4G" }, level = signalLevel())
+			MobileStatus(active = true, sims = simStatuses(showSecond))
 		} else {
-			MobileStatus(active = false, type = "", level = -1)
+			MobileStatus(active = false, sims = emptyList())
 		}
 
+	/**
+	 * One [SimStatus] per visible SIM in slot order, the data SIM flagged so
+	 * the bar's single generation label names the subscription the traffic
+	 * actually goes through (the AOSP split).
+	 *
+	 * The subscription list needs READ_PHONE_STATE and answers an *empty list*
+	 * without it, while the per-manager reads below keep working off
+	 * READ_BASIC_PHONE_STATE. A missing list therefore degrades to one row read
+	 * from the default subscription - exactly what a single-SIM device shows
+	 * either way, with or without the extra permission.
+	 */
+	private fun simStatuses(showSecond: Boolean): List<SimStatus> {
+		val dataSub = defaultDataSubId()
+		val subs =
+			activeSubscriptions()
+				.sortedBy { it.simSlotIndex }
+				.let { list ->
+					if (showSecond) {
+						list
+					} else {
+						list.filter { it.subscriptionId == dataSub }.ifEmpty { list.take(1) }
+					}
+				}
+		if (subs.isEmpty()) return listOf(defaultSimStatus())
+		return subs.map { info ->
+			val subId = info.subscriptionId
+			SimStatus(
+				// An empty slot reports -1; the bar only ever shows 1-based slots.
+				slot = info.simSlotIndex.coerceAtLeast(0) + 1,
+				type = mobileTypeLabel(subId),
+				level = signalLevel(subId),
+				isData = subId == dataSub
+			)
+		}
+	}
+
+	/** The no-subscription-list row: whatever the default subscription reports. */
+	private fun defaultSimStatus() =
+		SimStatus(
+			slot = 1,
+			type = mobileTypeLabel(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID),
+			level = signalLevel(SubscriptionManager.DEFAULT_SUBSCRIPTION_ID)
+		)
+
+	/**
+	 * Active subscriptions in any order, or empty when the list is out of
+	 * reach. The permission check is explicit because READ_PHONE_STATE is
+	 * runtime-granted: without it the platform answers an empty list rather
+	 * than throwing, and the bar degrades to the single default-subscription
+	 * row below.
+	 */
+	private fun activeSubscriptions(): List<SubscriptionInfo> {
+		if (context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
+			return emptyList()
+		}
+		return try {
+			context.getSystemService(SubscriptionManager::class.java)?.activeSubscriptionInfoList.orEmpty()
+		} catch (e: Exception) {
+			warn("activeSubscriptions", e)
+			emptyList()
+		}
+	}
+
+	/** The data subscription, or -1 when it cannot be read (single-SIM fallback below). */
+	private fun defaultDataSubId(): Int =
+		try {
+			SubscriptionManager.getDefaultDataSubscriptionId()
+		} catch (e: Exception) {
+			warn("defaultDataSubId", e)
+			SubscriptionManager.DEFAULT_SUBSCRIPTION_ID
+		}
+
+	/** A manager pinned to [subId], or the plain one when it is the default subscription. */
+	private fun telephonyFor(subId: Int): TelephonyManager? =
+		context
+			.getSystemService(TelephonyManager::class.java)
+			?.let { if (subId == SubscriptionManager.DEFAULT_SUBSCRIPTION_ID) it else it.createForSubscriptionId(subId) }
+
 	/** Network generation label like Dragon's getMobileDataStatus (LTE/5G/3G/2G). */
-	private fun mobileTypeLabel(): String {
+	private fun mobileTypeLabel(subId: Int): String {
 		// READ_BASIC_PHONE_STATE is install-time (API 29+); older devices keep
 		// the dangerous READ_PHONE_STATE unrequested and fall back to "4G".
 		val allowed =
@@ -186,7 +273,7 @@ internal class SystemIndicators(
 				context.checkSelfPermission(Manifest.permission.READ_BASIC_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
 		if (!allowed) return "4G"
 		return try {
-			val tm = context.getSystemService(TelephonyManager::class.java) ?: return "4G"
+			val tm = telephonyFor(subId) ?: return "4G"
 			// The data radio is the one the label is about; the voice radio only
 			// fills in when the modem reports no usable data type (IWLAN, lag).
 			networkTypeLabel(tm.dataNetworkType)
@@ -202,13 +289,12 @@ internal class SystemIndicators(
 	 * Signal level 0..4 on the same 5-step scale the system bars use, or -1 when
 	 * it cannot be read (no telephony radio, API < 28, modem not reporting).
 	 */
-	private fun signalLevel(): Int {
+	private fun signalLevel(subId: Int): Int {
 		// getSignalStrength() arrived in API 28: below that the call is a
 		// NoSuchMethodError, which catch(Exception) below would never see.
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return -1
 		return try {
-			val tm = context.getSystemService(TelephonyManager::class.java) ?: return -1
-			tm.signalStrength?.level?.coerceIn(0, 4) ?: -1
+			telephonyFor(subId)?.signalStrength?.level?.coerceIn(0, 4) ?: -1
 		} catch (e: Exception) {
 			warn("signalLevel", e)
 			-1
@@ -343,12 +429,11 @@ internal fun networkTypeLabel(type: Int): String =
 		else -> ""
 	}
 
-/** Cellular indicator snapshot: transport in use, generation label, signal level. */
+/** Cellular indicator snapshot: transport in use plus one row per visible SIM. */
 internal data class MobileStatus(
 	val active: Boolean,
-	val type: String,
-	/** Signal level 0..4, or -1 when it could not be read. */
-	val level: Int
+	/** One entry per visible SIM in slot order; empty while [active] is false. */
+	val sims: List<SimStatus>
 )
 
 /**
@@ -360,7 +445,7 @@ internal data class MobileStatus(
 internal suspend fun SystemIndicators.readMobile(p: OverlayPrefs): MobileStatus =
 	withContext(Dispatchers.IO) {
 		val active = !isAirplaneOn() && p.showMobileData && hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-		mobileStatus(active)
+		mobileStatus(active, p.showSim2Icons)
 	}
 
 /** One shot of every connectivity indicator, already filtered by the prefs. */
@@ -368,8 +453,8 @@ internal data class Connectivity(
 	val airplane: Boolean,
 	val wifi: Boolean,
 	val mobile: Boolean,
-	val mobileType: String,
-	val signalLevel: Int,
+	/** One entry per visible SIM in slot order; empty while cellular is off. */
+	val sims: List<SimStatus>,
 	val bluetooth: Boolean,
 	/** One entry per connected Bluetooth device; empty = generic glyph. */
 	val btDevices: List<BtDeviceIcon> = emptyList(),
@@ -398,14 +483,13 @@ internal suspend fun SystemIndicators.readConnectivity(p: OverlayPrefs): Connect
 		fun plain(show: Boolean, read: () -> Boolean) = show && read()
 
 		val mobile = radio(p.showMobileData) { hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) }
-		val status = mobileStatus(mobile)
+		val status = mobileStatus(mobile, p.showSim2Icons)
 		val bluetooth = radio(p.showBluetooth) { isBluetoothOn() }
 		Connectivity(
 			airplane = airplane,
 			wifi = radio(p.showWifi) { hasTransport(NetworkCapabilities.TRANSPORT_WIFI) },
 			mobile = status.active,
-			mobileType = status.type,
-			signalLevel = status.level,
+			sims = status.sims,
 			bluetooth = bluetooth,
 			btDevices = if (bluetooth) connectedBluetoothIcons(p) else emptyList(),
 			vpn = radio(p.showVpn) { isVpn() },

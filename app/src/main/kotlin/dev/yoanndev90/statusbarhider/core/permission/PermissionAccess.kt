@@ -22,6 +22,8 @@ data class PermissionGrants(
 	val overlay: Boolean,
 	val notifListener: Boolean,
 	val calendar: Boolean,
+	/** Second-SIM signal: the subscription list and per-SIM levels need it. */
+	val phoneState: Boolean,
 	val postNotifs: Boolean,
 	val bluetooth: Boolean,
 	val usage: Boolean,
@@ -41,6 +43,7 @@ object PermissionAccess {
 			overlay = Settings.canDrawOverlays(context),
 			notifListener = NotifListenerService.isEnabled(context),
 			calendar = context.checkSelfPermission(Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED,
+			phoneState = context.checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED,
 			postNotifs = context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED,
 			bluetooth = bluetoothGranted(context),
 			usage = UsageAccess.granted(context),

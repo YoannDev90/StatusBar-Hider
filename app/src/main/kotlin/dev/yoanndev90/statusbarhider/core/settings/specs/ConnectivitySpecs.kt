@@ -28,6 +28,18 @@ object ConnectivitySpecs {
 			label = R.string.switch_mobile_data
 		)
 
+	val showSim2Icons =
+		BoolSpec<OverlayPrefs>(
+			key = "show_sim2_icons",
+			get = OverlayPrefs::showSim2Icons,
+			set = { p, v -> p.copy(showSim2Icons = v) },
+			default = true,
+			icon = R.drawable.ic_signal,
+			label = R.string.switch_sim2_icons,
+			subtitle = R.string.switch_sim2_icons_sub,
+			shownWhen = { it.showMobileData }
+		)
+
 	val showBluetooth =
 		BoolSpec<OverlayPrefs>(
 			key = "show_bluetooth",
@@ -188,6 +200,7 @@ object ConnectivitySpecs {
 		listOf(
 			showWifi,
 			showMobileData,
+			showSim2Icons,
 			showBluetooth,
 			showBtIcons,
 			btIconOverrides,

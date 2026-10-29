@@ -52,9 +52,8 @@ data class OverlayBarState(
 	val airplane: Boolean = false,
 	val wifi: Boolean = false,
 	val mobile: Boolean = false,
-	val mobileType: String = "",
-	/** Cellular signal level 0..4 (-1 = unknown, drawn with the static icon). */
-	val signalLevel: Int = -1,
+	/** One entry per visible SIM, in slot order; empty while cellular is off. */
+	val sims: List<SimStatus> = emptyList(),
 	val bluetooth: Boolean = false,
 	/** One icon per connected Bluetooth device; empty = generic glyph. */
 	val btDevices: List<BtDeviceIcon> = emptyList(),

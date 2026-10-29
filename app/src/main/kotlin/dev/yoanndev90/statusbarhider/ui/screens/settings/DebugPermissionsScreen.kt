@@ -43,6 +43,8 @@ fun DebugPermissionsScreen(vm: StatusViewModel) {
 
 	val calendarLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
+	val phoneStateLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	val notificationsLauncher =
 		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	val bluetoothLauncher =
@@ -74,6 +76,10 @@ fun DebugPermissionsScreen(vm: StatusViewModel) {
 					label = R.string.perm_calendar,
 					granted = loaded.calendar
 				) { calendarLauncher.launch(Manifest.permission.READ_CALENDAR) }
+				SettingStatusRow(
+					label = R.string.perm_phone_state,
+					granted = loaded.phoneState
+				) { phoneStateLauncher.launch(Manifest.permission.READ_PHONE_STATE) }
 				if (Build.VERSION.SDK_INT >= 33) {
 					SettingStatusRow(
 						label = R.string.perm_post_notifs,

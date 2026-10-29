@@ -132,6 +132,7 @@
     <string name="perm_overlay">Display over other apps</string>
     <string name="perm_notif_access">Notification access</string>
     <string name="perm_calendar">Calendar</string>
+    <string name="perm_phone_state">Second SIM signal</string>
     <string name="perm_post_notifs">Post notifications</string>
     <string name="perm_bluetooth">Bluetooth devices</string>
     <string name="perm_usage">Usage access</string>
@@ -195,6 +196,7 @@
     <string name="setup_overlay">Display over other apps</string>
     <string name="setup_notif_access">Notification access</string>
     <string name="setup_calendar">Calendar (next event widget)</string>
+    <string name="setup_phone_state">Phone state (second SIM signal)</string>
     <string name="setup_post_notifs">Notifications (foreground service)</string>
     <string name="setup_bluetooth">Bluetooth devices (per-device icons)</string>
     <string name="setup_usage">Usage access (app blacklist, optional)</string>
@@ -213,6 +215,8 @@
     <string name="switch_notification_icons">Notification icons</string>
     <string name="switch_wifi">WiFi</string>
     <string name="switch_mobile_data">Mobile data</string>
+    <string name="switch_sim2_icons">Second SIM icon</string>
+    <string name="switch_sim2_icons_sub">Draws one signal icon per SIM card</string>
     <string name="switch_bluetooth">Bluetooth</string>
     <string name="switch_airplane">Airplane mode</string>
     <string name="switch_usb">USB</string>
@@ -355,7 +359,7 @@
     <string name="cd_airplane_mode">Airplane mode</string>
     <string name="cd_wifi">WiFi</string>
     <string name="cd_mobile_data">Mobile data</string>
-    <string name="cd_signal_level">Mobile data signal, %1$d of 4 bars</string>
+    <string name="cd_signal_level_sim">SIM %1$d signal, %2$d of 4 bars</string>
     <string name="cd_bluetooth">Bluetooth</string>
     <string name="cd_bluetooth_earbuds">Bluetooth earbuds</string>
     <string name="cd_bluetooth_headset">Bluetooth headset</string>

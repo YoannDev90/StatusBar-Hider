@@ -46,7 +46,7 @@ internal class SystemStatusReader(
 	/** Refreshes only the cellular indicator, on the faster loop's own cadence. */
 	suspend fun updateMobile() {
 		val m = indicators.readMobile(prefs())
-		updateBarState { it.copy(mobile = m.active, mobileType = m.type, signalLevel = m.level) }
+		updateBarState { it.copy(mobile = m.active, sims = m.sims) }
 	}
 
 	suspend fun updateCalendar() {
@@ -70,8 +70,7 @@ internal class SystemStatusReader(
 				airplane = c.airplane,
 				wifi = c.wifi,
 				mobile = c.mobile,
-				mobileType = c.mobileType,
-				signalLevel = c.signalLevel,
+				sims = c.sims,
 				bluetooth = c.bluetooth,
 				btDevices = c.btDevices,
 				vpn = c.vpn,

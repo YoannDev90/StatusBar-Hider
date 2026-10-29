@@ -68,12 +68,6 @@ fun SetupScreen(
 		onPauseOrDispose { }
 	}
 
-	val calendarLauncher =
-		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
-	val notificationsLauncher =
-		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
-	val bluetoothLauncher =
-		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { resumeTick++ }
 	// The permission rows are binder calls (overlay, listener, AppOps, grants):
 	// read them once per resume on IO instead of on every recomposition. Values
 	// from the previous read stay on screen while a refresh is in flight.
@@ -112,40 +106,7 @@ fun SetupScreen(
 				CircularProgressIndicator(Modifier.size(24.dp))
 			}
 		} else {
-			SettingGroup(R.string.setup_group_permissions) {
-				SettingStatusRow(
-					label = R.string.setup_overlay,
-					granted = loaded.overlay
-				) { PermissionAccess.openSpecialAccess(context, Settings.ACTION_MANAGE_OVERLAY_PERMISSION) }
-				SettingStatusRow(
-					label = R.string.setup_notif_access,
-					granted = loaded.notifListener
-				) { PermissionAccess.openSettings(context, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
-				SettingStatusRow(
-					label = R.string.setup_calendar,
-					granted = loaded.calendar
-				) { calendarLauncher.launch(Manifest.permission.READ_CALENDAR) }
-				if (Build.VERSION.SDK_INT >= 33) {
-					SettingStatusRow(
-						label = R.string.setup_post_notifs,
-						granted = loaded.postNotifs
-					) { notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
-				}
-				if (Build.VERSION.SDK_INT >= 31) {
-					SettingStatusRow(
-						label = R.string.setup_bluetooth,
-						granted = loaded.bluetooth
-					) { bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
-				}
-				SettingStatusRow(
-					label = R.string.setup_usage,
-					granted = loaded.usage
-				) { PermissionAccess.openSettings(context, Settings.ACTION_USAGE_ACCESS_SETTINGS) }
-				SettingStatusRow(
-					label = R.string.setup_accessibility,
-					granted = loaded.lockOverlay
-				) { PermissionAccess.openSettings(context, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
-			}
+			PermissionsGroup(loaded) { resumeTick++ }
 
 			KeepAliveGroup(oem.keepAlive, loaded.batteryExempt)
 		}
@@ -158,6 +119,66 @@ fun SetupScreen(
 		) {
 			Text(stringResource(R.string.action_setup_later))
 		}
+	}
+}
+
+/**
+ * The runtime-permission block. The request launchers live here so the screen
+ * only hands over [onGrant]: a grant lands while the checklist is not the
+ * foreground screen, so the rows re-read off that callback rather than off any
+ * state this block would own.
+ */
+@Composable
+private fun PermissionsGroup(
+	loaded: PermissionGrants,
+	onGrant: () -> Unit
+) {
+	val context = LocalContext.current
+	val calendarLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onGrant() }
+	val phoneStateLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onGrant() }
+	val notificationsLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onGrant() }
+	val bluetoothLauncher =
+		rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { onGrant() }
+	SettingGroup(R.string.setup_group_permissions) {
+		SettingStatusRow(
+			label = R.string.setup_overlay,
+			granted = loaded.overlay
+		) { PermissionAccess.openSpecialAccess(context, Settings.ACTION_MANAGE_OVERLAY_PERMISSION) }
+		SettingStatusRow(
+			label = R.string.setup_notif_access,
+			granted = loaded.notifListener
+		) { PermissionAccess.openSettings(context, Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS) }
+		SettingStatusRow(
+			label = R.string.setup_calendar,
+			granted = loaded.calendar
+		) { calendarLauncher.launch(Manifest.permission.READ_CALENDAR) }
+		SettingStatusRow(
+			label = R.string.setup_phone_state,
+			granted = loaded.phoneState
+		) { phoneStateLauncher.launch(Manifest.permission.READ_PHONE_STATE) }
+		if (Build.VERSION.SDK_INT >= 33) {
+			SettingStatusRow(
+				label = R.string.setup_post_notifs,
+				granted = loaded.postNotifs
+			) { notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
+		}
+		if (Build.VERSION.SDK_INT >= 31) {
+			SettingStatusRow(
+				label = R.string.setup_bluetooth,
+				granted = loaded.bluetooth
+			) { bluetoothLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
+		}
+		SettingStatusRow(
+			label = R.string.setup_usage,
+			granted = loaded.usage
+		) { PermissionAccess.openSettings(context, Settings.ACTION_USAGE_ACCESS_SETTINGS) }
+		SettingStatusRow(
+			label = R.string.setup_accessibility,
+			granted = loaded.lockOverlay
+		) { PermissionAccess.openSettings(context, Settings.ACTION_ACCESSIBILITY_SETTINGS) }
 	}
 }
 

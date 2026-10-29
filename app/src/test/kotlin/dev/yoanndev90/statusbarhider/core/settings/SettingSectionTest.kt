@@ -32,6 +32,7 @@ class SettingSectionTest {
 			listOf(
 				"show_wifi",
 				"show_mobile",
+				"show_sim2_icons",
 				"show_bluetooth",
 				"show_airplane",
 				"show_usb",
@@ -66,6 +67,14 @@ class SettingSectionTest {
 		assertTrue("bandwidth_merged shown while show_bandwidth is off", "bandwidth_merged" !in hidden)
 		val shown = ConnectivitySection.visibleRows(OverlayPrefs().copy(showBandwidth = true)).keys()
 		assertTrue("bandwidth_merged missing although show_bandwidth is on", "bandwidth_merged" in shown)
+	}
+
+	@Test
+	fun `shownWhen hides the second-SIM row while mobile data is off`() {
+		val hidden = ConnectivitySection.visibleRows(OverlayPrefs().copy(showMobileData = false)).keys()
+		assertTrue("show_sim2_icons shown while show_mobile is off", "show_sim2_icons" !in hidden)
+		val shown = ConnectivitySection.visibleRows(OverlayPrefs()).keys()
+		assertTrue("show_sim2_icons missing although show_mobile is on", "show_sim2_icons" in shown)
 	}
 
 	@Test
@@ -163,12 +172,12 @@ class SettingSectionTest {
 	fun `cards are built eagerly so no loose run can compose empty`() {
 		// Regression: the item lambda used to capture the mutable runner, so
 		// every loose run before a group composed with its emptied final value
-		// — connectivity lost its 15 toggles on device. Defaults hide the
-		// merged-speed row (show_bandwidth off), hence 14 of the 15 specs.
+		// — connectivity lost its 16 toggles on device. Defaults hide the
+		// merged-speed row (show_bandwidth off), hence 15 of the 16 specs.
 		val cards = cardsOf(ConnectivitySection.visibleRows(OverlayPrefs()))
 		assertEquals(2, cards.size)
 		assertEquals(0, cards[0].title)
-		assertEquals(14, cards[0].rows.size)
+		assertEquals(15, cards[0].rows.size)
 		assertEquals(2, cards[1].rows.size)
 	}
 

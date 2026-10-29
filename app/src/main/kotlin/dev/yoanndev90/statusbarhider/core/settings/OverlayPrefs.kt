@@ -32,6 +32,7 @@ private const val KEY_SHOW_BATTERY = "show_battery"
 private const val KEY_SHOW_BATTERY_PCT = "show_battery_pct"
 private const val KEY_SHOW_WIFI = "show_wifi"
 private const val KEY_SHOW_MOBILE = "show_mobile"
+private const val KEY_SHOW_SIM2_ICONS = "show_sim2_icons"
 private const val KEY_SHOW_BLUETOOTH = "show_bluetooth"
 private const val KEY_SHOW_BT_ICONS = "show_bt_icons"
 private const val KEY_BT_ICON_OVERRIDES = "bt_icon_overrides"
@@ -128,6 +129,8 @@ data class OverlayPrefs(
 	val showWifi: Boolean = true,
 	@SerialName(KEY_SHOW_MOBILE)
 	val showMobileData: Boolean = true,
+	@SerialName(KEY_SHOW_SIM2_ICONS)
+	val showSim2Icons: Boolean = true,
 	@SerialName(KEY_SHOW_BLUETOOTH)
 	val showBluetooth: Boolean = true,
 	@SerialName(KEY_SHOW_BT_ICONS)

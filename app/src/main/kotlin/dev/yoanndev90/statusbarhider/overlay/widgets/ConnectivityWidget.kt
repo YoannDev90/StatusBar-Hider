@@ -13,6 +13,15 @@ import androidx.compose.ui.unit.dp
 import dev.yoanndev90.statusbarhider.R
 import dev.yoanndev90.statusbarhider.core.settings.OverlayPrefs
 import dev.yoanndev90.statusbarhider.overlay.model.OverlayBarState
+import dev.yoanndev90.statusbarhider.overlay.model.SimStatus
+
+/**
+ * The one generation label the cellular block draws: the data SIM's, falling
+ * back to the first row when the platform could not say which subscription
+ * carries the traffic. A single-SIM device always lands on that first row.
+ */
+internal fun cellularTypeLabel(sims: List<SimStatus>): String =
+	(sims.firstOrNull { it.isData } ?: sims.firstOrNull())?.type.orEmpty()
 
 /**
  * One connectivity icon: visible while its toggle is on, the underlying state
@@ -71,17 +80,20 @@ internal fun ConnectivityWidget(
 	) {
 		visible.forEach { indicator ->
 			if (indicator.typeLabel) {
-				// Cellular: the bars track the signal level, the label the real
-				// network type; a level the platform never reported (-1) keeps
-				// the static drawable so the icon never turns into a blank.
-				val level = state.signalLevel
-				if (level >= 0) {
-					SignalIcon(level, fg, stringResource(R.string.cd_signal_level, level))
-				} else {
-					IconImage(indicator.icon, stringResource(indicator.label), fg)
+				// Cellular: one glyph per SIM, then a single label naming the
+				// data SIM's real network type - the split AOSP uses, so a dual
+				// SIM bar stays as narrow as it can. A level the platform never
+				// reported (-1) keeps the static drawable so the icon never
+				// turns into a blank.
+				state.sims.forEach { sim ->
+					if (sim.level >= 0) {
+						SignalIcon(sim.level, fg, stringResource(R.string.cd_signal_level_sim, sim.slot, sim.level))
+					} else {
+						IconImage(indicator.icon, stringResource(indicator.label), fg)
+					}
 				}
 				Text(
-					text = state.mobileType.ifEmpty { "4G" },
+					text = cellularTypeLabel(state.sims).ifEmpty { "4G" },
 					fontSize = prefs.textSp(-3),
 					color = fg,
 					modifier = Modifier.padding(start = 1.dp, end = 2.dp)
